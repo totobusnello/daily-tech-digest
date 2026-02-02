@@ -1,9 +1,9 @@
 name: 🔥 THE DAILY BYTE - Daily Digest
 
 on:
-  # Executa todo dia às 11:00 UTC (08:00 BRT)
+  # Executa todo dia às 10:45 UTC (07:45 BRT) - 15min antes para compensar fila
   schedule:
-    - cron: '0 11 * * *'
+    - cron: '45 10 * * *'
 
   # Permite executar manualmente
   workflow_dispatch:
