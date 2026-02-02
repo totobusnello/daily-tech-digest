@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THE DAILY BYTE</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #ffffff;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 3px solid #0069FF;
+      margin-bottom: 30px;
+    }
+    .header img {
+      max-width: 200px;
+    }
+    .header h1 {
+      color: #0069FF;
+      margin: 10px 0 5px;
+      font-size: 28px;
+    }
+    .header .tagline {
+      color: #666;
+      font-size: 14px;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #0069FF;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+    }
+    .tldr {
+      background: #f8f9fa;
+      border-left: 4px solid #0069FF;
+      padding: 15px;
+      margin-bottom: 25px;
+    }
+    .tldr ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .tldr li {
+      margin-bottom: 8px;
+    }
+    .item {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .item:last-child {
+      border-bottom: none;
+    }
+    .item-headline {
+      font-size: 16px;
+      font-weight: bold;
+      color: #1a1a1a;
+      margin-bottom: 5px;
+    }
+    .item-context {
+      color: #444;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .item-meta {
+      font-size: 12px;
+      color: #888;
+    }
+    .item-meta a {
+      color: #0069FF;
+      text-decoration: none;
+    }
+    .item-meta a:hover {
+      text-decoration: underline;
+    }
+    .heat-badge {
+      display: inline-block;
+      background: #ff6b35;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-left: 5px;
+    }
+    .analysis {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 25px 0;
+    }
+    .analysis h3 {
+      margin-top: 0;
+    }
+    .video-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .video-icon {
+      font-size: 24px;
+      margin-right: 10px;
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      border-top: 2px solid #e0e0e0;
+      margin-top: 30px;
+      font-size: 12px;
+      color: #888;
+    }
+    .footer a {
+      color: #0069FF;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>THE DAILY BYTE</h1>
+    <div class="tagline">News, insights & trends</div>
+  </div>
+
+  <!-- TL;DR -->
+  <div class="section">
+    <div class="section-title">⚡ TL;DR</div>
+    <div class="tldr">
+      <ul>
+        {{#each tldr}}
+        <li>{{this}}</li>
+        {{/each}}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Breaking News -->
+  <div class="section">
+    <div class="section-title">🔥 BREAKING</div>
+    {{#each breaking}}
+    <div class="item">
+      <div class="item-headline">
+        {{headline}}
+        <span class="heat-badge">{{heat_score}}</span>
+      </div>
+      <div class="item-context">{{why_it_matters}}</div>
+      <div class="item-meta">
+        🔗 <a href="{{source_url}}">Ver original</a> |
+        📍 {{source_name}} |
+        ⏰ Há {{hours_ago}}h
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <!-- AI & Models -->
+  <div class="section">
+    <div class="section-title">🤖 AI & MODELS</div>
+    {{#each ai_models}}
+    <div class="item">
+      <div class="item-headline">{{headline}}</div>
+      <div class="item-context">{{why_it_matters}}</div>
+      <div class="item-meta">
+        🔗 <a href="{{source_url}}">Ver</a> | {{source_name}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <!-- Big Tech -->
+  <div class="section">
+    <div class="section-title">💼 BIG TECH MOVES</div>
+    {{#each big_tech}}
+    <div class="item">
+      <div class="item-headline">{{headline}}</div>
+      <div class="item-context">{{why_it_matters}}</div>
+      <div class="item-meta">
+        🔗 <a href="{{source_url}}">Ver</a> | {{source_name}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <!-- Analysis -->
+  <div class="analysis">
+    <h3>🔮 Análise do Dia</h3>
+    <p>{{daily_analysis}}</p>
+  </div>
+
+  <!-- Watch Later -->
+  <div class="section">
+    <div class="section-title">📺 WATCH LATER</div>
+    {{#each videos}}
+    <div class="video-item">
+      <div class="video-icon">🎬</div>
+      <div>
+        <strong>{{headline}}</strong><br>
+        <small>{{source_name}} | <a href="{{source_url}}">▶️ Assistir</a></small>
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <div class="footer">
+    <p><strong>Curated by Totó Busnello AI</strong></p>
+    <p>
+      <a href="{{unsubscribe_url}}">Cancelar inscrição</a> |
+      <a href="{{manage_url}}">Gerenciar preferências</a>
+    </p>
+    <p>THE DAILY BYTE - News, insights & trends</p>
+  </div>
+</body>
+</html>

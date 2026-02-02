@@ -1,0 +1,90 @@
+# ============================================
+# THE DAILY BYTE - Configuração
+# ============================================
+
+newsletter:
+  name: "THE DAILY BYTE"
+  tagline: "News, insights & trends"
+  author: "Totó Busnello"
+  email: "lab@nuvini.ai"
+  landing_page: "buttondown.com/totobusnello"
+
+# Horário de envio (BRT)
+schedule:
+  time: "08:00"
+  timezone: "America/Sao_Paulo"
+
+# Filtros de curadoria
+filters:
+  # Idade máxima das notícias
+  max_age_hours: 24
+
+  # Score mínimo para entrar (0-100)
+  min_heat_score: 60
+
+  # Máximo de itens no digest
+  max_items: 15
+
+  # Distribuição por categoria
+  distribution:
+    tldr: 3
+    breaking: 4
+    ai_models: 4
+    big_tech: 3
+    watch_later: 2
+
+# Temas prioritários (boost no score)
+themes:
+  priority:
+    - "agentic engineering"
+    - "agent swarms"
+    - "foundation models"
+    - "AI safety"
+    - "enterprise AI"
+    - "Claude"
+    - "GPT"
+    - "LLM"
+
+  # Keywords que indicam hype vazio (penalidade)
+  penalty:
+    - "vai revolucionar"
+    - "mudará tudo"
+    - "10 prompts"
+    - "você não vai acreditar"
+
+# APIs (usar variáveis de ambiente)
+apis:
+  anthropic:
+    model: "claude-sonnet-4-20250514"
+    max_tokens: 4096
+
+  buttondown:
+    api_url: "https://api.buttondown.email/v1/emails"
+    # API key via BUTTONDOWN_API_KEY env var
+
+  x_twitter:
+    # Bearer token via X_BEARER_TOKEN env var
+    rate_limit_per_15min: 15
+
+# Fontes
+sources:
+  # Tier 1 - Primeira Mão (máxima prioridade)
+  tier1_handles:
+    - sama
+    - AnthropicAI
+    - satyanadella
+    - sundarpichai
+    - ylecun
+    - karpathy
+
+  # RSS Feeds
+  rss_feeds:
+    - https://hnrss.org/frontpage?points=100
+    - https://techcrunch.com/category/artificial-intelligence/feed/
+    - https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+
+  # YouTube Channels
+  youtube_channels:
+    - UCsBjURrPoezykLs9EqgamOA  # Fireship
+    - UCbfYPyITQ-7l4upoX8nvctg  # Two Minute Papers
+    - UCWN3xxRkmTPmbKwht9FuE5A  # Karpathy

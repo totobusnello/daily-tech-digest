@@ -1,0 +1,74 @@
+name: 🔥 THE DAILY BYTE - Daily Digest
+
+on:
+  # Executa todo dia às 11:00 UTC (08:00 BRT)
+  schedule:
+    - cron: '0 11 * * *'
+
+  # Permite executar manualmente
+  workflow_dispatch:
+    inputs:
+      preview_only:
+        description: 'Apenas preview (não envia email)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+  X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+
+jobs:
+  generate-digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: 📰 Collect news sources
+        run: |
+          cd scripts
+          python collector.py
+          echo "✅ Collection complete"
+
+      - name: 🤖 Curate with Claude AI
+        run: |
+          cd scripts
+          python processor.py
+          echo "✅ Curation complete"
+
+      - name: 📧 Send digest
+        if: ${{ github.event.inputs.preview_only != 'true' }}
+        run: |
+          cd scripts
+          python sender.py
+          echo "✅ Email sent!"
+
+      - name: 👀 Preview only (no send)
+        if: ${{ github.event.inputs.preview_only == 'true' }}
+        run: |
+          cd scripts
+          python sender.py --preview
+          echo "📋 Preview generated (email NOT sent)"
+
+      - name: 📊 Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ github.run_number }}
+          path: |
+            /tmp/digest_raw.json
+            /tmp/digest_curated.json
+            /tmp/digest_preview.md
+          retention-days: 7
