@@ -6,6 +6,7 @@ Usa Claude para filtrar e curar notícias quentíssimas
 
 import os
 import json
+import time
 import anthropic
 from datetime import datetime
 from pathlib import Path
@@ -123,12 +124,21 @@ def curate_with_claude(raw_data: dict) -> dict:
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        system=CURATOR_SYSTEM,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    for attempt in range(3):
+        try:
+            response = client.messages.create(
+                model=MODEL,
+                max_tokens=MAX_TOKENS,
+                system=CURATOR_SYSTEM,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            break
+        except anthropic.RateLimitError:
+            wait = 60 * (attempt + 1)
+            print(f"⏳ Rate limit atingido, aguardando {wait}s (tentativa {attempt + 1}/3)...")
+            time.sleep(wait)
+    else:
+        raise RuntimeError("❌ Rate limit persistente após 3 tentativas")
 
     # Parse response
     response_text = response.content[0].text
