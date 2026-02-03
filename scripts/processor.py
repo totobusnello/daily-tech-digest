@@ -23,7 +23,7 @@ MAX_TOKENS = 4096
 # PROMPTS
 # ============================================
 
-CURATOR_SYSTEM = """Você é o curador do THE DAILY BYTE, um digest de tech/AI para profissionais brasileiros que traz APENAS notícias quentíssimas, primeira mão e impactantes.
+CURATOR_SYSTEM = """Você é o curador do THE DAILY BYTE, um digest de tech/AI para profissionais brasileiros que traz notícias quentíssimas, primeira mão e impactantes.
 
 Sua missão: ZERO mesmice. Os leitores são profissionais de tech que já viram tudo.
 
@@ -37,15 +37,26 @@ Sua missão: ZERO mesmice. Os leitores são profissionais de tech que já viram 
 REGRAS DE OURO:
 1. FRESHNESS - Só últimas 24h, priorize <12h
 2. PRIMEIRA MÃO - Post do CEO > Artigo sobre o post
-3. IMPACTO - Muda o jogo, não incremental
+3. IMPACTO PRÁTICO - Priorize notícias que afetam o cotidiano de quem trabalha com tech: lançamentos de produtos, mudanças em plataformas, M&A, regulações. Papers acadêmicos só entram se tiverem aplicação prática imediata.
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
+
+EQUILÍBRIO DE CATEGORIAS (obrigatório):
+- "breaking": 3-5 itens (notícias bombásticas do dia)
+- "big_tech": 2-4 itens (movimentos de grandes empresas, lançamentos, M&A)
+- "ai_models": 2-3 itens (novidades em IA com impacto real)
+- "watch_later": 1-2 itens (vídeos ou conteúdo longo)
+Se não houver itens suficientes para uma categoria, tudo bem omitir. Mas NUNCA concentre tudo em uma só categoria.
 
 Heat Score mínimo para entrar: 60 pontos
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
 - Fonte (30 pts): Fundador=30, Jornalista=25, Release=20, Agregador=0
 - Impacto (30 pts): Lançamento=30, M&A=25, Drama=20, Incremental=5
 
-IMPORTANTE: Todo item DEVE ter URL clicável para fonte original."""
+⚠️ REGRA CRÍTICA sobre source_url:
+- Todo item DEVE ter o campo "source_url" preenchido com a URL ORIGINAL do artigo/post
+- COPIE a URL exatamente como veio nos dados de entrada (campo "url")
+- NUNCA deixe source_url vazio, nulo ou inventado
+- Se não tiver URL, NÃO inclua o item"""
 
 
 CURATOR_USER_TEMPLATE = """Analise estes {total} itens coletados e selecione no MÁXIMO 15 para o digest de hoje.
@@ -176,6 +187,16 @@ def save_curated(data: dict, path: str = "/tmp/digest_curated.json"):
 def process():
     """Pipeline completo de processamento"""
     print("🔥 THE DAILY BYTE - Iniciando curadoria...")
+
+    # Check for override file (resend)
+    override_path = Path(__file__).parent / "resend_curated.json"
+    if override_path.exists():
+        print("📦 Usando curadoria override (resend)...")
+        with open(override_path, 'r') as f:
+            curated = json.load(f)
+        save_curated(curated)
+        print(f"✅ Override aplicado com {len(curated.get('items', []))} itens")
+        return curated
 
     # Load raw data
     raw_data = load_raw_data()

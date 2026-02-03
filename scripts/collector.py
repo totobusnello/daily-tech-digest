@@ -38,12 +38,17 @@ TIER1_HANDLES = [
 
 # RSS Feeds
 RSS_FEEDS = {
+    # Tech geral e impacto no cotidiano
     "hacker_news": "https://hnrss.org/frontpage?points=100",
+    "ars_technica": "https://feeds.arstechnica.com/arstechnica/index",
+    "wired": "https://www.wired.com/feed/rss",
+    "the_verge": "https://www.theverge.com/rss/index.xml",
+    "reuters_tech": "https://www.reuters.com/technology/rss",
+    # AI específico
     "techcrunch_ai": "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "the_verge_ai": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
     "mit_tech_review": "https://www.technologyreview.com/feed/",
+    # Research (limitado a 1 feed)
     "arxiv_ai": "http://export.arxiv.org/rss/cs.AI",
-    "arxiv_lg": "http://export.arxiv.org/rss/cs.LG",
 }
 
 # YouTube Channels (via RSS)

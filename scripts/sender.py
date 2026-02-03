@@ -21,45 +21,11 @@ BUTTONDOWN_API_URL = "https://api.buttondown.email/v1/emails"
 # TEMPLATES
 # ============================================
 
-EMAIL_TEMPLATE = """
-# ⚡ TL;DR
-
-{tldr}
-
----
-
-# 🔥 BREAKING
-
-{breaking}
-
----
-
-# 🤖 AI & MODELS
-
-{ai_models}
-
----
-
-# 💼 BIG TECH MOVES
-
-{big_tech}
-
----
-
-# 🔮 ANÁLISE DO DIA
-
-{analysis}
-
----
-
-# 📺 WATCH LATER
-
-{videos}
-
+EMAIL_FOOTER = """
 ---
 
 *Curated by Totó Busnello AI*
-*[Gerenciar assinatura]({{{{ unsubscribe_url }}}})*
+*[Gerenciar assinatura]({{ unsubscribe_url }})*
 """
 
 
@@ -99,9 +65,13 @@ def format_video(item: Dict) -> str:
 def generate_email_content(curated: Dict) -> str:
     """Gera o conteúdo do email a partir dos dados curados"""
 
-    # TL;DR
+    sections = []
+
+    # TL;DR (sempre presente)
     tldr_bullets = curated.get('tldr', [])
-    tldr = "\n".join([f"→ {b}" for b in tldr_bullets])
+    if tldr_bullets:
+        tldr = "\n".join([f"→ {b}" for b in tldr_bullets])
+        sections.append(f"# ⚡ TL;DR\n\n{tldr}")
 
     # Categorize items
     items = curated.get('items', [])
@@ -110,23 +80,25 @@ def generate_email_content(curated: Dict) -> str:
     big_tech = [i for i in items if i.get('category') == 'big_tech']
     videos = [i for i in items if i.get('category') == 'watch_later']
 
-    # Format sections
-    breaking_text = "\n".join([format_item(i) for i in breaking]) or "*Nenhum breaking hoje*"
-    ai_text = "\n".join([format_item(i) for i in ai_models]) or "*Nenhuma novidade*"
-    tech_text = "\n".join([format_item(i) for i in big_tech]) or "*Nenhuma novidade*"
-    videos_text = "\n".join([format_video(i) for i in videos]) or "*Nenhum vídeo recomendado*"
+    # Só adiciona seções que têm conteúdo
+    if breaking:
+        sections.append("# 🔥 BREAKING\n\n" + "\n".join([format_item(i) for i in breaking]))
 
-    # Analysis
-    analysis = curated.get('daily_analysis', '*Análise não disponível*')
+    if ai_models:
+        sections.append("# 🤖 AI & MODELS\n\n" + "\n".join([format_item(i) for i in ai_models]))
 
-    return EMAIL_TEMPLATE.format(
-        tldr=tldr,
-        breaking=breaking_text,
-        ai_models=ai_text,
-        big_tech=tech_text,
-        analysis=analysis,
-        videos=videos_text
-    )
+    if big_tech:
+        sections.append("# 💼 BIG TECH MOVES\n\n" + "\n".join([format_item(i) for i in big_tech]))
+
+    # Análise do dia
+    analysis = curated.get('daily_analysis', '')
+    if analysis:
+        sections.append(f"# 🔮 ANÁLISE DO DIA\n\n{analysis}")
+
+    if videos:
+        sections.append("# 📺 WATCH LATER\n\n" + "\n".join([format_video(i) for i in videos]))
+
+    return "\n\n---\n\n".join(sections) + EMAIL_FOOTER
 
 
 def send_via_buttondown(subject: str, content: str, draft: bool = False) -> Dict:
