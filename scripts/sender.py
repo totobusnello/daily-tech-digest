@@ -140,7 +140,7 @@ def send_via_buttondown(subject: str, content: str, draft: bool = False) -> Dict
     payload = {
         "subject": subject,
         "body": content,
-        "status": "draft" if draft else "published"
+        "status": "draft" if draft else "about_to_send"
     }
 
     print(f"📤 Enviando via Buttondown (draft={draft})...")
@@ -159,7 +159,7 @@ def send_via_buttondown(subject: str, content: str, draft: bool = False) -> Dict
     else:
         print(f"❌ Erro: {response.status_code}")
         print(f"   {response.text}")
-        return {"success": False, "error": response.text}
+        raise RuntimeError(f"Buttondown API error: {response.status_code}")
 
 
 def load_curated(path: str = "/tmp/digest_curated.json") -> Dict:
