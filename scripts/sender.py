@@ -70,7 +70,7 @@ def generate_email_content(curated: Dict) -> str:
     # TL;DR (sempre presente)
     tldr_bullets = curated.get('tldr', [])
     if tldr_bullets:
-        tldr = "\n".join([f"→ {b}" for b in tldr_bullets])
+        tldr = "\n\n".join([f"→ **{b}**" for b in tldr_bullets])
         sections.append(f"# ⚡ TL;DR\n\n{tldr}")
 
     # Categorize items
