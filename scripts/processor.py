@@ -119,7 +119,7 @@ def curate_with_claude(raw_data: dict) -> dict:
 
     prompt = CURATOR_USER_TEMPLATE.format(
         total=len(items),
-        items=json.dumps(items[:100], ensure_ascii=False, indent=2)  # Max 100 for context
+        items=json.dumps(items[:30], ensure_ascii=False, indent=2)  # Max 30 para caber no rate limit
     )
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")
