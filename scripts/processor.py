@@ -82,7 +82,11 @@ RETORNE JSON com esta estrutura:
       "category": "breaking|ai_models|big_tech|watch_later"
     }}
   ],
-  "daily_analysis": "Parágrafo conectando os pontos do dia",
+  "daily_analysis": [
+    "**Tema curto** — Insight conectando pontos do dia em 1-2 frases",
+    "**Outro tema** — Outro insight relevante",
+    "**Tendência** — O que isso sinaliza para o futuro próximo"
+  ],
   "stats": {{
     "total_analyzed": X,
     "selected": Y,

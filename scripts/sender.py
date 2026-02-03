@@ -93,7 +93,11 @@ def generate_email_content(curated: Dict) -> str:
     # Análise do dia
     analysis = curated.get('daily_analysis', '')
     if analysis:
-        sections.append(f"# 🔮 ANÁLISE DO DIA\n\n{analysis}")
+        if isinstance(analysis, list):
+            analysis_text = "\n\n".join([f"• {item}" for item in analysis])
+        else:
+            analysis_text = analysis
+        sections.append(f"# 🔮 ANÁLISE DO DIA\n\n{analysis_text}")
 
     if videos:
         sections.append("# 📺 WATCH LATER\n\n" + "\n".join([format_video(i) for i in videos]))
