@@ -14,7 +14,7 @@ from typing import Dict, Optional
 # CONFIGURAÇÃO
 # ============================================
 
-BUTTONDOWN_API_KEY = os.environ.get('BUTTONDOWN_API_KEY', '1efd990d-1ad0-4fb2-99cf-f000df7269bc')
+BUTTONDOWN_API_KEY = os.environ.get('BUTTONDOWN_API_KEY', '').strip()
 BUTTONDOWN_API_URL = "https://api.buttondown.email/v1/emails"
 
 # ============================================
