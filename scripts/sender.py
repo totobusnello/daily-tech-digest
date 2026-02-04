@@ -67,11 +67,17 @@ def generate_email_content(curated: Dict) -> str:
 
     sections = []
 
-    # TL;DR (sempre presente)
-    tldr_bullets = curated.get('tldr', [])
-    if tldr_bullets:
-        tldr = "\n\n".join([f"→ **{b}**" for b in tldr_bullets])
-        sections.append(f"# ⚡ TL;DR\n\n{tldr}")
+    # Mundo Real (sempre presente)
+    world_items = curated.get('world', [])
+    if world_items:
+        world_lines = []
+        for wi in world_items:
+            headline = wi.get('headline', '')
+            context = wi.get('context', '')
+            url = wi.get('source_url', '#')
+            source = wi.get('source_name', '')
+            world_lines.append(f"→ **{headline}** — {context} ([{source}]({url}))")
+        sections.append(f"# 🌍 MUNDO REAL\n\n" + "\n\n".join(world_lines))
 
     # Categorize items
     items = curated.get('items', [])

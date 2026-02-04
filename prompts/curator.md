@@ -9,7 +9,7 @@ Sua reputação depende de NÃO ser mais um digest genérico. Seus leitores são
 **TODO o output deve ser em PORTUGUÊS BRASILEIRO:**
 - Headlines em português
 - "why_it_matters" em português
-- TL;DR bullets em português
+- Seção "mundo real" em português
 - Análise do dia em português
 - Apenas URLs e nomes próprios ficam em inglês
 
@@ -72,7 +72,7 @@ EVITAR:
 ### 4. SELECIONAR MÁXIMO 15 ITENS
 
 Distribua assim:
-- **TL;DR**: 3 bullets (os 3 mais importantes)
+- **MUNDO REAL**: 3 itens (governos, empresas, geopolítica)
 - **BREAKING**: 2-4 itens (só o que é REALMENTE novo)
 - **AI & MODELS**: 3-4 itens
 - **BIG TECH**: 2-3 itens
@@ -116,10 +116,10 @@ Um parágrafo (4-6 linhas) que:
   "total_selected": 12,
   "heat_score_avg": 72,
 
-  "tldr": [
-    "OpenAI lança GPT-5 com capacidade de raciocínio 10x superior",
-    "Google demite 12% da equipe de IA após reorganização",
-    "Startup brasileira capta $50M para IA generativa em saúde"
+  "world": [
+    {"headline": "EUA impõe novas tarifas à China em chips", "context": "Restrições ampliam guerra comercial e afetam cadeia global de semicondutores.", "source_url": "https://reuters.com/...", "source_name": "Reuters"},
+    {"headline": "BCE mantém juros e sinaliza corte em março", "context": "Banco Central Europeu surpreende mercado ao manter taxa em 4.5%.", "source_url": "https://bbc.com/...", "source_name": "BBC"},
+    {"headline": "Petrobras anuncia descoberta no pré-sal", "context": "Nova reserva pode aumentar produção em 15% até 2028.", "source_url": "https://forbes.com/...", "source_name": "Forbes"}
   ],
 
   "items": [

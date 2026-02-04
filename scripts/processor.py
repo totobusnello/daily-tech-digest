@@ -30,7 +30,7 @@ Sua missão: ZERO mesmice. Os leitores são profissionais de tech que já viram 
 ⚠️ IDIOMA: TODO o output deve ser em PORTUGUÊS BRASILEIRO:
 - Headlines em português
 - "why_it_matters" em português
-- TL;DR bullets em português
+- Seção "mundo real" em português
 - Análise do dia em português
 - Apenas URLs e nomes próprios (como @sama, OpenAI) ficam em inglês
 
@@ -46,6 +46,13 @@ EQUILÍBRIO DE CATEGORIAS (obrigatório):
 - "ai_models": 2-3 itens (novidades em IA com impacto real)
 - "watch_later": 1-2 itens (vídeos ou conteúdo longo)
 Se não houver itens suficientes para uma categoria, tudo bem omitir. Mas NUNCA concentre tudo em uma só categoria.
+
+SEÇÃO MUNDO REAL (obrigatório):
+- Selecione 3 notícias do mundo real a partir dos itens com source_type "world"
+- Foque em: movimentações de governos, decisões políticas globais, grandes empresas da economia real (energia, indústria, infraestrutura, saúde), geopolítica, trade wars, regulações
+- O objetivo é tirar o leitor da bolha tech e mostrar o que está acontecendo no mundo
+- Cada item deve ter: headline curto (max 10 palavras), contexto breve (1 frase), e a URL original
+- Priorize impacto global e relevância para profissionais brasileiros
 
 Heat Score mínimo para entrar: 60 pontos
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
@@ -69,7 +76,14 @@ DADOS COLETADOS:
 RETORNE JSON com esta estrutura:
 {{
   "date": "YYYY-MM-DD",
-  "tldr": ["bullet 1", "bullet 2", "bullet 3"],
+  "world": [
+    {{
+      "headline": "Max 10 palavras",
+      "context": "1 frase de contexto",
+      "source_url": "URL ORIGINAL",
+      "source_name": "Reuters|Forbes|BBC"
+    }}
+  ],
   "items": [
     {{
       "headline": "Max 12 palavras",
@@ -100,7 +114,7 @@ LEMBRE-SE:
 - Priorize BREAKING real (não requentado)
 - Todo item precisa de source_url válida
 - Seja impiedoso na curadoria - menos é mais
-- ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO (headlines, why_it_matters, tldr, análise)"""
+- ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO (headlines, why_it_matters, mundo real, análise)"""
 
 
 # ============================================
@@ -222,9 +236,9 @@ def process():
         print(f"   📊 Analisados: {curated.get('stats', {}).get('total_analyzed', '?')}")
         print(f"   ✨ Selecionados: {len(curated['items'])}")
 
-        print(f"\n📌 TL;DR:")
-        for bullet in curated.get('tldr', []):
-            print(f"   → {bullet}")
+        print(f"\n🌍 MUNDO REAL:")
+        for item in curated.get('world', []):
+            print(f"   → {item.get('headline', '?')}")
 
         print(f"\n🔥 BREAKING:")
         for item in curated['items'][:5]:

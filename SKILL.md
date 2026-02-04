@@ -87,11 +87,11 @@ THE DAILY BYTE
 News, insights & trends
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-⚡ TL;DR (3 bullets - o que acordar sabendo)
+🌍 MUNDO REAL (3 notícias além da bolha tech)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-→ [Notícia mais quente em 1 linha]
-→ [Segunda mais importante]
-→ [Terceira - pode ser tendência]
+→ [Movimentação de governo/empresa relevante]
+→ [Decisão geopolítica ou econômica]
+→ [Tendência do mundo real]
 
 🔥 BREAKING (só o que é REALMENTE breaking)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

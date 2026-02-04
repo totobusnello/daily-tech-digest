@@ -51,6 +51,16 @@ RSS_FEEDS = {
     "arxiv_ai": "http://export.arxiv.org/rss/cs.AI",
 }
 
+# RSS Feeds - Mundo Real (governos, empresas, geopolítica)
+WORLD_FEEDS = {
+    "reuters_world": "https://www.reuters.com/world/rss",
+    "reuters_business": "https://www.reuters.com/business/rss",
+    "forbes_business": "https://www.forbes.com/business/feed/",
+    "forbes_innovation": "https://www.forbes.com/innovation/feed/",
+    "bbc_world": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "bbc_business": "https://feeds.bbci.co.uk/news/business/rss.xml",
+}
+
 # YouTube Channels (via RSS)
 YOUTUBE_CHANNELS = {
     "fireship": "UCsBjURrPoezykLs9EqgamOA",
@@ -93,15 +103,14 @@ class RawItem:
 # COLETORES
 # ============================================
 
-def collect_rss_feeds() -> List[RawItem]:
-    """Coleta itens de RSS feeds"""
+def _parse_feed_items(feeds: dict, cutoff, source_type_fn=None, max_per_feed: int = 20) -> List[RawItem]:
+    """Coleta itens de um dicionário de RSS feeds"""
     items = []
-    cutoff = datetime.utcnow() - timedelta(hours=24)
 
-    for source_name, feed_url in RSS_FEEDS.items():
+    for source_name, feed_url in feeds.items():
         try:
             feed = feedparser.parse(feed_url)
-            for entry in feed.entries[:20]:  # Max 20 per feed
+            for entry in feed.entries[:max_per_feed]:
                 # Parse date
                 published = None
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
@@ -115,12 +124,17 @@ def collect_rss_feeds() -> List[RawItem]:
                 if published < cutoff:
                     continue
 
+                if source_type_fn:
+                    stype = source_type_fn(source_name)
+                else:
+                    stype = 'article' if 'arxiv' not in source_name else 'paper'
+
                 items.append(RawItem(
                     title=entry.get('title', ''),
                     content=entry.get('summary', ''),
                     url=entry.get('link', ''),
                     source_name=source_name,
-                    source_type='article' if 'arxiv' not in source_name else 'paper',
+                    source_type=stype,
                     author=entry.get('author', source_name),
                     published_at=published,
                     engagement={},
@@ -130,6 +144,22 @@ def collect_rss_feeds() -> List[RawItem]:
             print(f"Error fetching {source_name}: {e}")
 
     return items
+
+
+def collect_rss_feeds() -> List[RawItem]:
+    """Coleta itens de RSS feeds de tech"""
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    return _parse_feed_items(RSS_FEEDS, cutoff)
+
+
+def collect_world_feeds() -> List[RawItem]:
+    """Coleta notícias do mundo real (governos, empresas, geopolítica)"""
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    return _parse_feed_items(
+        WORLD_FEEDS, cutoff,
+        source_type_fn=lambda _: 'world',
+        max_per_feed=10
+    )
 
 
 def collect_youtube_feeds() -> List[RawItem]:
@@ -243,11 +273,17 @@ def collect_all() -> Dict:
 
     all_items = []
 
-    # RSS Feeds
+    # RSS Feeds (tech)
     print("📰 Coletando RSS feeds...")
     rss_items = collect_rss_feeds()
     all_items.extend(rss_items)
     print(f"   → {len(rss_items)} itens de RSS")
+
+    # World Feeds (Reuters, Forbes, BBC)
+    print("🌍 Coletando mundo real...")
+    world_items = collect_world_feeds()
+    all_items.extend(world_items)
+    print(f"   → {len(world_items)} itens do mundo real")
 
     # YouTube
     print("📺 Coletando YouTube...")
@@ -270,6 +306,7 @@ def collect_all() -> Dict:
         "total_items": len(all_items),
         "breakdown": {
             "rss": len(rss_items),
+            "world": len(world_items),
             "youtube": len(youtube_items),
             "x": len(x_items)
         },

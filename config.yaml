@@ -27,7 +27,7 @@ filters:
 
   # Distribuição por categoria
   distribution:
-    tldr: 3
+    world: 3
     breaking: 4
     ai_models: 4
     big_tech: 3

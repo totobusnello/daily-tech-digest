@@ -43,18 +43,40 @@
       padding-bottom: 8px;
       margin-bottom: 15px;
     }
-    .tldr {
+    .world {
       background: #f8f9fa;
-      border-left: 4px solid #0069FF;
+      border-left: 4px solid #2ecc71;
       padding: 15px;
       margin-bottom: 25px;
     }
-    .tldr ul {
-      margin: 0;
-      padding-left: 20px;
+    .world-item {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
     }
-    .tldr li {
-      margin-bottom: 8px;
+    .world-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .world-headline {
+      font-weight: bold;
+      color: #1a1a1a;
+      font-size: 14px;
+    }
+    .world-context {
+      color: #555;
+      font-size: 13px;
+      margin-top: 3px;
+    }
+    .world-source {
+      font-size: 11px;
+      color: #888;
+      margin-top: 3px;
+    }
+    .world-source a {
+      color: #2ecc71;
+      text-decoration: none;
     }
     .item {
       margin-bottom: 20px;
@@ -105,6 +127,16 @@
     .analysis h3 {
       margin-top: 0;
     }
+    .analysis-item {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .analysis-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
     .video-item {
       display: flex;
       align-items: center;
@@ -136,15 +168,17 @@
     <div class="tagline">News, insights & trends</div>
   </div>
 
-  <!-- TL;DR -->
+  <!-- Mundo Real -->
   <div class="section">
-    <div class="section-title">⚡ TL;DR</div>
-    <div class="tldr">
-      <ul>
-        {{#each tldr}}
-        <li>{{this}}</li>
-        {{/each}}
-      </ul>
+    <div class="section-title">🌍 MUNDO REAL</div>
+    <div class="world">
+      {{#each world}}
+      <div class="world-item">
+        <div class="world-headline">{{headline}}</div>
+        <div class="world-context">{{context}}</div>
+        <div class="world-source">📍 <a href="{{source_url}}">{{source_name}}</a></div>
+      </div>
+      {{/each}}
     </div>
   </div>
 
@@ -198,7 +232,9 @@
   <!-- Analysis -->
   <div class="analysis">
     <h3>🔮 Análise do Dia</h3>
-    <p>{{daily_analysis}}</p>
+    {{#each daily_analysis}}
+    <div class="analysis-item">{{this}}</div>
+    {{/each}}
   </div>
 
   <!-- Watch Later -->
