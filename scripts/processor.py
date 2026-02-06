@@ -39,6 +39,7 @@ REGRAS DE OURO:
 2. PRIMEIRA MÃO - Post do CEO > Artigo sobre o post
 3. IMPACTO PRÁTICO - Priorize notícias que afetam o cotidiano de quem trabalha com tech: lançamentos de produtos, mudanças em plataformas, M&A, regulações. Papers acadêmicos só entram se tiverem aplicação prática imediata.
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
+5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 2-3 frases de análise contextual. Não é resumo — é o "por que um C-level deveria se importar". Este campo é ESSENCIAL para o valor do digest.
 
 EQUILÍBRIO DE CATEGORIAS (obrigatório):
 - "breaking": 3-5 itens (notícias bombásticas do dia)
@@ -97,7 +98,7 @@ RETORNE JSON com esta estrutura:
   "items": [
     {{
       "headline": "Max 12 palavras",
-      "why_it_matters": "2 linhas de contexto",
+      "why_it_matters": "OBRIGATÓRIO: 2-3 frases de análise explicando POR QUE esta notícia importa para o leitor. Não é resumo — é contexto estratégico e impacto prático.",
       "source_url": "URL ORIGINAL",
       "source_name": "@handle ou Publicação",
       "source_type": "tweet|article|video|paper",
@@ -127,7 +128,14 @@ LEMBRE-SE:
 - Inclua itens de NEWSLETTER quando trouxerem análise ou ângulo único
 - A categoria "saas_enterprise" cobre: SaaS, CapEx, valuations, enterprise tech
 - Na seção "world", inclua pelo menos 1 notícia relevante do Brasil quando disponível
-- ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO (headlines, why_it_matters, mundo real, análise)"""
+- ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO (headlines, why_it_matters, mundo real, análise)
+
+⚠️ REGRA CRÍTICA sobre why_it_matters:
+- CADA item DEVE ter um "why_it_matters" com 2-3 frases SUBSTANCIAIS
+- NÃO é um resumo da notícia — é uma ANÁLISE do impacto e contexto
+- Responda: "Por que um CEO/CFO/CMO/CPO deveria se importar com isso?"
+- Conecte com tendências maiores, impacto no mercado, ou ação prática
+- NUNCA deixe why_it_matters vazio ou com apenas 1 frase curta"""
 
 
 # ============================================
