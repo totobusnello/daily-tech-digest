@@ -25,6 +25,9 @@ EMAIL_FOOTER = """
 ---
 
 *Curated by Totó Busnello AI*
+
+✍️ **Quer ir mais fundo?** Leia meus artigos sobre tech, AI e negócios no [LinkedIn](https://www.linkedin.com/in/luiz-antonio-busnello/)
+
 *[Gerenciar assinatura]({{ unsubscribe_url }})*
 """
 
