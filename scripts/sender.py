@@ -6,6 +6,7 @@ Envia o digest via Buttondown API
 
 import os
 import json
+import re
 import requests
 from datetime import datetime
 from typing import Dict, Optional
@@ -107,7 +108,14 @@ def generate_email_content(curated: Dict) -> str:
     analysis = curated.get('daily_analysis', '')
     if analysis:
         if isinstance(analysis, list):
-            analysis_text = "\n\n".join([f"• {item}" for item in analysis])
+            sanitized = []
+            for item in analysis:
+                # Strip heading markers (###, ##, #)
+                item = re.sub(r'^#{1,6}\s*', '', item.strip())
+                # Strip leading bullet markers (•, -, *)
+                item = re.sub(r'^[•\-\*]\s*', '', item.strip())
+                sanitized.append(f"• {item}")
+            analysis_text = "\n\n".join(sanitized)
         else:
             analysis_text = analysis
         sections.append(f"# 🔮 ANÁLISE DO DIA\n\n{analysis_text}")
