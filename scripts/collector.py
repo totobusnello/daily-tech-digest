@@ -13,6 +13,12 @@ from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 import re
 
+# Import newsletter collector
+try:
+    from newsletter_collector import collect_all_newsletters
+except ImportError:
+    collect_all_newsletters = None
+
 # ============================================
 # CONFIGURAÇÃO
 # ============================================
@@ -298,22 +304,36 @@ def collect_all() -> Dict:
     all_items.extend(x_items)
     print(f"   → {len(x_items)} tweets")
 
-    # Sort by recency
+    # Newsletters (AiDrop, Evolving AI, Update Diário, TechDrop)
+    newsletter_items_raw = []
+    if collect_all_newsletters:
+        print("📰 Coletando newsletters...")
+        newsletter_items_raw = collect_all_newsletters()
+        print(f"   → {len(newsletter_items_raw)} itens de newsletters")
+    else:
+        print("⚠️ Newsletter collector não disponível")
+
+    # Sort by recency (RawItem objects)
     all_items.sort(key=lambda x: x.published_at, reverse=True)
+
+    # Merge: convert RawItems to dicts + add newsletter items (already dicts)
+    all_items_dicts = [item.to_dict() for item in all_items]
+    all_items_dicts.extend(newsletter_items_raw)
 
     result = {
         "collected_at": datetime.utcnow().isoformat(),
-        "total_items": len(all_items),
+        "total_items": len(all_items_dicts),
         "breakdown": {
             "rss": len(rss_items),
             "world": len(world_items),
             "youtube": len(youtube_items),
-            "x": len(x_items)
+            "x": len(x_items),
+            "newsletters": len(newsletter_items_raw)
         },
-        "items": [item.to_dict() for item in all_items]
+        "items": all_items_dicts
     }
 
-    print(f"\n✅ Total coletado: {len(all_items)} itens")
+    print(f"\n✅ Total coletado: {len(all_items_dicts)} itens")
     return result
 
 

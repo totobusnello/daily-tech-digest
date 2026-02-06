@@ -23,9 +23,9 @@ MAX_TOKENS = 4096
 # PROMPTS
 # ============================================
 
-CURATOR_SYSTEM = """Você é o curador do THE DAILY BYTE, um digest de tech/AI para profissionais brasileiros que traz notícias quentíssimas, primeira mão e impactantes.
+CURATOR_SYSTEM = """Você é o curador do THE DAILY BYTE, um digest de tech/AI para profissionais brasileiros (CEOs, CFOs, CMOs, CPOs) que traz notícias quentíssimas, primeira mão e impactantes.
 
-Sua missão: ZERO mesmice. Os leitores são profissionais de tech que já viram tudo.
+Sua missão: ZERO mesmice. Os leitores são C-levels de tech que já viram tudo.
 
 ⚠️ IDIOMA: TODO o output deve ser em PORTUGUÊS BRASILEIRO:
 - Headlines em português
@@ -35,7 +35,7 @@ Sua missão: ZERO mesmice. Os leitores são profissionais de tech que já viram 
 - Apenas URLs e nomes próprios (como @sama, OpenAI) ficam em inglês
 
 REGRAS DE OURO:
-1. FRESHNESS - Só últimas 24h, priorize <12h
+1. FRESHNESS - Só últimas 24h, priorize <12h (newsletters: janela de 36h)
 2. PRIMEIRA MÃO - Post do CEO > Artigo sobre o post
 3. IMPACTO PRÁTICO - Priorize notícias que afetam o cotidiano de quem trabalha com tech: lançamentos de produtos, mudanças em plataformas, M&A, regulações. Papers acadêmicos só entram se tiverem aplicação prática imediata.
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
@@ -43,21 +43,31 @@ REGRAS DE OURO:
 EQUILÍBRIO DE CATEGORIAS (obrigatório):
 - "breaking": 3-5 itens (notícias bombásticas do dia)
 - "big_tech": 2-4 itens (movimentos de grandes empresas, lançamentos, M&A)
-- "ai_models": 2-3 itens (novidades em IA com impacto real)
+- "ai_models": 2-4 itens (novidades em IA com impacto real)
+- "saas_enterprise": 2-3 itens (SaaS, valuations, CapEx, enterprise tech) — NOVO
 - "watch_later": 1-2 itens (vídeos ou conteúdo longo)
 Se não houver itens suficientes para uma categoria, tudo bem omitir. Mas NUNCA concentre tudo em uma só categoria.
 
 SEÇÃO MUNDO REAL (obrigatório):
-- Selecione 3 notícias do mundo real a partir dos itens com source_type "world"
+- Selecione 3-4 notícias do mundo real a partir dos itens com source_type "world" ou "newsletter" com category_hint "world"
+- INCLUA notícias do Brasil quando relevantes (economia, mercado, política brasileira)
 - Foque em: movimentações de governos, decisões políticas globais, grandes empresas da economia real (energia, indústria, infraestrutura, saúde), geopolítica, trade wars, regulações
-- O objetivo é tirar o leitor da bolha tech e mostrar o que está acontecendo no mundo
+- O objetivo é tirar o leitor da bolha tech e mostrar o que está acontecendo no mundo E no Brasil
 - Cada item deve ter: headline curto (max 10 palavras), contexto breve (1 frase), e a URL original
 - Priorize impacto global e relevância para profissionais brasileiros
 
+REGRAS PARA ITENS DE NEWSLETTER (source_type "newsletter"):
+- Newsletters são fontes CURADAS — tratá-las como Tier 2 de confiabilidade
+- Quando o mesmo fato aparece em RSS E newsletter, PREFIRA a versão da newsletter se trouxer análise ou contexto adicional
+- Se a newsletter apenas REPETE o que o RSS já trouxe sem adicionar valor, DESCARTE a duplicata
+- Newsletters em português podem fornecer o ângulo brasileiro que falta nas fontes internacionais
+- Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise)
+
 Heat Score mínimo para entrar: 60 pontos
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
-- Fonte (30 pts): Fundador=30, Jornalista=25, Release=20, Agregador=0
+- Fonte (30 pts): Fundador=30, Jornalista=25, Release=20, Newsletter curada=15, Agregador=0
 - Impacto (30 pts): Lançamento=30, M&A=25, Drama=20, Incremental=5
+- Newsletter Bonus: Insight exclusivo=+10, Cross-validação=+5
 
 ⚠️ REGRA CRÍTICA sobre source_url:
 - Todo item DEVE ter o campo "source_url" preenchido com a URL ORIGINAL do artigo/post
@@ -66,7 +76,7 @@ Heat Score mínimo para entrar: 60 pontos
 - Se não tiver URL, NÃO inclua o item"""
 
 
-CURATOR_USER_TEMPLATE = """Analise estes {total} itens coletados e selecione no MÁXIMO 15 para o digest de hoje.
+CURATOR_USER_TEMPLATE = """Analise estes {total} itens coletados e selecione no MÁXIMO 20 para o digest de hoje.
 
 DADOS COLETADOS:
 ```json
@@ -93,7 +103,7 @@ RETORNE JSON com esta estrutura:
       "source_type": "tweet|article|video|paper",
       "hours_ago": 4,
       "heat_score": 75,
-      "category": "breaking|ai_models|big_tech|watch_later"
+      "category": "breaking|ai_models|big_tech|saas_enterprise|watch_later"
     }}
   ],
   "daily_analysis": [
@@ -110,10 +120,13 @@ RETORNE JSON com esta estrutura:
 }}
 
 LEMBRE-SE:
-- NO máximo 15 itens selecionados
+- NO máximo 20 itens selecionados
 - Priorize BREAKING real (não requentado)
 - Todo item precisa de source_url válida
 - Seja impiedoso na curadoria - menos é mais
+- Inclua itens de NEWSLETTER quando trouxerem análise ou ângulo único
+- A categoria "saas_enterprise" cobre: SaaS, CapEx, valuations, enterprise tech
+- Na seção "world", inclua pelo menos 1 notícia relevante do Brasil quando disponível
 - ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO (headlines, why_it_matters, mundo real, análise)"""
 
 
@@ -138,8 +151,11 @@ def curate_with_claude(raw_data: dict) -> dict:
     # Prepare items (limit to recent and trim content)
     items = raw_data.get('items', [])
 
-    # Pre-filter: only <24h
-    items = [i for i in items if i.get('hours_ago', 100) <= 24]
+    # Pre-filter: <24h for regular sources, <36h for newsletters
+    items = [i for i in items if (
+        i.get('hours_ago', 100) <= 36 if i.get('source_type') == 'newsletter'
+        else i.get('hours_ago', 100) <= 24
+    )]
 
     # Trim content for context
     for item in items:
@@ -148,7 +164,7 @@ def curate_with_claude(raw_data: dict) -> dict:
 
     prompt = CURATOR_USER_TEMPLATE.format(
         total=len(items),
-        items=json.dumps(items[:30], ensure_ascii=False, indent=2)  # Max 30 para caber no rate limit
+        items=json.dumps(items[:40], ensure_ascii=False, indent=2)  # Max 40 items (increased for newsletters)
     )
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")

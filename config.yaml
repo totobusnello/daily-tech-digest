@@ -1,5 +1,5 @@
 # ============================================
-# THE DAILY BYTE - Configuração
+# THE DAILY BYTE - Configuração v2.0
 # ============================================
 
 newsletter:
@@ -18,18 +18,21 @@ schedule:
 filters:
   # Idade máxima das notícias
   max_age_hours: 24
+  # Idade máxima para newsletters (janela maior)
+  max_age_hours_newsletters: 36
 
   # Score mínimo para entrar (0-100)
   min_heat_score: 60
 
   # Máximo de itens no digest
-  max_items: 15
+  max_items: 20
 
   # Distribuição por categoria
   distribution:
-    world: 3
+    world: 4          # Inclui notícias Brasil
     breaking: 4
     ai_models: 4
+    saas_enterprise: 3  # NOVO
     big_tech: 3
     watch_later: 2
 
@@ -44,6 +47,13 @@ themes:
     - "Claude"
     - "GPT"
     - "LLM"
+    - "SaaS"
+    - "CapEx"
+    - "valuations"
+    - "Brasil"
+    - "regulação AI"
+    - "plugins"
+    - "MCP"
 
   # Keywords que indicam hype vazio (penalidade)
   penalty:
@@ -51,6 +61,7 @@ themes:
     - "mudará tudo"
     - "10 prompts"
     - "você não vai acreditar"
+    - "isso muda tudo"
 
 # APIs (usar variáveis de ambiente)
 apis:
@@ -88,3 +99,22 @@ sources:
     - UCsBjURrPoezykLs9EqgamOA  # Fireship
     - UCbfYPyITQ-7l4upoX8nvctg  # Two Minute Papers
     - UCWN3xxRkmTPmbKwht9FuE5A  # Karpathy
+
+  # Newsletter Sources (NOVO - v2.0)
+  newsletters:
+    - name: "AiDrop"
+      url: "https://www.aidrop.news"
+      language: "pt-br"
+      focus: "ai"
+    - name: "Evolving AI"
+      url: "https://evolvingai.io"
+      language: "en"
+      focus: "ai"
+    - name: "Update Diário"
+      url: "https://updatediario.beehiiv.com"
+      language: "pt-br"
+      focus: "general_br"
+    - name: "TechDrop"
+      url: "https://www.techdrop.news"
+      language: "pt-br"
+      focus: "saas"

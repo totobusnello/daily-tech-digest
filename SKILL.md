@@ -71,13 +71,21 @@ IMPACTO (30 pontos)
 @MilesKruppa - WSJ
 ```
 
-### 🎯 Tier 3 - Newsletters/Agregadores de Qualidade
+### 🎯 Tier 3 - Newsletters Curadas (via scraping)
 ```
+- AiDrop (aidrop.news) - Ecossistema AI, análise profunda, PT-BR
+- Evolving AI (evolvingai.io) - Modelos AI, benchmarks, EN
+- Update Diário (updatediario.beehiiv.com) - Brasil/economia/política, PT-BR
+- TechDrop (techdrop.news) - SaaS/enterprise/CapEx, PT-BR
 - The Batch (Andrew Ng)
 - Import AI (Jack Clark)
-- AI News (Daniel Nest)
 - Stratechery (Ben Thompson)
 ```
+
+### Regras para Newsletters
+- Janela ampliada: 36h (vs 24h de RSS)
+- Cross-referência: preferir newsletter se trouxer análise > RSS bruto
+- Dedup: newsletter repetindo RSS sem agregar = descartar
 
 ## Estrutura do Email
 
@@ -105,6 +113,10 @@ Cada item:
 🤖 AI & MODELS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [Updates de modelos, papers importantes, demos]
+
+💰 SaaS & ENTERPRISE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[SaaS, valuations, CapEx, enterprise tech]
 
 💼 BIG TECH MOVES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -150,7 +162,7 @@ schedule:
 filters:
   max_age_hours: 24
   min_heat_score: 60
-  max_items: 15
+  max_items: 20
 
 themes:
   priority:

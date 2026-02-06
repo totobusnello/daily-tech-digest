@@ -83,6 +83,7 @@ def generate_email_content(curated: Dict) -> str:
     items = curated.get('items', [])
     breaking = [i for i in items if i.get('category') == 'breaking']
     ai_models = [i for i in items if i.get('category') == 'ai_models']
+    saas_enterprise = [i for i in items if i.get('category') == 'saas_enterprise']
     big_tech = [i for i in items if i.get('category') == 'big_tech']
     videos = [i for i in items if i.get('category') == 'watch_later']
 
@@ -92,6 +93,9 @@ def generate_email_content(curated: Dict) -> str:
 
     if ai_models:
         sections.append("# 🤖 AI & MODELS\n\n" + "\n".join([format_item(i) for i in ai_models]))
+
+    if saas_enterprise:
+        sections.append("# 💰 SaaS & ENTERPRISE\n\n" + "\n".join([format_item(i) for i in saas_enterprise]))
 
     if big_tech:
         sections.append("# 💼 BIG TECH MOVES\n\n" + "\n".join([format_item(i) for i in big_tech]))
