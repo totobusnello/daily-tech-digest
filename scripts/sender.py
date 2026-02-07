@@ -23,7 +23,8 @@ BUTTONDOWN_API_URL = "https://api.buttondown.email/v1/emails"
 # ============================================
 
 EMAIL_FOOTER = """
----
+
+***
 
 *Curated by Totó Busnello AI*
 
@@ -123,7 +124,7 @@ def generate_email_content(curated: Dict) -> str:
     if videos:
         sections.append("# 📺 WATCH LATER\n\n" + "\n".join([format_video(i) for i in videos]))
 
-    return "\n\n---\n\n".join(sections) + EMAIL_FOOTER
+    return "\n\n***\n\n".join(sections) + EMAIL_FOOTER
 
 
 def send_via_buttondown(subject: str, content: str, draft: bool = False) -> Dict:

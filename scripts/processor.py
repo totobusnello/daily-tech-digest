@@ -44,13 +44,13 @@ REGRAS DE OURO:
 EQUILÍBRIO DE CATEGORIAS (obrigatório):
 - "breaking": 3-5 itens (notícias bombásticas do dia)
 - "big_tech": 2-4 itens (movimentos de grandes empresas, lançamentos, M&A)
-- "ai_models": 2-4 itens (novidades em IA com impacto real)
+- "ai_models": 2-3 itens (novidades em IA com impacto real)
 - "saas_enterprise": 2-3 itens (SaaS, valuations, CapEx, enterprise tech) — NOVO
 - "watch_later": 1-2 itens (vídeos ou conteúdo longo)
 Se não houver itens suficientes para uma categoria, tudo bem omitir. Mas NUNCA concentre tudo em uma só categoria.
 
 SEÇÃO MUNDO REAL (obrigatório):
-- Selecione 3-4 notícias do mundo real a partir dos itens com source_type "world" ou "newsletter" com category_hint "world"
+- Selecione 4-5 notícias do mundo real a partir dos itens com source_type "world" ou "newsletter" com category_hint "world"
 - INCLUA notícias do Brasil quando relevantes (economia, mercado, política brasileira)
 - Foque em: movimentações de governos, decisões políticas globais, grandes empresas da economia real (energia, indústria, infraestrutura, saúde), geopolítica, trade wars, regulações
 - O objetivo é tirar o leitor da bolha tech e mostrar o que está acontecendo no mundo E no Brasil

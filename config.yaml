@@ -29,9 +29,9 @@ filters:
 
   # Distribuição por categoria
   distribution:
-    world: 4          # Inclui notícias Brasil
+    world: 5          # Inclui notícias Brasil
     breaking: 4
-    ai_models: 4
+    ai_models: 3
     saas_enterprise: 3  # NOVO
     big_tech: 3
     watch_later: 2
