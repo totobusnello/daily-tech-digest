@@ -44,6 +44,13 @@ NEWSLETTER_SOURCES = {
         "category_hint": "saas_enterprise",
         "description": "SaaS, enterprise tech, CapEx analysis"
     },
+    "alphasignal": {
+        "name": "AlphaSignal",
+        "base_url": "https://alphasignalai.beehiiv.com",
+        "language": "en",
+        "category_hint": "ai_models",
+        "description": "Research-to-product bridge: AI papers with practical applications"
+    },
 }
 
 # Headers to mimic a browser request

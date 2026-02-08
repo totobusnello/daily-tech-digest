@@ -46,6 +46,7 @@ EQUILÍBRIO DE CATEGORIAS (obrigatório):
 - "big_tech": 2-4 itens (movimentos de grandes empresas, lançamentos, M&A)
 - "ai_models": 2-3 itens (novidades em IA com impacto real)
 - "saas_enterprise": 2-3 itens (SaaS, valuations, CapEx, enterprise tech) — NOVO
+- "tool_of_day": 1 item (UMA ferramenta AI/tech prática que o leitor pode usar HOJE — app, plugin, API, framework. Priorize ferramentas pouco conhecidas mas poderosas.)
 - "watch_later": 1-2 itens (vídeos ou conteúdo longo)
 Se não houver itens suficientes para uma categoria, tudo bem omitir. Mas NUNCA concentre tudo em uma só categoria.
 
@@ -62,7 +63,7 @@ REGRAS PARA ITENS DE NEWSLETTER (source_type "newsletter"):
 - Quando o mesmo fato aparece em RSS E newsletter, PREFIRA a versão da newsletter se trouxer análise ou contexto adicional
 - Se a newsletter apenas REPETE o que o RSS já trouxe sem adicionar valor, DESCARTE a duplicata
 - Newsletters em português podem fornecer o ângulo brasileiro que falta nas fontes internacionais
-- Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise)
+- Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise), AlphaSignal (research→produto)
 
 Heat Score mínimo para entrar: 60 pontos
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
@@ -104,7 +105,7 @@ RETORNE JSON com esta estrutura:
       "source_type": "tweet|article|video|paper",
       "hours_ago": 4,
       "heat_score": 75,
-      "category": "breaking|ai_models|big_tech|saas_enterprise|watch_later"
+      "category": "breaking|ai_models|big_tech|saas_enterprise|tool_of_day|watch_later"
     }}
   ],
   "daily_analysis": [

@@ -77,6 +77,7 @@ IMPACTO (30 pontos)
 - Evolving AI (evolvingai.io) - Modelos AI, benchmarks, EN
 - Update Diário (updatediario.beehiiv.com) - Brasil/economia/política, PT-BR
 - TechDrop (techdrop.news) - SaaS/enterprise/CapEx, PT-BR
+- AlphaSignal (alphasignalai.beehiiv.com) - Research→produto, papers com aplicação prática, EN
 - The Batch (Andrew Ng)
 - Import AI (Jack Clark)
 - Stratechery (Ben Thompson)
@@ -95,7 +96,7 @@ THE DAILY BYTE
 News, insights & trends
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🌍 MUNDO REAL (3 notícias além da bolha tech)
+🌍 MUNDO REAL (5 notícias além da bolha tech)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 → [Movimentação de governo/empresa relevante]
 → [Decisão geopolítica ou econômica]
@@ -122,9 +123,13 @@ Cada item:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [Contratações, layoffs, M&A, pivots]
 
+🛠️ TOOL DO DIA (1 ferramenta prática)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1 tool AI/tech que o leitor pode usar hoje]
+
 🔮 ANÁLISE DO DIA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[1 parágrafo conectando os pontos -
+[3 bullets conectando os pontos -
 qual é a narrativa maior?]
 
 📺 WATCH LATER (1-2 vídeos essenciais)

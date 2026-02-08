@@ -19,6 +19,7 @@
 | Evolving AI | evolvingai.io | AI models EN | ✅ Ativa |
 | Update Diário | updatediario.beehiiv.com | Brasil/geral PT-BR | ✅ Ativa |
 | TechDrop | techdrop.news | SaaS/enterprise PT-BR | ✅ Ativa |
+| AlphaSignal | alphasignalai.beehiiv.com | Research→produto EN | ✅ Ativa |
 
 ## Fontes BR Potenciais para Avaliar
 

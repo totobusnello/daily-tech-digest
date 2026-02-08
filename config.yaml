@@ -34,6 +34,7 @@ filters:
     ai_models: 3
     saas_enterprise: 3  # NOVO
     big_tech: 3
+    tool_of_day: 1        # NOVO - 1 ferramenta prática por dia
     watch_later: 2
 
 # Temas prioritários (boost no score)
@@ -118,3 +119,7 @@ sources:
       url: "https://www.techdrop.news"
       language: "pt-br"
       focus: "saas"
+    - name: "AlphaSignal"
+      url: "https://alphasignalai.beehiiv.com"
+      language: "en"
+      focus: "ai_research"

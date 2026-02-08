@@ -90,6 +90,7 @@ def generate_email_content(curated: Dict) -> str:
     ai_models = [i for i in items if i.get('category') == 'ai_models']
     saas_enterprise = [i for i in items if i.get('category') == 'saas_enterprise']
     big_tech = [i for i in items if i.get('category') == 'big_tech']
+    tool_of_day = [i for i in items if i.get('category') == 'tool_of_day']
     videos = [i for i in items if i.get('category') == 'watch_later']
 
     # Só adiciona seções que têm conteúdo
@@ -104,6 +105,12 @@ def generate_email_content(curated: Dict) -> str:
 
     if big_tech:
         sections.append("# 💼 BIG TECH MOVES\n\n" + "\n".join([format_item(i) for i in big_tech]))
+
+    # Tool do Dia (1 ferramenta prática)
+    if tool_of_day:
+        tool = tool_of_day[0]  # Sempre apenas 1
+        tool_text = f"**{tool.get('headline', '')}**\n\n{tool.get('why_it_matters', '')}\n\n🔗 [Experimentar]({tool.get('source_url', '#')}) | 📍 {tool.get('source_name', '')}"
+        sections.append(f"# 🛠️ TOOL DO DIA\n\n{tool_text}")
 
     # Análise do dia
     analysis = curated.get('daily_analysis', '')
