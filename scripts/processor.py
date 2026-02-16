@@ -16,7 +16,7 @@ from pathlib import Path
 # ============================================
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-sonnet-4-5-20250929"
 MAX_TOKENS = 4096
 
 # ============================================
@@ -32,6 +32,7 @@ Sua missão: ZERO mesmice. Os leitores são C-levels de tech que já viram tudo.
 - "why_it_matters" em português
 - Seção "mundo real" em português
 - Análise do dia em português
+- "how_to_use" em português
 - Apenas URLs e nomes próprios (como @sama, OpenAI) ficam em inglês
 
 REGRAS DE OURO:
@@ -41,29 +42,41 @@ REGRAS DE OURO:
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
 5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 2-3 frases de análise contextual. Não é resumo — é o "por que um C-level deveria se importar". Este campo é ESSENCIAL para o valor do digest.
 
-EQUILÍBRIO DE CATEGORIAS (obrigatório):
-- "breaking": 3-5 itens (notícias bombásticas do dia)
-- "big_tech": 2-4 itens (movimentos de grandes empresas, lançamentos, M&A)
-- "ai_models": 2-3 itens (novidades em IA com impacto real)
-- "saas_enterprise": 2-3 itens (SaaS, valuations, CapEx, enterprise tech) — NOVO
-- "tool_of_day": 1 item (UMA ferramenta AI/tech prática que o leitor pode usar HOJE — app, plugin, API, framework. Priorize ferramentas pouco conhecidas mas poderosas.)
-- "watch_later": 1-2 itens (vídeos ou conteúdo longo)
-Se não houver itens suficientes para uma categoria, tudo bem omitir. Mas NUNCA concentre tudo em uma só categoria.
+LAYOUT CONSOLIDADO v2.1 — 6 SEÇÕES:
+
+1. "world" (3 itens): Mundo Real — mundo + Brasil. Governos, geopolítica, economia real.
+2. "hoje_no_byte" (4-5 itens): A seção principal. CONSOLIDA breaking + ai_models + big_tech.
+   Cada item recebe uma TAG entre: [BREAKING], [AI], [BIG TECH], [ENTERPRISE].
+   A tag vai no campo "tag" do JSON.
+3. "saas_enterprise" (2 itens): SaaS, valuations, CapEx, enterprise tech.
+4. "tool_of_day" (1 item): UMA ferramenta AI/tech prática que o leitor pode usar HOJE.
+   DEVE incluir campo "how_to_use": um prompt ou mini-tutorial copy-paste de 2-3 linhas.
+   ⚠️ É um OBJETO SEPARADO no JSON (não vai no array "items").
+5. "quick_links" (5-6 itens): Links rápidos — APENAS headline + URL, zero análise.
+   São notícias que não cabem nas seções principais mas merecem menção.
+6. "watch_later" (1 item): UM vídeo essencial. Vai no array "items" com category "watch_later".
+   São notícias que não cabem nas seções principais mas merecem menção.
+
+TOTAL MÁXIMO: 18 itens (12 principais + 6 quick links)
 
 SEÇÃO MUNDO REAL (obrigatório):
-- Selecione 4-5 notícias do mundo real a partir dos itens com source_type "world" ou "newsletter" com category_hint "world"
+- Selecione 3 notícias do mundo real a partir dos itens com source_type "world" ou "newsletter" com category_hint "world"
 - INCLUA notícias do Brasil quando relevantes (economia, mercado, política brasileira)
-- Foque em: movimentações de governos, decisões políticas globais, grandes empresas da economia real (energia, indústria, infraestrutura, saúde), geopolítica, trade wars, regulações
-- O objetivo é tirar o leitor da bolha tech e mostrar o que está acontecendo no mundo E no Brasil
+- Foque em: movimentações de governos, decisões políticas globais, grandes empresas da economia real, geopolítica, trade wars, regulações
 - Cada item deve ter: headline curto (max 10 palavras), contexto breve (1 frase), e a URL original
-- Priorize impacto global e relevância para profissionais brasileiros
+
+SEÇÃO COMO USAR HOJE (dentro de tool_of_day):
+- O campo "how_to_use" deve conter um prompt ou tutorial PRÁTICO e COPY-PASTE ready
+- Formato: "Abra [ferramenta]. Cole: [prompt exato]. Resultado: [o que esperar]."
+- Deve estar ligado à ferramenta do dia OU à notícia principal do digest
+- Máximo 3 linhas. Precisa ser acionável em 30 segundos.
 
 REGRAS PARA ITENS DE NEWSLETTER (source_type "newsletter"):
 - Newsletters são fontes CURADAS — tratá-las como Tier 2 de confiabilidade
 - Quando o mesmo fato aparece em RSS E newsletter, PREFIRA a versão da newsletter se trouxer análise ou contexto adicional
 - Se a newsletter apenas REPETE o que o RSS já trouxe sem adicionar valor, DESCARTE a duplicata
 - Newsletters em português podem fornecer o ângulo brasileiro que falta nas fontes internacionais
-- Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise), AlphaSignal (research→produto)
+- Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise), AlphaSignal (research→produto), There's An AI For That (AI tools), Turing Post (AI strategy)
 
 Heat Score mínimo para entrar: 60 pontos
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
@@ -78,14 +91,14 @@ Heat Score mínimo para entrar: 60 pontos
 - Se não tiver URL, NÃO inclua o item"""
 
 
-CURATOR_USER_TEMPLATE = """Analise estes {total} itens coletados e selecione no MÁXIMO 20 para o digest de hoje.
+CURATOR_USER_TEMPLATE = """Analise estes {total} itens coletados e selecione no MÁXIMO 18 para o digest de hoje.
 
 DADOS COLETADOS:
 ```json
 {items}
 ```
 
-RETORNE JSON com esta estrutura:
+RETORNE JSON com esta estrutura (layout consolidado v2.1):
 {{
   "date": "YYYY-MM-DD",
   "world": [
@@ -99,13 +112,28 @@ RETORNE JSON com esta estrutura:
   "items": [
     {{
       "headline": "Max 12 palavras",
+      "tag": "BREAKING|AI|BIG TECH|ENTERPRISE",
       "why_it_matters": "OBRIGATÓRIO: 2-3 frases de análise explicando POR QUE esta notícia importa para o leitor. Não é resumo — é contexto estratégico e impacto prático.",
       "source_url": "URL ORIGINAL",
       "source_name": "@handle ou Publicação",
-      "source_type": "tweet|article|video|paper",
+      "source_type": "tweet|article|video|paper|newsletter",
       "hours_ago": 4,
       "heat_score": 75,
-      "category": "breaking|ai_models|big_tech|saas_enterprise|tool_of_day|watch_later"
+      "category": "hoje_no_byte|saas_enterprise|watch_later"
+    }}
+  ],
+  "tool_of_day": {{
+    "headline": "Nome da ferramenta — o que faz em 5 palavras",
+    "why_it_matters": "2-3 frases sobre por que usar esta ferramenta",
+    "how_to_use": "Prompt ou tutorial copy-paste em 2-3 linhas. Ex: Abra [tool]. Cole: [prompt]. Resultado: [o que esperar].",
+    "source_url": "URL da ferramenta",
+    "source_name": "Fonte"
+  }},
+  "quick_links": [
+    {{
+      "headline": "Headline curto max 8 palavras",
+      "source_url": "URL ORIGINAL",
+      "source_name": "Fonte"
     }}
   ],
   "daily_analysis": [
@@ -122,21 +150,26 @@ RETORNE JSON com esta estrutura:
 }}
 
 LEMBRE-SE:
-- NO máximo 20 itens selecionados
-- Priorize BREAKING real (não requentado)
-- Todo item precisa de source_url válida
+- NO máximo 18 itens selecionados (12 principais + 6 quick links)
+- A seção "items" usa category "hoje_no_byte" para a maioria. Cada item DEVE ter "tag" (BREAKING, AI, BIG TECH, ou ENTERPRISE)
+- "saas_enterprise" é categoria separada (2 itens)
+- "tool_of_day" é um OBJETO separado (não vai no array items) — DEVE ter "how_to_use"
+- "quick_links" são APENAS headline + URL + fonte. SEM why_it_matters.
+- "watch_later" vai no array items com category "watch_later" (1 vídeo)
+- 3 itens em "world" (inclua Brasil quando relevante)
 - Seja impiedoso na curadoria - menos é mais
-- Inclua itens de NEWSLETTER quando trouxerem análise ou ângulo único
-- A categoria "saas_enterprise" cobre: SaaS, CapEx, valuations, enterprise tech
-- Na seção "world", inclua pelo menos 1 notícia relevante do Brasil quando disponível
-- ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO (headlines, why_it_matters, mundo real, análise)
+- Notícias boas que não cabem nas seções → vão para quick_links
+- ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO
 
 ⚠️ REGRA CRÍTICA sobre why_it_matters:
-- CADA item DEVE ter um "why_it_matters" com 2-3 frases SUBSTANCIAIS
-- NÃO é um resumo da notícia — é uma ANÁLISE do impacto e contexto
-- Responda: "Por que um CEO/CFO/CMO/CPO deveria se importar com isso?"
-- Conecte com tendências maiores, impacto no mercado, ou ação prática
-- NUNCA deixe why_it_matters vazio ou com apenas 1 frase curta"""
+- CADA item (exceto quick_links) DEVE ter "why_it_matters" com 2-3 frases SUBSTANCIAIS
+- NÃO é resumo — é ANÁLISE do impacto e contexto para C-levels
+- NUNCA deixe why_it_matters vazio ou com apenas 1 frase curta
+
+⚠️ REGRA CRÍTICA sobre how_to_use (tool_of_day):
+- DEVE ser PRÁTICO e COPY-PASTE ready
+- Máximo 3 linhas. Acionável em 30 segundos.
+- Formato: "Abra [X]. Cole: [prompt]. Resultado: [Y]." """
 
 
 # ============================================
@@ -265,10 +298,19 @@ def process():
         for item in curated.get('world', []):
             print(f"   → {item.get('headline', '?')}")
 
-        print(f"\n🔥 BREAKING:")
+        print(f"\n🔥 HOJE NO BYTE:")
         for item in curated['items'][:5]:
-            print(f"   • {item.get('headline', '?')}")
+            tag = item.get('tag', '')
+            print(f"   • [{tag}] {item.get('headline', '?')}")
             print(f"     Heat: {item.get('heat_score', '?')} | {item.get('source_name', '?')}")
+
+        tool = curated.get('tool_of_day', {})
+        if tool:
+            print(f"\n🛠️ TOOL DO DIA: {tool.get('headline', '?')}")
+
+        quick = curated.get('quick_links', [])
+        if quick:
+            print(f"\n⚡ QUICK LINKS: {len(quick)} links")
 
     return curated
 

@@ -1,5 +1,5 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.0
+# THE DAILY BYTE - Configuração v2.1
 # ============================================
 
 newsletter:
@@ -24,18 +24,17 @@ filters:
   # Score mínimo para entrar (0-100)
   min_heat_score: 60
 
-  # Máximo de itens no digest
-  max_items: 20
+  # Máximo de itens no digest (main sections + quick links)
+  max_items: 18
 
-  # Distribuição por categoria
+  # Distribuição por categoria (novo layout consolidado v2.1)
   distribution:
-    world: 5          # Inclui notícias Brasil
-    breaking: 4
-    ai_models: 3
-    saas_enterprise: 3  # NOVO
-    big_tech: 3
-    tool_of_day: 1        # NOVO - 1 ferramenta prática por dia
-    watch_later: 2
+    world: 3              # Mundo Real (mundo + Brasil)
+    hoje_no_byte: 5       # Consolidação: breaking + ai_models + big_tech
+    saas_enterprise: 2    # SaaS, valuations, CapEx
+    tool_of_day: 1        # 1 ferramenta prática + prompt "Como Usar"
+    watch_later: 1        # 1 vídeo essencial
+    quick_links: 6        # Links rápidos no final (headline + link only)
 
 # Temas prioritários (boost no score)
 themes:
@@ -67,7 +66,7 @@ themes:
 # APIs (usar variáveis de ambiente)
 apis:
   anthropic:
-    model: "claude-sonnet-4-20250514"
+    model: "claude-sonnet-4-5-20250929"
     max_tokens: 4096
 
   buttondown:
@@ -101,7 +100,7 @@ sources:
     - UCbfYPyITQ-7l4upoX8nvctg  # Two Minute Papers
     - UCWN3xxRkmTPmbKwht9FuE5A  # Karpathy
 
-  # Newsletter Sources (NOVO - v2.0)
+  # Newsletter Sources (v2.1 — 7 fontes)
   newsletters:
     - name: "AiDrop"
       url: "https://www.aidrop.news"
@@ -123,3 +122,11 @@ sources:
       url: "https://alphasignalai.beehiiv.com"
       language: "en"
       focus: "ai_research"
+    - name: "There's An AI For That"
+      url: "https://newsletter.theresanaiforthat.com"
+      language: "en"
+      focus: "ai_tools"
+    - name: "Turing Post"
+      url: "https://www.turingpost.com"
+      language: "en"
+      focus: "ai_strategy"

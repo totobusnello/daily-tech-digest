@@ -69,82 +69,79 @@ EVITAR:
 - "According to reports..." sem link original
 - Newsletters citando outras newsletters
 
-### 4. SELECIONAR MÁXIMO 20 ITENS
+### 4. SELECIONAR MÁXIMO 18 ITENS (Layout Consolidado v2.1)
 
 Distribua assim:
-- **MUNDO REAL**: 3-4 itens (governos, empresas, geopolítica, INCLUIR Brasil)
-- **BREAKING**: 3-5 itens (só o que é REALMENTE novo)
-- **AI & MODELS**: 2-4 itens
-- **SaaS & ENTERPRISE**: 2-3 itens (SaaS, valuations, CapEx, enterprise tech)
-- **BIG TECH**: 2-3 itens
-- **WATCH LATER**: 1-2 vídeos
+- **MUNDO REAL**: 3 itens (mundo + Brasil)
+- **HOJE NO BYTE**: 4-5 itens com tags [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
+- **SaaS & ENTERPRISE**: 2 itens
+- **TOOL DO DIA**: 1 ferramenta + "COMO USAR HOJE" (prompt/tutorial copy-paste)
+- **WATCH LATER**: 1 vídeo
+- **QUICK LINKS**: 5-6 links rápidos (headline + URL, sem análise)
 
-### 5. PARA CADA ITEM SELECIONADO, FORNEÇA:
+### 5. PARA CADA ITEM, FORNEÇA:
 
+**Items principais (hoje_no_byte, saas_enterprise):**
 ```json
 {
   "headline": "Headline impactante EM PORTUGUÊS em max 12 palavras",
-  "why_it_matters": "Por que o leitor deveria se importar EM PORTUGUÊS (2 linhas)",
-  "source_url": "URL ORIGINAL (não agregador)",
-  "source_name": "@handle ou Nome da Publicação",
-  "source_type": "tweet|linkedin|article|video|paper",
-  "posted_at": "ISO timestamp",
+  "tag": "BREAKING|AI|BIG TECH|ENTERPRISE",
+  "why_it_matters": "2-3 frases de ANÁLISE (não resumo) EM PORTUGUÊS",
+  "source_url": "URL ORIGINAL",
+  "source_name": "@handle ou Publicação",
+  "source_type": "tweet|article|video|paper|newsletter",
   "hours_ago": 4,
   "heat_score": 75,
-  "heat_breakdown": {
-    "freshness": 30,
-    "source": 25,
-    "impact": 20
-  },
-  "category": "breaking|ai_models|saas_enterprise|big_tech|watch_later"
+  "category": "hoje_no_byte|saas_enterprise|watch_later"
+}
+```
+
+**Tool do Dia (objeto separado):**
+```json
+{
+  "headline": "Nome — o que faz em 5 palavras",
+  "why_it_matters": "2-3 frases sobre por que usar",
+  "how_to_use": "Prompt copy-paste. Ex: Abra [X]. Cole: [prompt]. Resultado: [Y].",
+  "source_url": "URL da ferramenta",
+  "source_name": "Fonte"
+}
+```
+
+**Quick Links (sem análise):**
+```json
+{
+  "headline": "Max 8 palavras",
+  "source_url": "URL ORIGINAL",
+  "source_name": "Fonte"
 }
 ```
 
 ### 6. ESCREVA A ANÁLISE DO DIA
 
-Um parágrafo (4-6 linhas) que:
-- Conecta 2-3 notícias do dia
-- Identifica uma tendência ou narrativa maior
-- Dá uma opinião informada (não genérica)
-- Termina com uma provocação ou pergunta
+3 bullets que:
+- Conectam 2-3 notícias do dia
+- Identificam tendências ou narrativas maiores
+- Dão opinião informada com provocação
 
 ## Output Esperado
 
 ```json
 {
   "date": "2026-02-02",
-  "total_analyzed": 150,
-  "total_selected": 12,
-  "heat_score_avg": 72,
-
   "world": [
-    {"headline": "EUA impõe novas tarifas à China em chips", "context": "Restrições ampliam guerra comercial e afetam cadeia global de semicondutores.", "source_url": "https://reuters.com/...", "source_name": "Reuters"},
-    {"headline": "BCE mantém juros e sinaliza corte em março", "context": "Banco Central Europeu surpreende mercado ao manter taxa em 4.5%.", "source_url": "https://bbc.com/...", "source_name": "BBC"},
-    {"headline": "Petrobras anuncia descoberta no pré-sal", "context": "Nova reserva pode aumentar produção em 15% até 2028.", "source_url": "https://forbes.com/...", "source_name": "Forbes"}
+    {"headline": "EUA impõe novas tarifas à China em chips", "context": "Restrições ampliam guerra comercial.", "source_url": "https://reuters.com/...", "source_name": "Reuters"}
   ],
-
   "items": [
-    {
-      "headline": "...",
-      "why_it_matters": "...",
-      "source_url": "...",
-      "source_name": "...",
-      "source_type": "...",
-      "posted_at": "...",
-      "hours_ago": 4,
-      "heat_score": 75,
-      "category": "breaking"
-    }
+    {"headline": "...", "tag": "BREAKING", "why_it_matters": "...", "source_url": "...", "source_name": "...", "heat_score": 75, "category": "hoje_no_byte"},
+    {"headline": "...", "tag": "AI", "why_it_matters": "...", "source_url": "...", "source_name": "...", "heat_score": 70, "category": "hoje_no_byte"},
+    {"headline": "...", "why_it_matters": "...", "source_url": "...", "source_name": "...", "heat_score": 65, "category": "saas_enterprise"}
   ],
-
-  "daily_analysis": "O lançamento do GPT-5 marca uma nova era na corrida por AGI, mas o mais interessante é o timing: coincide com a reestruturação massiva do Google. Enquanto a OpenAI acelera, seus competidores parecem estar recuando para reorganizar. A pergunta que fica: estamos vendo o início de um monopólio em IA ou apenas a calmaria antes da tempestade?",
-
-  "rejection_summary": {
-    "too_old": 45,
-    "low_impact": 30,
-    "duplicate": 20,
-    "aggregator": 15
-  }
+  "tool_of_day": {"headline": "ToolX — resumo de PDFs com AI", "why_it_matters": "...", "how_to_use": "Abra toolx.ai. Arraste um PDF. Pergunte: 'Quais são os 3 riscos principais deste contrato?'", "source_url": "...", "source_name": "..."},
+  "quick_links": [
+    {"headline": "Nvidia supera Apple em market cap", "source_url": "...", "source_name": "CNBC"}
+  ],
+  "daily_analysis": ["**Tema** — Insight...", "**Tema** — Insight...", "**Tendência** — ..."],
+  "stats": {"total_analyzed": 150, "selected": 18, "rejected_too_old": 45, "rejected_low_impact": 30}
 }
 ```
 
@@ -152,9 +149,10 @@ Um parágrafo (4-6 linhas) que:
 
 1. **NUNCA inclua item sem URL original** - Se não tem link, não existe
 2. **NUNCA inclua item >24h** - Isso é DAILY, não weekly
-3. **NUNCA inclua mais de 15 itens** - Curadoria > Volume
+3. **NUNCA inclua mais de 18 itens** - 12 principais + 6 quick links
 4. **SEMPRE priorize primeira mão** - O post do CEO > artigo sobre o post
 5. **SEMPRE questione o hype** - Nem tudo que parece grande é grande
+6. **tool_of_day SEMPRE tem how_to_use** - Prompt copy-paste obrigatório
 
 ## Exemplo de Rejeição
 

@@ -78,6 +78,8 @@ IMPACTO (30 pontos)
 - Update Diário (updatediario.beehiiv.com) - Brasil/economia/política, PT-BR
 - TechDrop (techdrop.news) - SaaS/enterprise/CapEx, PT-BR
 - AlphaSignal (alphasignalai.beehiiv.com) - Research→produto, papers com aplicação prática, EN
+- There's An AI For That (newsletter.theresanaiforthat.com) - AI tools curadas, 2.8M subs, EN
+- Turing Post (turingpost.com) - Análise estratégica AI, geopolítica, enterprise, EN
 - The Batch (Andrew Ng)
 - Import AI (Jack Clark)
 - Stratechery (Ben Thompson)
@@ -88,7 +90,7 @@ IMPACTO (30 pontos)
 - Cross-referência: preferir newsletter se trouxer análise > RSS bruto
 - Dedup: newsletter repetindo RSS sem agregar = descartar
 
-## Estrutura do Email
+## Estrutura do Email (Layout Consolidado v2.1)
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -96,43 +98,36 @@ THE DAILY BYTE
 News, insights & trends
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🌍 MUNDO REAL (5 notícias além da bolha tech)
+🌍 MUNDO REAL (3 notícias — mundo + Brasil)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-→ [Movimentação de governo/empresa relevante]
-→ [Decisão geopolítica ou econômica]
-→ [Tendência do mundo real]
+→ [Geopolítica, economia, regulação]
+→ [Brasil quando relevante]
 
-🔥 BREAKING (só o que é REALMENTE breaking)
+🔥 HOJE NO BYTE (4-5 itens com tags)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[Apenas 2-4 itens REALMENTE novos]
+[BREAKING] Headline + análise
+[AI] Headline + análise
+[BIG TECH] Headline + análise
+[ENTERPRISE] Headline + análise
 
-Cada item:
-📰 HEADLINE IMPACTANTE
-   Por que importa: contexto em 2 linhas
-   🔗 [Fonte original] | ⏰ Há Xh
-
-🤖 AI & MODELS
+💰 SaaS & ENTERPRISE (2 itens)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[Updates de modelos, papers importantes, demos]
 
-💰 SaaS & ENTERPRISE
+🛠️ TOOL DO DIA + 💡 COMO USAR HOJE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[SaaS, valuations, CapEx, enterprise tech]
-
-💼 BIG TECH MOVES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[Contratações, layoffs, M&A, pivots]
-
-🛠️ TOOL DO DIA (1 ferramenta prática)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[1 tool AI/tech que o leitor pode usar hoje]
+[1 ferramenta + prompt copy-paste]
 
 🔮 ANÁLISE DO DIA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[3 bullets conectando os pontos -
-qual é a narrativa maior?]
+[3 bullets conectando os pontos]
 
-📺 WATCH LATER (1-2 vídeos essenciais)
+⚡ QUICK LINKS (5-6 links rápidos)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Headline + link (sem análise)
+→ Headline + link
+→ ...
+
+📺 WATCH LATER (1 vídeo essencial)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Curated by Totó Busnello AI
@@ -167,7 +162,7 @@ schedule:
 filters:
   max_age_hours: 24
   min_heat_score: 60
-  max_items: 20
+  max_items: 18
 
 themes:
   priority:

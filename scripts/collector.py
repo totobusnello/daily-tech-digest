@@ -304,7 +304,7 @@ def collect_all() -> Dict:
     all_items.extend(x_items)
     print(f"   → {len(x_items)} tweets")
 
-    # Newsletters (AiDrop, Evolving AI, Update Diário, TechDrop)
+    # Newsletters (AiDrop, Evolving AI, Update Diário, TechDrop, AlphaSignal, TAAFT, Turing Post)
     newsletter_items_raw = []
     if collect_all_newsletters:
         print("📰 Coletando newsletters...")

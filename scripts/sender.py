@@ -35,8 +35,9 @@ EMAIL_FOOTER = """
 
 
 def format_item(item: Dict) -> str:
-    """Formata um item para o email"""
+    """Formata um item principal com tag para o email"""
     headline = item.get('headline', 'Sem título')
+    tag = item.get('tag', '')
     why = item.get('why_it_matters', '')
     url = item.get('source_url', '#')
     source = item.get('source_name', 'Fonte')
@@ -44,8 +45,9 @@ def format_item(item: Dict) -> str:
     heat = item.get('heat_score', 0)
 
     heat_emoji = "🔥🔥🔥" if heat >= 80 else "🔥🔥" if heat >= 70 else "🔥"
+    tag_str = f"[{tag}] " if tag else ""
 
-    return f"""**{headline}** {heat_emoji}
+    return f"""{tag_str}**{headline}** {heat_emoji}
 
 {why}
 
@@ -68,11 +70,11 @@ def format_video(item: Dict) -> str:
 
 
 def generate_email_content(curated: Dict) -> str:
-    """Gera o conteúdo do email a partir dos dados curados"""
+    """Gera o conteúdo do email — Layout consolidado v2.1"""
 
     sections = []
 
-    # Mundo Real (sempre presente)
+    # 1. Mundo Real (3 itens — mundo + Brasil)
     world_items = curated.get('world', [])
     if world_items:
         world_lines = []
@@ -84,50 +86,64 @@ def generate_email_content(curated: Dict) -> str:
             world_lines.append(f"→ **{headline}** — {context} ([{source}]({url}))")
         sections.append(f"# 🌍 MUNDO REAL\n\n" + "\n\n".join(world_lines))
 
-    # Categorize items
+    # 2. Hoje no Byte (seção principal consolidada — breaking + ai + big tech)
     items = curated.get('items', [])
-    breaking = [i for i in items if i.get('category') == 'breaking']
-    ai_models = [i for i in items if i.get('category') == 'ai_models']
-    saas_enterprise = [i for i in items if i.get('category') == 'saas_enterprise']
-    big_tech = [i for i in items if i.get('category') == 'big_tech']
-    tool_of_day = [i for i in items if i.get('category') == 'tool_of_day']
-    videos = [i for i in items if i.get('category') == 'watch_later']
+    hoje = [i for i in items if i.get('category') == 'hoje_no_byte']
+    # Fallback: suporta formato antigo (breaking/ai_models/big_tech separados)
+    if not hoje:
+        hoje = [i for i in items if i.get('category') in ('breaking', 'ai_models', 'big_tech')]
+    if hoje:
+        sections.append("# 🔥 HOJE NO BYTE\n\n" + "\n".join([format_item(i) for i in hoje]))
 
-    # Só adiciona seções que têm conteúdo
-    if breaking:
-        sections.append("# 🔥 BREAKING\n\n" + "\n".join([format_item(i) for i in breaking]))
+    # 3. SaaS & Enterprise
+    saas = [i for i in items if i.get('category') == 'saas_enterprise']
+    if saas:
+        sections.append("# 💰 SaaS & ENTERPRISE\n\n" + "\n".join([format_item(i) for i in saas]))
 
-    if ai_models:
-        sections.append("# 🤖 AI & MODELS\n\n" + "\n".join([format_item(i) for i in ai_models]))
+    # 4. Tool do Dia + Como Usar Hoje
+    tool = curated.get('tool_of_day', {})
+    # Fallback: tool pode estar no array items (formato antigo)
+    if not tool:
+        tool_items = [i for i in items if i.get('category') == 'tool_of_day']
+        if tool_items:
+            tool = tool_items[0]
 
-    if saas_enterprise:
-        sections.append("# 💰 SaaS & ENTERPRISE\n\n" + "\n".join([format_item(i) for i in saas_enterprise]))
-
-    if big_tech:
-        sections.append("# 💼 BIG TECH MOVES\n\n" + "\n".join([format_item(i) for i in big_tech]))
-
-    # Tool do Dia (1 ferramenta prática)
-    if tool_of_day:
-        tool = tool_of_day[0]  # Sempre apenas 1
+    if tool and tool.get('headline'):
+        how_to = tool.get('how_to_use', '')
         tool_text = f"**{tool.get('headline', '')}**\n\n{tool.get('why_it_matters', '')}\n\n🔗 [Experimentar]({tool.get('source_url', '#')}) | 📍 {tool.get('source_name', '')}"
+        if how_to:
+            tool_text += f"\n\n---\n\n💡 **COMO USAR HOJE**\n\n{how_to}"
         sections.append(f"# 🛠️ TOOL DO DIA\n\n{tool_text}")
 
-    # Análise do dia
+    # 5. Análise do dia
     analysis = curated.get('daily_analysis', '')
     if analysis:
         if isinstance(analysis, list):
             sanitized = []
-            for item in analysis:
+            for a_item in analysis:
                 # Strip heading markers (###, ##, #)
-                item = re.sub(r'^#{1,6}\s*', '', item.strip())
+                a_item = re.sub(r'^#{1,6}\s*', '', a_item.strip())
                 # Strip leading bullet markers (•, -, *)
-                item = re.sub(r'^[•\-\*]\s*', '', item.strip())
-                sanitized.append(f"• {item}")
+                a_item = re.sub(r'^[•\-\*]\s*', '', a_item.strip())
+                sanitized.append(f"• {a_item}")
             analysis_text = "\n\n".join(sanitized)
         else:
             analysis_text = analysis
         sections.append(f"# 🔮 ANÁLISE DO DIA\n\n{analysis_text}")
 
+    # 6. Quick Links (headlines rápidos sem análise)
+    quick_links = curated.get('quick_links', [])
+    if quick_links:
+        ql_lines = []
+        for ql in quick_links:
+            headline = ql.get('headline', '')
+            url = ql.get('source_url', '#')
+            source = ql.get('source_name', '')
+            ql_lines.append(f"→ [{headline}]({url}) *({source})*")
+        sections.append(f"# ⚡ QUICK LINKS\n\n" + "\n\n".join(ql_lines))
+
+    # Watch Later (1 vídeo no final)
+    videos = [i for i in items if i.get('category') == 'watch_later']
     if videos:
         sections.append("# 📺 WATCH LATER\n\n" + "\n".join([format_video(i) for i in videos]))
 

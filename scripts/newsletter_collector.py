@@ -51,6 +51,20 @@ NEWSLETTER_SOURCES = {
         "category_hint": "ai_models",
         "description": "Research-to-product bridge: AI papers with practical applications"
     },
+    "taaft": {
+        "name": "There's An AI For That",
+        "base_url": "https://newsletter.theresanaiforthat.com",
+        "language": "en",
+        "category_hint": "tool_of_day",
+        "description": "World's largest AI tools newsletter (2.8M subs). Curated new AI tools and product launches."
+    },
+    "turing_post": {
+        "name": "Turing Post",
+        "base_url": "https://www.turingpost.com",
+        "language": "en",
+        "category_hint": "ai_models",
+        "description": "Strategic AI analysis: geopolitics, open-source vs closed, enterprise AI decisions. 100K+ readers."
+    },
 }
 
 # Headers to mimic a browser request
