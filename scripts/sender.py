@@ -202,7 +202,7 @@ def send(preview: bool = False):
 
     if 'error' in curated:
         print(f"❌ Erro nos dados curados: {curated['error']}")
-        return
+        raise RuntimeError(f"Dados curados contêm erro: {curated['error']}")
 
     # Generate subject
     today = datetime.now()

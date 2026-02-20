@@ -211,13 +211,19 @@ def curate_with_claude(raw_data: dict) -> dict:
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")
 
+    # Use assistant prefill to force JSON output (Claude will continue from '{')
+    messages = [
+        {"role": "user", "content": prompt},
+        {"role": "assistant", "content": "{"}
+    ]
+
     for attempt in range(3):
         try:
             response = client.messages.create(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
                 system=CURATOR_SYSTEM,
-                messages=[{"role": "user", "content": prompt}]
+                messages=messages
             )
             break
         except anthropic.RateLimitError:
@@ -227,26 +233,71 @@ def curate_with_claude(raw_data: dict) -> dict:
     else:
         raise RuntimeError("❌ Rate limit persistente após 3 tentativas")
 
-    # Parse response
-    response_text = response.content[0].text
+    # Parse response — prepend the '{' from prefill and extract JSON
+    response_text = "{" + response.content[0].text
+    curated = _extract_json(response_text)
 
-    # Extract JSON from response
-    try:
-        # Try to find JSON in response
-        if "```json" in response_text:
-            json_str = response_text.split("```json")[1].split("```")[0]
-        elif "```" in response_text:
-            json_str = response_text.split("```")[1].split("```")[0]
-        else:
-            json_str = response_text
+    if curated is None:
+        # Retry once with explicit JSON-only instruction
+        print("⚠️ Claude não retornou JSON válido. Fazendo retry com instrução reforçada...")
+        print(f"   Resposta original (primeiros 200 chars): {response_text[:200]}")
 
-        curated = json.loads(json_str)
-    except json.JSONDecodeError as e:
-        print(f"⚠️ Erro parsing JSON: {e}")
-        print(f"Response: {response_text[:500]}")
-        curated = {"error": str(e), "raw_response": response_text}
+        retry_response = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=CURATOR_SYSTEM,
+            messages=[
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": response_text},
+                {"role": "user", "content": "Sua resposta não está em formato JSON. Por favor, retorne APENAS o JSON válido conforme a estrutura solicitada. Sem texto explicativo, sem markdown, sem análise — SOMENTE o JSON."}
+            ]
+        )
+        retry_text = retry_response.content[0].text
+        curated = _extract_json(retry_text)
+
+        if curated is None:
+            print(f"❌ Retry também falhou. Resposta: {retry_text[:300]}")
+            raise RuntimeError("Claude não retornou JSON válido após retry. Abortando.")
+
+        print("✅ Retry bem-sucedido — JSON extraído.")
 
     return curated
+
+
+def _extract_json(text: str) -> dict | None:
+    """Extrai JSON de uma resposta que pode conter texto/markdown ao redor"""
+    # Try 1: JSON in code block
+    if "```json" in text:
+        try:
+            json_str = text.split("```json")[1].split("```")[0]
+            return json.loads(json_str)
+        except (json.JSONDecodeError, IndexError):
+            pass
+
+    # Try 2: any code block
+    if "```" in text:
+        try:
+            json_str = text.split("```")[1].split("```")[0]
+            return json.loads(json_str)
+        except (json.JSONDecodeError, IndexError):
+            pass
+
+    # Try 3: find first { and last } (raw JSON)
+    first_brace = text.find('{')
+    last_brace = text.rfind('}')
+    if first_brace != -1 and last_brace > first_brace:
+        try:
+            return json.loads(text[first_brace:last_brace + 1])
+        except json.JSONDecodeError:
+            pass
+
+    # Try 4: entire text is JSON
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    return None
 
 
 def save_curated(data: dict, path: str = "/tmp/digest_curated.json"):
