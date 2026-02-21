@@ -17,7 +17,7 @@ from pathlib import Path
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 MODEL = "claude-sonnet-4-5-20250929"
-MAX_TOKENS = 4096
+MAX_TOKENS = 8192
 
 # ============================================
 # PROMPTS
@@ -237,9 +237,15 @@ def curate_with_claude(raw_data: dict) -> dict:
     response_text = "{" + response.content[0].text
     curated = _extract_json(response_text)
 
+    # Check if response was truncated (stop_reason)
+    stop_reason = response.stop_reason
+    if stop_reason == "max_tokens":
+        print(f"⚠️ Resposta TRUNCADA (max_tokens={MAX_TOKENS}). JSON incompleto.")
+
     if curated is None:
         # Retry once with explicit JSON-only instruction
         print("⚠️ Claude não retornou JSON válido. Fazendo retry com instrução reforçada...")
+        print(f"   Stop reason: {stop_reason}")
         print(f"   Resposta original (primeiros 200 chars): {response_text[:200]}")
 
         retry_response = client.messages.create(
