@@ -42,7 +42,7 @@ REGRAS DE OURO:
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
 5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 2-3 frases de análise contextual. Não é resumo — é o "por que um C-level deveria se importar". Este campo é ESSENCIAL para o valor do digest.
 
-LAYOUT CONSOLIDADO v2.1 — 6 SEÇÕES:
+LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
 
 1. "world" (3 itens): Mundo Real — mundo + Brasil. Governos, geopolítica, economia real.
 2. "hoje_no_byte" (4-5 itens): A seção principal. CONSOLIDA breaking + ai_models + big_tech.
@@ -51,11 +51,17 @@ LAYOUT CONSOLIDADO v2.1 — 6 SEÇÕES:
 3. "saas_enterprise" (2 itens): SaaS, valuations, CapEx, enterprise tech.
 4. "tool_of_day" (1 item): UMA ferramenta AI/tech prática que o leitor pode usar HOJE.
    DEVE incluir campo "how_to_use": um prompt ou mini-tutorial copy-paste de 2-3 linhas.
+   DEVE incluir campo "prompt_of_day": um prompt COPY-PASTE ready para ChatGPT/Claude/Gemini, ligado à notícia principal do dia ou à ferramenta. Máximo 3 linhas.
    ⚠️ É um OBJETO SEPARADO no JSON (não vai no array "items").
 5. "quick_links" (5-6 itens): Links rápidos — APENAS headline + URL, zero análise.
    São notícias que não cabem nas seções principais mas merecem menção.
 6. "watch_later" (1 item): UM vídeo essencial. Vai no array "items" com category "watch_later".
-   São notícias que não cabem nas seções principais mas merecem menção.
+
+MICRO-SEÇÃO — "number_of_day":
+- UM data point impactante do dia, extraído das notícias analisadas.
+- Formato: {"value": "$600B", "context": "Meta de compute da OpenAI até 2030"}
+- Deve ser um número que impressione e contextualize uma tendência.
+- É um OBJETO SEPARADO no JSON.
 
 TOTAL MÁXIMO: 18 itens (12 principais + 6 quick links)
 
@@ -76,7 +82,7 @@ REGRAS PARA ITENS DE NEWSLETTER (source_type "newsletter"):
 - Quando o mesmo fato aparece em RSS E newsletter, PREFIRA a versão da newsletter se trouxer análise ou contexto adicional
 - Se a newsletter apenas REPETE o que o RSS já trouxe sem adicionar valor, DESCARTE a duplicata
 - Newsletters em português podem fornecer o ângulo brasileiro que falta nas fontes internacionais
-- Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise), AlphaSignal (research→produto), There's An AI For That (AI tools), Turing Post (AI strategy)
+- Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise), AlphaSignal (research→produto), There's An AI For That (AI tools), Turing Post (AI strategy), Import AI (policy/research, Jack Clark), Distrito News Inside VC (startups/VC Brasil)
 
 Heat Score mínimo para entrar: 60 pontos
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
@@ -98,9 +104,14 @@ DADOS COLETADOS:
 {items}
 ```
 
-RETORNE JSON com esta estrutura (layout consolidado v2.1):
+RETORNE JSON com esta estrutura (layout consolidado v2.2):
 {{
   "date": "YYYY-MM-DD",
+  "subject_hook": "Frase-gancho de max 6 palavras sobre a notícia mais impactante do dia. Ex: 'OpenAI mira $600B em compute'",
+  "number_of_day": {{
+    "value": "$600B",
+    "context": "Meta de compute da OpenAI até 2030 — o maior CapEx da história da tecnologia"
+  }},
   "world": [
     {{
       "headline": "Max 10 palavras",
@@ -126,6 +137,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.1):
     "headline": "Nome da ferramenta — o que faz em 5 palavras",
     "why_it_matters": "2-3 frases sobre por que usar esta ferramenta",
     "how_to_use": "Prompt ou tutorial copy-paste em 2-3 linhas. Ex: Abra [tool]. Cole: [prompt]. Resultado: [o que esperar].",
+    "prompt_of_day": "Um prompt COPY-PASTE ready para ChatGPT/Claude/Gemini ligado à notícia principal ou à ferramenta. Ex: 'Analise o impacto de [notícia] no setor de [setor]. Liste 3 riscos e 2 oportunidades em formato executivo.'",
     "source_url": "URL da ferramenta",
     "source_name": "Fonte"
   }},
@@ -153,13 +165,15 @@ LEMBRE-SE:
 - NO máximo 18 itens selecionados (12 principais + 6 quick links)
 - A seção "items" usa category "hoje_no_byte" para a maioria. Cada item DEVE ter "tag" (BREAKING, AI, BIG TECH, ou ENTERPRISE)
 - "saas_enterprise" é categoria separada (2 itens)
-- "tool_of_day" é um OBJETO separado (não vai no array items) — DEVE ter "how_to_use"
+- "tool_of_day" é um OBJETO separado (não vai no array items) — DEVE ter "how_to_use" E "prompt_of_day"
 - "quick_links" são APENAS headline + URL + fonte. SEM why_it_matters.
 - "watch_later" vai no array items com category "watch_later" (1 vídeo)
 - 3 itens em "world" (inclua Brasil quando relevante)
 - Seja impiedoso na curadoria - menos é mais
 - Notícias boas que não cabem nas seções → vão para quick_links
 - ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO
+- "subject_hook" é uma frase-gancho de max 6 palavras sobre a notícia mais impactante
+- "number_of_day" é UM data point numérico impressionante extraído das notícias (value + context)
 
 ⚠️ REGRA CRÍTICA sobre why_it_matters:
 - CADA item (exceto quick_links) DEVE ter "why_it_matters" com 2-3 frases SUBSTANCIAIS

@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.1 (Layout Consolidado)
+**Versao atual:** v2.2 (Novas Fontes + Micro-Secoes)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -33,7 +33,7 @@ sender.py             -> Buttondown API -> email
 |---------|--------|
 | `config.yaml` | Configuracao central: modelo, distribuicao, fontes, temas |
 | `scripts/collector.py` | Coleta RSS, YouTube, X/Twitter, orquestra newsletters |
-| `scripts/newsletter_collector.py` | Scraper BeautifulSoup para 7 newsletters |
+| `scripts/newsletter_collector.py` | Scraper BeautifulSoup + RSS para 9 newsletters |
 | `scripts/processor.py` | Curadoria com Claude (CURATOR_SYSTEM + CURATOR_USER_TEMPLATE) |
 | `scripts/sender.py` | Renderiza email markdown e envia via Buttondown |
 | `scripts/run.py` | Pipeline completo (collect -> process -> send) |
@@ -43,13 +43,14 @@ sender.py             -> Buttondown API -> email
 
 ---
 
-## Layout v2.1 — 6 Secoes
+## Layout v2.2 — 6 Secoes + 2 Micro-Secoes
 
 ```
+0. NUMERO DO DIA (data point impactante — value + context)
 1. MUNDO REAL (3 itens) — mundo + Brasil
 2. HOJE NO BYTE (4-5 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
 3. SaaS & ENTERPRISE (2 itens)
-4. TOOL DO DIA (1 item) + COMO USAR HOJE (prompt copy-paste)
+4. TOOL DO DIA (1 item) + COMO USAR HOJE + PROMPT DO DIA (copy-paste ready)
 5. ANALISE DO DIA (3 bullets)
 6. QUICK LINKS (5-6 itens) — headline + link, sem analise
 + WATCH LATER (1 video no final)
@@ -58,9 +59,11 @@ sender.py             -> Buttondown API -> email
 **Total maximo:** 18 itens (12 principais + 6 quick links)
 
 **JSON do curador:**
+- `subject_hook` — frase-gancho de max 6 palavras para subject line
+- `number_of_day{}` — {value, context} — data point numerico impressionante
 - `world[]` — array de 3 itens (headline, context, source_url, source_name)
 - `items[]` — array com category `hoje_no_byte|saas_enterprise|watch_later` e campo `tag`
-- `tool_of_day{}` — OBJETO SEPARADO (nao vai no items), com `how_to_use` obrigatorio
+- `tool_of_day{}` — OBJETO SEPARADO (nao vai no items), com `how_to_use` e `prompt_of_day` obrigatorios
 - `quick_links[]` — apenas headline + source_url + source_name
 - `daily_analysis[]` — 3 strings com formato "**Tema** — Insight"
 
@@ -69,14 +72,14 @@ sender.py             -> Buttondown API -> email
 ## Fontes
 
 ### Tier 1 — Primeira Mao (X/Twitter handles)
-@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, etc.
+@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @aravind_srinivas, @demishassabis, @ethanmollick, etc.
 
 ### Tier 2 — RSS Feeds
-**Tech:** HN (100+ pts), Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review
+**Tech:** HN (100+ pts), Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review, The Decoder
 **World:** Reuters (world + business), Forbes (business + innovation), BBC (world + business)
 **Research:** arXiv cs.AI
 
-### Tier 3 — Newsletters (7 fontes, via scraping)
+### Tier 3 — Newsletters (9 fontes, via scraping + RSS)
 | Newsletter | Foco | Idioma |
 |-----------|------|--------|
 | AiDrop | AI, analise profunda | PT-BR |
@@ -86,9 +89,11 @@ sender.py             -> Buttondown API -> email
 | AlphaSignal | Research -> produto | EN |
 | There's An AI For That | AI tools (2.8M subs) | EN |
 | Turing Post | AI strategy, geopolitica | EN |
+| Import AI | AI policy, research (Jack Clark) | EN |
+| Distrito News Inside VC | VC/startups Brasil | PT-BR |
 
-### YouTube (7 canais)
-Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief
+### YouTube (8 canais)
+Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps
 
 ---
 
@@ -108,7 +113,7 @@ Threshold minimo: 60 pontos
 ## Modelo AI
 
 - **Curadoria:** Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`)
-- **Max tokens:** 4096
+- **Max tokens:** 8192
 - **Retry:** 3 tentativas com backoff (60s, 120s, 180s) para rate limit
 
 ---
@@ -117,7 +122,7 @@ Threshold minimo: 60 pontos
 
 1. **Prompts vivem em `processor.py`** (CURATOR_SYSTEM e CURATOR_USER_TEMPLATE), nao em arquivos separados. O `prompts/curator.md` e so documentacao de referencia.
 
-2. **tool_of_day e objeto separado** — nunca colocar no array `items`. O sender.py tem fallback para formato antigo.
+2. **tool_of_day e objeto separado** — nunca colocar no array `items`. Deve ter `how_to_use` E `prompt_of_day`. O sender.py tem fallback para formato antigo.
 
 3. **Backward compatibility** — sender.py suporta categorias antigas (breaking/ai_models/big_tech) como fallback.
 
@@ -128,6 +133,10 @@ Threshold minimo: 60 pontos
 6. **Newsletters tem janela de 36h** (vs 24h para RSS/X).
 
 7. **max_items = 18** em todos os arquivos (config.yaml, SKILL.md, prompts).
+
+8. **subject_hook** — frase-gancho de max 6 palavras sobre a noticia mais impactante. Usada no subject do email.
+
+9. **number_of_day** — data point numerico impressionante extraido das noticias (value + context).
 
 ---
 

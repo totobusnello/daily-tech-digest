@@ -6,6 +6,7 @@ Coleta posts recentes de newsletters no Beehiiv via scraping de HTML
 
 import re
 import requests
+import feedparser
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
@@ -64,6 +65,22 @@ NEWSLETTER_SOURCES = {
         "language": "en",
         "category_hint": "ai_models",
         "description": "Strategic AI analysis: geopolitics, open-source vs closed, enterprise AI decisions. 100K+ readers."
+    },
+    "import_ai": {
+        "name": "Import AI",
+        "base_url": "https://importai.substack.com",
+        "rss_url": "https://importai.substack.com/feed",
+        "language": "en",
+        "category_hint": "ai_models",
+        "description": "Jack Clark (ex-OpenAI policy). AI policy, research, geopolitics. Weekly deep analysis."
+    },
+    "distrito_news": {
+        "name": "Distrito News Inside VC",
+        "base_url": "https://insidevcnews.substack.com",
+        "rss_url": "https://insidevcnews.substack.com/feed",
+        "language": "pt-br",
+        "category_hint": "saas_enterprise",
+        "description": "Brazil VC/startup ecosystem. Funding rounds, valuations, exits. PT-BR."
     },
 }
 
@@ -312,9 +329,55 @@ def _enrich_post(item: NewsletterItem) -> NewsletterItem:
 # MAIN COLLECTOR
 # ============================================
 
+def _collect_via_rss(source_key: str, source_config: dict, cutoff: datetime, max_items: int = 5) -> List[Dict]:
+    """Coleta posts via RSS feed (Substack nativo)"""
+    rss_url = source_config.get('rss_url', '')
+    if not rss_url:
+        return []
+
+    items = []
+    try:
+        feed = feedparser.parse(rss_url)
+        for entry in feed.entries[:max_items]:
+            published = None
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                published = datetime(*entry.published_parsed[:6])
+            elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
+                published = datetime(*entry.updated_parsed[:6])
+
+            if published and published < cutoff:
+                continue
+
+            item = NewsletterItem(
+                title=entry.get('title', ''),
+                description=entry.get('summary', '')[:500] if entry.get('summary') else entry.get('title', ''),
+                url=entry.get('link', ''),
+                source_name=source_config['name'],
+                source_key=source_key,
+                language=source_config['language'],
+                category_hint=source_config['category_hint'],
+                published_at=published,
+            )
+            items.append(item.to_raw_dict())
+
+    except Exception as e:
+        print(f"  ⚠️ RSS falhou para {source_config['name']}: {e}")
+
+    return items
+
+
 def collect_newsletter(source_key: str, source_config: dict, cutoff: datetime, max_items: int = 5) -> List[Dict]:
     """Coleta posts recentes de uma newsletter específica"""
     items = []
+
+    # Try RSS first if available (more reliable for Substack)
+    if source_config.get('rss_url'):
+        print(f"  📰 Coletando {source_config['name']} via RSS...")
+        items = _collect_via_rss(source_key, source_config, cutoff, max_items)
+        if items:
+            print(f"    → {len(items)} itens via RSS")
+            return items
+        print(f"    → RSS vazio, tentando scraping...")
 
     try:
         print(f"  📰 Coletando {source_config['name']} ({source_config['base_url']})...")

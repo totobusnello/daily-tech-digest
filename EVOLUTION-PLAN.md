@@ -4,6 +4,46 @@
 
 ## Changelog
 
+### v2.2 — 22/02/2026 (Novas Fontes + Micro-Secoes)
+
+**Decisoes aprovadas pelo Toto:**
+- Fontes: +4 (Import AI, Distrito News Inside VC, The Decoder RSS, Filipe Deschamps YT) + 3 X handles
+- Formato: Prompt do Dia (copy-paste), Numero do Dia (data point), Subject line com gancho
+- Engajamento: nenhum por enquanto
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `config.yaml` | v2.2, max_tokens 8192, +3 X handles, +1 RSS (The Decoder), +1 YouTube (Filipe Deschamps), +2 newsletters (Import AI, Distrito News) |
+| `scripts/collector.py` | +3 X handles (TIER1_HANDLES), +1 RSS (the_decoder), +1 YouTube (filipe_deschamps), comment 9 newsletters |
+| `scripts/newsletter_collector.py` | +2 fontes (Import AI, Distrito News) com suporte RSS nativo via feedparser |
+| `scripts/processor.py` | CURATOR_SYSTEM v2.2: number_of_day, prompt_of_day, subject_hook. JSON schema atualizado |
+| `scripts/sender.py` | +Numero do Dia (secao 0), +Prompt do Dia (dentro de Tool do Dia), subject line dinamico com hook |
+| `CLAUDE.md` | v2.2, 9 newsletters, max_tokens 8192, novas secoes |
+
+**Layout v2.2 (6 secoes + 2 micro-secoes):**
+```
+0. NUMERO DO DIA (data point impactante)
+1. MUNDO REAL (3) — mundo + Brasil
+2. HOJE NO BYTE (4-5) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
+3. SaaS & ENTERPRISE (2)
+4. TOOL DO DIA (1) + COMO USAR HOJE + PROMPT DO DIA (copy-paste ready)
+5. ANALISE DO DIA (3 bullets)
+6. QUICK LINKS (5-6) — headline + link, sem analise
++ WATCH LATER (1 video) no final
+```
+
+**Novas fontes (total: 9 newsletters + 1 RSS + 1 YouTube + 3 X handles):**
+- Newsletters: +Import AI (Jack Clark, AI policy/research), +Distrito News Inside VC (BR VC/startups)
+- RSS: +The Decoder (AI enterprise + EU policy)
+- YouTube: +Filipe Deschamps (PT-BR)
+- X: +@aravind_srinivas (CEO Perplexity), +@demishassabis (CEO DeepMind), +@ethanmollick (Wharton)
+
+**Benchmarks analisados:** Pulse.bot, TLDR AI, The Rundown AI, Superhuman AI, The Neuron, Ben's Bites
+
+---
+
 ### v2.1 — 15/02/2026 (Layout Consolidado)
 
 **Decisoes aprovadas pelo Toto:**
@@ -78,8 +118,10 @@
 
 **Fontes:**
 - [ ] StartSe — adicionar se trouxer conteudo inovador/inedito
-- [ ] Filipe Deschamps (YouTube BR) — considerar para watch_later
-- [ ] The Batch (Andrew Ng), Import AI (Jack Clark), Stratechery — fontes aspiracionais sem scraper
+- [x] Filipe Deschamps (YouTube BR) — adicionado v2.2
+- [x] Import AI (Jack Clark) — adicionado v2.2 via Substack RSS
+- [ ] The Batch (Andrew Ng), Stratechery — fontes aspiracionais sem scraper
+- [ ] Crunchbase Daily — precisa scraper dedicado
 
 **Formato:**
 - [ ] Template HTML dedicado (hoje e markdown puro via Buttondown)

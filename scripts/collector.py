@@ -38,6 +38,8 @@ TIER1_HANDLES = [
     # Outros fundadores/researchers
     "karpathy", "drfeifei", "AndrewYNg",
     "EMostaque", "caborian", "demaboris",
+    # AI-native CEOs + Research
+    "aravind_srinivas", "demishassabis", "ethanmollick",
     # AI Labs
     "xaborai", "Mistral", "PerplexityAI",
 ]
@@ -55,6 +57,8 @@ RSS_FEEDS = {
     "mit_tech_review": "https://www.technologyreview.com/feed/",
     # Research (limitado a 1 feed)
     "arxiv_ai": "http://export.arxiv.org/rss/cs.AI",
+    # AI-focused (enterprise + policy)
+    "the_decoder": "https://the-decoder.com/feed/",
 }
 
 # RSS Feeds - Mundo Real (governos, empresas, geopolítica)
@@ -76,6 +80,7 @@ YOUTUBE_CHANNELS = {
     "lex_fridman": "UCSHZKyawb77ixDdsGog4iWA",
     "andrej_karpathy": "UCWN3xxRkmTPmbKwht9FuE5A",
     "ai_daily_brief": "UCKa4vLnfLYnxKZ4fKJttGsA",
+    "filipe_deschamps": "UCU5JicSrEM5A63jkJ2QvGYw",
 }
 
 # ============================================
@@ -304,7 +309,7 @@ def collect_all() -> Dict:
     all_items.extend(x_items)
     print(f"   → {len(x_items)} tweets")
 
-    # Newsletters (AiDrop, Evolving AI, Update Diário, TechDrop, AlphaSignal, TAAFT, Turing Post)
+    # Newsletters (9 fontes: AiDrop, Evolving AI, Update Diário, TechDrop, AlphaSignal, TAAFT, Turing Post, Import AI, Distrito News)
     newsletter_items_raw = []
     if collect_all_newsletters:
         print("📰 Coletando newsletters...")

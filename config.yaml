@@ -1,5 +1,5 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.1
+# THE DAILY BYTE - Configuração v2.2
 # ============================================
 
 newsletter:
@@ -67,7 +67,7 @@ themes:
 apis:
   anthropic:
     model: "claude-sonnet-4-5-20250929"
-    max_tokens: 4096
+    max_tokens: 8192
 
   buttondown:
     api_url: "https://api.buttondown.email/v1/emails"
@@ -87,20 +87,25 @@ sources:
     - sundarpichai
     - ylecun
     - karpathy
+    - aravind_srinivas    # CEO Perplexity AI
+    - demishassabis       # CEO Google DeepMind, Nobel 2024
+    - ethanmollick        # Wharton Prof, enterprise AI adoption
 
   # RSS Feeds
   rss_feeds:
     - https://hnrss.org/frontpage?points=100
     - https://techcrunch.com/category/artificial-intelligence/feed/
     - https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+    - https://the-decoder.com/feed/          # The Decoder — AI enterprise + EU policy
 
   # YouTube Channels
   youtube_channels:
     - UCsBjURrPoezykLs9EqgamOA  # Fireship
     - UCbfYPyITQ-7l4upoX8nvctg  # Two Minute Papers
     - UCWN3xxRkmTPmbKwht9FuE5A  # Karpathy
+    - UCU5JicSrEM5A63jkJ2QvGYw  # Filipe Deschamps (PT-BR)
 
-  # Newsletter Sources (v2.1 — 7 fontes)
+  # Newsletter Sources (v2.2 — 9 fontes)
   newsletters:
     - name: "AiDrop"
       url: "https://www.aidrop.news"
@@ -130,3 +135,13 @@ sources:
       url: "https://www.turingpost.com"
       language: "en"
       focus: "ai_strategy"
+    - name: "Import AI"
+      url: "https://importai.substack.com"
+      rss: "https://importai.substack.com/feed"
+      language: "en"
+      focus: "ai_policy_research"
+    - name: "Distrito News Inside VC"
+      url: "https://insidevcnews.substack.com"
+      rss: "https://insidevcnews.substack.com/feed"
+      language: "pt-br"
+      focus: "startup_vc_brasil"

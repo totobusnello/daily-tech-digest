@@ -70,9 +70,14 @@ def format_video(item: Dict) -> str:
 
 
 def generate_email_content(curated: Dict) -> str:
-    """Gera o conteúdo do email — Layout consolidado v2.1"""
+    """Gera o conteúdo do email — Layout consolidado v2.2"""
 
     sections = []
+
+    # 0. Número do Dia (data point impactante)
+    number = curated.get('number_of_day', {})
+    if number and number.get('value'):
+        sections.append(f"# 📊 NÚMERO DO DIA\n\n**{number.get('value', '')}** — {number.get('context', '')}")
 
     # 1. Mundo Real (3 itens — mundo + Brasil)
     world_items = curated.get('world', [])
@@ -110,9 +115,12 @@ def generate_email_content(curated: Dict) -> str:
 
     if tool and tool.get('headline'):
         how_to = tool.get('how_to_use', '')
+        prompt = tool.get('prompt_of_day', '')
         tool_text = f"**{tool.get('headline', '')}**\n\n{tool.get('why_it_matters', '')}\n\n🔗 [Experimentar]({tool.get('source_url', '#')}) | 📍 {tool.get('source_name', '')}"
         if how_to:
             tool_text += f"\n\n---\n\n💡 **COMO USAR HOJE**\n\n{how_to}"
+        if prompt:
+            tool_text += f"\n\n---\n\n🧠 **PROMPT DO DIA** *(copy-paste ready)*\n\n> {prompt}"
         sections.append(f"# 🛠️ TOOL DO DIA\n\n{tool_text}")
 
     # 5. Análise do dia
@@ -210,7 +218,13 @@ def send(preview: bool = False):
     months_pt = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
-    subject = f"🔥 Daily Byte - {weekdays_pt[today.weekday()]}, {today.day} de {months_pt[today.month]}"
+    # Dynamic subject with hook from curated data
+    hook = curated.get('subject_hook', '')
+    date_str = f"{weekdays_pt[today.weekday()]}, {today.day} de {months_pt[today.month]}"
+    if hook:
+        subject = f"{hook} | Daily Byte - {date_str}"
+    else:
+        subject = f"🔥 Daily Byte - {date_str}"
 
     # Generate content
     content = generate_email_content(curated)
