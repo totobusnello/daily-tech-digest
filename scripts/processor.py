@@ -11,6 +11,13 @@ import anthropic
 from datetime import datetime
 from pathlib import Path
 
+# v2.3: Dedup entre dias
+try:
+    from dedup import load_cache, dedup_items
+except ImportError:
+    load_cache = None
+    dedup_items = None
+
 # ============================================
 # CONFIGURAÇÃO
 # ============================================
@@ -213,14 +220,27 @@ def curate_with_claude(raw_data: dict) -> dict:
         else i.get('hours_ago', 100) <= 24
     )]
 
-    # Trim content for context
+    # v2.3: Dedup — remove itens já enviados em dias anteriores
+    if dedup_items and load_cache:
+        cache = load_cache()
+        items = dedup_items(items, cache)
+
+    # Trim content and strip heavy fields to save tokens
+    CURATOR_FIELDS = ['title', 'content', 'url', 'source_name', 'source_type', 'author', 'published_at', 'hours_ago', 'engagement']
+    slim_items = []
     for item in items:
-        if len(item.get('content', '')) > 500:
-            item['content'] = item['content'][:500] + '...'
+        slim = {k: item.get(k) for k in CURATOR_FIELDS if item.get(k) is not None}
+        # Trim content to 500 chars
+        if len(slim.get('content', '')) > 500:
+            slim['content'] = slim['content'][:500] + '...'
+        slim_items.append(slim)
+
+    # Sort by freshness (hours_ago ascending) then send top 80
+    slim_items.sort(key=lambda x: x.get('hours_ago', 999))
 
     prompt = CURATOR_USER_TEMPLATE.format(
-        total=len(items),
-        items=json.dumps(items[:40], ensure_ascii=False, indent=2)  # Max 40 items (increased for newsletters)
+        total=len(slim_items),
+        items=json.dumps(slim_items[:80], ensure_ascii=False, indent=2)  # v2.3: 80 items (stripped raw_data)
     )
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")

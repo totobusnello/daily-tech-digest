@@ -1,5 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.2
+# THE DAILY BYTE - Configuração v2.3
+# Atualizado: 2026-02-22 (Tier 1 Expansion — 92 novas fontes Pulse.bot)
 # ============================================
 
 newsletter:
@@ -18,7 +19,7 @@ schedule:
 filters:
   # Idade máxima das notícias
   max_age_hours: 24
-  # Idade máxima para newsletters (janela maior)
+  # Idade máxima para newsletters/substacks (janela maior)
   max_age_hours_newsletters: 36
 
   # Score mínimo para entrar (0-100)
@@ -77,35 +78,222 @@ apis:
     # Bearer token via X_BEARER_TOKEN env var
     rate_limit_per_15min: 15
 
-# Fontes
+# ============================================
+# FONTES — v2.3 (Tier 1 Expansion)
+# ============================================
+# Total: ~120 fontes ativas
+#   - 46 X handles (25 originais + 21 novos)
+#   - 26 RSS tech/AI (9 originais + 17 novos)
+#   - 24 RSS world/business (6 originais + 18 novos)
+#   - 29 Substacks curados (novos)
+#   - 8 YouTube channels
+#   - 9 Newsletter scrapers
+# ============================================
+
 sources:
-  # Tier 1 - Primeira Mão (máxima prioridade)
+  # ── Tier 1 — X/Twitter Handles (46 total) ──
   tier1_handles:
-    - sama
-    - AnthropicAI
-    - satyanadella
-    - sundarpichai
-    - ylecun
-    - karpathy
+    # Originais v2.2 (AI Labs + Founders + Researchers)
+    - sama                 # Sam Altman — OpenAI
+    - AnthropicAI          # Anthropic
+    - satyanadella         # Satya Nadella — Microsoft
+    - sundarpichai         # Sundar Pichai — Google
+    - ylecun              # Yann LeCun — Meta AI
+    - karpathy            # Andrej Karpathy
     - aravind_srinivas    # CEO Perplexity AI
-    - demishassabis       # CEO Google DeepMind, Nobel 2024
-    - ethanmollick        # Wharton Prof, enterprise AI adoption
+    - demishassabis       # CEO Google DeepMind
+    - ethanmollick        # Wharton Prof, enterprise AI
+    # v2.3 — VC / Strategy / Leadership
+    - vkhosla             # Vinod Khosla — VC legend
+    - benedictevans       # Benedict Evans — tech strategy
+    - jasonlk             # Jason Lemkin — SaaStr
+    - bznotes             # Bilal Zuberi — Lux Capital
+    - simonsinek          # Simon Sinek — leadership
+    - randfish            # Rand Fishkin — SaaS/marketing
+    - shaiwi              # Shai Wininger — Lemonade CEO
+    # v2.3 — Geopolitics / Think Tanks
+    - CarnegieEndow       # Carnegie Endowment
+    - CSIS                # Center for Strategic & Intl Studies
+    - christogrozev       # Christo Grozev — Bellingcat
+    - ChuckDBrooks        # Cybersecurity/policy
+    # v2.3 — Markets / Investing
+    - charliebilello      # Charlie Bilello — markets data
+    - DivesTech           # Dan Ives — Wedbush tech analyst
+    - EddyElfenbein       # Eddy Elfenbein — investing
+    - munster_gene        # Gene Munster — Deepwater
+    - InvestingVisual     # Charts/data
+    - LanceUlanoff        # Tech/media
+    - LizAnnSonders       # Schwab chief strategist
+    - tracyalloway        # Tracy Alloway — Bloomberg
+    # v2.3 — Crypto
+    - cryptosauce_        # Crypto insights
+    - ADDerivs            # Crypto options
 
-  # RSS Feeds
+  # ── RSS Feeds — Tech & AI (26 feeds) ──
   rss_feeds:
+    # Originais v2.2
     - https://hnrss.org/frontpage?points=100
+    - https://feeds.arstechnica.com/arstechnica/index
+    - https://www.wired.com/feed/rss
+    - https://www.theverge.com/rss/index.xml
+    - https://www.reuters.com/technology/rss
     - https://techcrunch.com/category/artificial-intelligence/feed/
-    - https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
-    - https://the-decoder.com/feed/          # The Decoder — AI enterprise + EU policy
+    - https://www.technologyreview.com/feed/
+    - http://export.arxiv.org/rss/cs.AI
+    - https://the-decoder.com/feed/
+    # v2.3 — AI Enterprise
+    - https://venturebeat.com/feed/
+    - https://venturebeat.com/category/ai/feed/
+    - https://aibusiness.com/rss.xml
+    - https://www.enterpriseai.news/feed/
+    - https://aithority.com/feed/
+    - https://www.artificialintelligence-news.com/feed/
+    - https://www.zdnet.com/news/rss.xml
+    - https://www.engadget.com/rss.xml
+    - https://siliconangle.com/feed/
+    - https://www.geekwire.com/feed/
+    - https://www.fastcompany.com/latest/rss
+    - https://www.inc.com/rss
+    # v2.3 — Crypto/SaaS
+    - https://www.coindesk.com/arc/outboundfeeds/rss/
+    - https://decrypt.co/feed
+    - https://saas-mag.com/feed/
+    - https://www.saastock.com/blog/feed/
+    - https://news.crunchbase.com/feed/
 
-  # YouTube Channels
+  # ── RSS Feeds — World / Business (24 feeds) ──
+  world_feeds:
+    # Originais v2.2
+    - https://www.reuters.com/world/rss
+    - https://www.reuters.com/business/rss
+    - https://www.forbes.com/business/feed/
+    - https://www.forbes.com/innovation/feed/
+    - https://feeds.bbci.co.uk/news/world/rss.xml
+    - https://feeds.bbci.co.uk/news/business/rss.xml
+    # v2.3 — Business/Finance
+    - https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114  # CNBC Top
+    - https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258   # CNBC Markets
+    - https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910259   # CNBC Economy
+    - https://feeds.a.dj.com/rss/RSSMarketsMain.xml  # WSJ Markets
+    - https://rss.nytimes.com/services/xml/rss/nyt/DealBook.xml  # NYT DealBook
+    - https://api.axios.com/feed/
+    - https://fortune.com/feed/
+    - https://www.businessinsider.com/sai/rss
+    - https://qz.com/feed
+    - https://asia.nikkei.com/rss
+    - https://www.politico.eu/section/technology/feed/
+    # v2.3 — Fintech/Payments
+    - https://www.pymnts.com/feed/
+    - https://www.finextra.com/rss/headlines.aspx
+    # v2.3 — Paywalled (may fail gracefully)
+    - https://feeds.bloomberg.com/technology/news.rss
+    - https://www.ft.com/technology?format=rss
+    - https://www.ft.com/start-ups?format=rss
+    - https://www.economist.com/finance-and-economics/rss.xml
+    - https://www.economist.com/business/rss.xml
+
+  # ── Substacks Curados (29 feeds via RSS) — v2.3 ──
+  substacks:
+    - name: "Capital Wars"
+      rss: "https://capitalwars.substack.com/feed"
+      focus: "business_strategy"
+    - name: "CFO Dynamics"
+      rss: "https://cfodynamics.substack.com/feed"
+      focus: "cfo_finance"
+    - name: "Doomberg"
+      rss: "https://doomberg.substack.com/feed"
+      focus: "energy_macro"
+    - name: "The Beautiful Mess"
+      rss: "https://cutlefish.substack.com/feed"
+      focus: "product_management"
+    - name: "The Contrarian HR"
+      rss: "https://thecontrarianhr.substack.com/feed"
+      focus: "hr_leadership"
+    - name: "AI at Work"
+      rss: "https://aiatwork.substack.com/feed"
+      focus: "ai_enterprise"
+    - name: "AI Chat"
+      rss: "https://aichat.substack.com/feed"
+      focus: "ai"
+    - name: "AI Explored"
+      rss: "https://aiexplored.substack.com/feed"
+      focus: "ai"
+    - name: "AI for Humans"
+      rss: "https://aiforhumans.substack.com/feed"
+      focus: "ai"
+    - name: "AI Today"
+      rss: "https://aitoday.substack.com/feed"
+      focus: "ai"
+    - name: "AI Marketing"
+      rss: "https://aima.substack.com/feed"
+      focus: "ai_marketing"
+    - name: "Authentic AI"
+      rss: "https://authenticai.substack.com/feed"
+      focus: "ai_entrepreneurship"
+    - name: "Everyday AI"
+      rss: "https://everydayai.substack.com/feed"
+      focus: "ai_practical"
+    - name: "How I AI"
+      rss: "https://howaiai.substack.com/feed"
+      focus: "ai_practical"
+    - name: "Conversations on Applied AI"
+      rss: "https://conversationsonappliedai.substack.com/feed"
+      focus: "ai_applied"
+    - name: "Fintech Business Weekly"
+      rss: "https://fintechbusinessweekly.substack.com/feed"
+      focus: "fintech"
+    - name: "Fintech Confidential"
+      rss: "https://fintechconfidential.substack.com/feed"
+      focus: "fintech"
+    - name: "Fintech Hunting"
+      rss: "https://fintechhunting.substack.com/feed"
+      focus: "fintech"
+    - name: "Fintech Newscast"
+      rss: "https://fintech-newscast.substack.com/feed"
+      focus: "fintech"
+    - name: "Connecting Dots Fintech"
+      rss: "https://connectingdots.substack.com/feed"
+      focus: "fintech"
+    - name: "AI for Pharma Growth"
+      rss: "https://aiforpharmagrowth.substack.com/feed"
+      focus: "biotech_ai"
+    - name: "Biotech Blueprint"
+      rss: "https://biotechblueprint.substack.com/feed"
+      focus: "biotech"
+    - name: "Biotech Bytes"
+      rss: "https://biotechbytes.substack.com/feed"
+      focus: "biotech_it"
+    - name: "Biotech Strategy"
+      rss: "https://biotechstrategy.substack.com/feed"
+      focus: "biotech"
+    - name: "Health Tech Happy Hour"
+      rss: "https://longyearhealth.substack.com/feed"
+      focus: "healthtech"
+    - name: "Ecommerce Playbook"
+      rss: "https://ecommerceplaybook.substack.com/feed"
+      focus: "ecommerce"
+    - name: "EdTech Partnerships"
+      rss: "https://edtechpartnerships.substack.com/feed"
+      focus: "edtech"
+    - name: "Sustainability by Numbers"
+      rss: "https://hannahritchie.substack.com/feed"
+      focus: "sustainability"
+    - name: "Tom's AI in Edu"
+      rss: "https://tomstakesaitools.substack.com/feed"
+      focus: "ai_education"
+
+  # ── YouTube Channels (8 — unchanged) ──
   youtube_channels:
     - UCsBjURrPoezykLs9EqgamOA  # Fireship
     - UCbfYPyITQ-7l4upoX8nvctg  # Two Minute Papers
+    - UCNF8RjQNdHcz4n4vMBhlaJQ  # AI Explained
+    - UCJvbN6qX8gJM6Y4NRm81tSA  # Matt Wolfe
+    - UCSHZKyawb77ixDdsGog4iWA  # Lex Fridman
     - UCWN3xxRkmTPmbKwht9FuE5A  # Karpathy
+    - UCKa4vLnfLYnxKZ4fKJttGsA  # AI Daily Brief
     - UCU5JicSrEM5A63jkJ2QvGYw  # Filipe Deschamps (PT-BR)
 
-  # Newsletter Sources (v2.2 — 9 fontes)
+  # ── Newsletter Sources (9 scrapers — unchanged v2.2) ──
   newsletters:
     - name: "AiDrop"
       url: "https://www.aidrop.news"

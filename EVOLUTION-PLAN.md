@@ -4,6 +4,36 @@
 
 ## Changelog
 
+### v2.3 — 22/02/2026 (Tier 1 Expansion + Resiliencia)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/collector.py` | +21 X handles (45 total), +17 RSS tech (25 total), +18 RSS world (24 total), +29 Substacks novos, `_fetch_feed()` com fallback requests, `collect_substack_feeds()` |
+| `scripts/processor.py` | Strip `raw_data` dos itens (67K→12.5K tokens, 5x reducao), cap 40→80 itens, sort por freshness, integracao dedup |
+| `scripts/sender.py` | Integracao dedup — registra itens enviados no cache |
+| `scripts/dedup.py` | **NOVO** — Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao |
+| `scripts/alert_failure.py` | **NOVO** — Envia email alerta via Buttondown quando pipeline falha |
+| `.github/workflows/daily-digest.yml` | +job `notify-failure`, +actions/cache para dedup, artifacts `if: always()` |
+| `config.yaml` | v2.3, todas as novas fontes documentadas, secao substacks |
+| `CLAUDE.md` | v2.3 (Tier 1 Expansion — 92 fontes Pulse.bot) |
+| `Daily_Byte_Master_Sources_v2.3.xlsx` | **NOVO** — 2,143 fontes consolidadas (Pulse.bot + digest + backlog) |
+
+**Fontes v2.3 (92 novas do Pulse.bot):**
+- 21 novos X handles (VC, geopolitica, mercados, crypto)
+- 17 novos RSS tech (VentureBeat, ZDNet, Engadget, CoinDesk, etc)
+- 18 novos RSS world (CNBC, WSJ, NYT DealBook, Bloomberg, FT, Economist, etc)
+- 29 Substacks curados (AI, fintech, biotech, business strategy)
+- Total coletores: ~140 fontes ativas
+
+**Resiliencia v2.3:**
+- Alerta email automático quando pipeline falha (Buttondown → lab@nuvini.com.br)
+- Dedup entre dias — cache de 5 dias via GitHub Actions cache
+- Token optimization — 5x menos tokens por curadoria, 2x mais itens analisados
+
+---
+
 ### v2.2 — 22/02/2026 (Novas Fontes + Micro-Secoes)
 
 **Decisoes aprovadas pelo Toto:**
@@ -116,24 +146,44 @@
 
 ## Proximas Evolucoes (Backlog)
 
+### 🗓️ Proximo Domingo (01/03/2026) — Prioridades
+
+**4. Feedback loop com Buttondown:**
+- [ ] Usar Buttondown API para puxar opens/clicks da semana
+- [ ] Top 3 assuntos mais clicados → informar curador
+- [ ] Metricas basicas: open rate, click rate, growth semanal
+
+**5. Template HTML dedicado:**
+- [ ] Substituir markdown puro por template HTML com identidade visual
+- [ ] Logo, cores, layout fixo (header, sections, footer)
+- [ ] Mobile-first (maioria le no celular)
+
+**6. Otimizar newsletter_collector.py:**
+- [ ] Remover `raw_data` do output (mesmo fix do processor.py)
+- [ ] Adicionar `_fetch_feed()` fallback (consistencia com collector.py)
+- [ ] Avaliar quais newsletters scrapers podem migrar pra RSS puro
+
+---
+
+### Backlog Geral
+
 **Fontes:**
 - [ ] StartSe — adicionar se trouxer conteudo inovador/inedito
 - [x] Filipe Deschamps (YouTube BR) — adicionado v2.2
 - [x] Import AI (Jack Clark) — adicionado v2.2 via Substack RSS
 - [ ] The Batch (Andrew Ng), Stratechery — fontes aspiracionais sem scraper
-- [ ] Crunchbase Daily — precisa scraper dedicado
+- [x] Crunchbase News — adicionado v2.3 via RSS
 
 **Formato:**
-- [ ] Template HTML dedicado (hoje e markdown puro via Buttondown)
 - [ ] A/B test de subject lines
 - [ ] Secao de engagement (enquetes, CTA)
 
 **Curadoria:**
-- [ ] Feedback loop — rastrear opens/clicks para refinar selecao
 - [ ] Dedup mais inteligente (embeddings para similaridade semantica)
-- [ ] Cache de items ja enviados para evitar repeticao entre dias
+- [x] Cache de items ja enviados para evitar repeticao entre dias — implementado v2.3
+- [ ] Feedback loop — rastrear opens/clicks para refinar selecao
 
 **Infra:**
-- [ ] Monitoring/alertas quando o pipeline falha
+- [x] Monitoring/alertas quando o pipeline falha — implementado v2.3 (email alert)
 - [ ] Retry automatico se um feed der timeout
 - [ ] Dashboard com metricas (opens, clicks, growth)

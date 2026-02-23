@@ -11,6 +11,14 @@ import requests
 from datetime import datetime
 from typing import Dict, Optional
 
+# v2.3: Dedup — registra itens enviados no cache
+try:
+    from dedup import load_cache, save_cache, register_sent
+except ImportError:
+    load_cache = None
+    save_cache = None
+    register_sent = None
+
 # ============================================
 # CONFIGURAÇÃO
 # ============================================
@@ -247,7 +255,18 @@ def send(preview: bool = False):
         return {"preview": True, "subject": subject, "content": content}
 
     # Send
-    return send_via_buttondown(subject, content)
+    result = send_via_buttondown(subject, content)
+
+    # v2.3: Registra itens enviados no cache para dedup
+    if result.get('success') and register_sent and load_cache and save_cache:
+        try:
+            cache = load_cache()
+            cache = register_sent(curated, cache)
+            save_cache(cache)
+        except Exception as e:
+            print(f"⚠️ Erro ao salvar cache de dedup: {e}")
+
+    return result
 
 
 if __name__ == "__main__":
