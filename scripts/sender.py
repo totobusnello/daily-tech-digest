@@ -439,13 +439,13 @@ def generate_email_html(curated: Dict) -> str:
       <tr>
         <td style="text-align:center;padding-bottom:12px;">
           <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;">
-            &#x270D;&#xFE0F; <a href="https://www.linkedin.com/in/luiz-antonio-busnello/" style="color:{COLORS["brand"]};text-decoration:none;font-weight:600;">Artigos sobre tech, AI e neg&oacute;cios</a>
+            &#x270D;&#xFE0F; <span style="color:#94a3b8;">Artigos sobre tech, AI e neg&oacute;cios</span>
           </span>
         </td>
       </tr>
       <tr>
         <td style="text-align:center;">
-          <a href="{{{{ unsubscribe_url }}}}" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#64748b;text-decoration:underline;">Gerenciar assinatura</a>
+          <a href="https://www.linkedin.com/in/luiz-antonio-busnello/" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#64748b;text-decoration:none;">LinkedIn &#x2197;</a>
         </td>
       </tr>
     </table>
