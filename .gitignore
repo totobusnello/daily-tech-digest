@@ -1,1 +1,7 @@
 .env
+__pycache__/
+*.pyc
+venv/
+/tmp/digest_*.json
+/tmp/digest_*.md
+/tmp/digest_*.html

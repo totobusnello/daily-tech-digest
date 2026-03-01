@@ -337,7 +337,7 @@ def curate_with_claude(raw_data: dict) -> dict:
     return curated
 
 
-def _extract_json(text: str) -> dict | None:
+def _extract_json(text: str):
     """Extrai JSON de uma resposta que pode conter texto/markdown ao redor"""
     # Try 1: JSON in code block
     if "```json" in text:

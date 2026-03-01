@@ -150,7 +150,34 @@ Threshold minimo: 60 pontos
 
 ## Como rodar localmente
 
+### Setup inicial (so precisa fazer uma vez)
+
 ```bash
+# 1. Python 3.14 via Homebrew (macOS)
+brew install python@3.14
+
+# 2. Criar virtual environment na raiz do projeto
+cd ~/daily-tech-digest
+python3 -m venv venv
+
+# 3. Ativar venv e instalar dependencias
+source venv/bin/activate
+pip install anthropic feedparser beautifulsoup4 lxml requests pyyaml python-dotenv
+
+# 4. Criar .env com as chaves (ja esta no .gitignore)
+# O arquivo .env deve conter:
+#   ANTHROPIC_API_KEY=sk-ant-...
+#   BUTTONDOWN_API_KEY=...
+#   X_BEARER_TOKEN=...
+```
+
+### Rodar o pipeline
+
+```bash
+cd ~/daily-tech-digest
+source venv/bin/activate
+source .env   # carrega as chaves no shell
+
 cd scripts
 
 # So coletar
@@ -163,14 +190,34 @@ python processor.py
 python sender.py --preview
 
 # Pipeline completo
-python run.py --preview     # sem enviar
-python run.py               # envia de verdade
+python run.py --preview     # sem enviar (salva .md + .html em /tmp/)
+python run.py               # envia de verdade via Buttondown
 ```
 
-**Env vars necessarias:**
-- `ANTHROPIC_API_KEY` — obrigatoria
-- `BUTTONDOWN_API_KEY` — para envio + feedback loop
-- `X_BEARER_TOKEN` — opcional (coleta do X)
+### Env vars necessarias
+
+| Variavel | Onde conseguir | Obrigatoria? |
+|----------|---------------|--------------|
+| `ANTHROPIC_API_KEY` | console.anthropic.com | Sim |
+| `BUTTONDOWN_API_KEY` | buttondown.com/settings | Sim (envio + feedback) |
+| `X_BEARER_TOKEN` | developer.x.com | Opcional (coleta do X) |
+
+Estas chaves tambem estao configuradas no GitHub Secrets para o Actions.
+
+---
+
+## Troubleshooting (erros comuns)
+
+| Erro | Causa | Fix |
+|------|-------|-----|
+| `ModuleNotFoundError: No module named 'anthropic'` | venv nao ativado ou deps faltando | `source venv/bin/activate && pip install -r requirements.txt` |
+| `zsh: command not found: python` | macOS usa `python3` | Usar `python3` ou ativar venv (que cria alias `python`) |
+| `error: externally-managed-environment` | Python Homebrew bloqueia pip global (PEP 668) | Usar venv (`python3 -m venv venv`) |
+| `Couldn't find tree builder: lxml` | lxml nao instalado | `pip install lxml` |
+| `ANTHROPIC_API_KEY not set` | Chaves nao exportadas no shell | `source .env` antes de rodar |
+| `GH013: Push cannot contain secrets` | .env commitado por engano | `git reset HEAD~1`, add `.env` ao `.gitignore` |
+| `another git process seems to be running` | Lock file travado | `rm -f .git/HEAD.lock .git/index.lock` |
+| `unsupported operand type(s) for \|: 'type' and 'NoneType'` | Syntax `dict \| None` requer Python 3.10+ | Ja corrigido no processor.py (v2.4) |
 
 ---
 
