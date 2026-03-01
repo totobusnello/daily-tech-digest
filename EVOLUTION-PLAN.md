@@ -4,6 +4,48 @@
 
 ## Changelog
 
+### v2.4 — 01/03/2026 (HTML Template + Feedback Loop + Optimizations)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/sender.py` | Template HTML completo com inline CSS, table-based layout, mobile-first. Branded colors (#FF6B35 orange, #1a1a2e dark). Todas as 7 secoes renderizadas em HTML. `send()` agora envia HTML (preview continua markdown). Preview salva .md + .html |
+| `scripts/feedback.py` | **NOVO** — Puxa metricas de engajamento do Buttondown API (opens, clicks, unsubs). Calcula open/click rate, top 3 temas, gera curator_hint. Salva em `/tmp/digest_feedback.json` |
+| `scripts/processor.py` | Integra feedback loop — carrega metricas e injeta no prompt do curador (top temas, open rate, click rate) |
+| `scripts/run.py` | +Step 1.5 (Feedback Loop) entre coleta e curadoria. Import graceful com try/except |
+| `scripts/newsletter_collector.py` | Removido `raw_data` do output (token optimization). Adicionado `_fetch_feed()` com fallback requests. RSS inferido para Substack/Beehiiv sem rss_url configurado |
+| `EVOLUTION-PLAN.md` | v2.4 changelog, backlog atualizado |
+| `CLAUDE.md` | v2.4 |
+
+**Item 4 — Feedback Loop (Buttondown API):**
+- Novo modulo `feedback.py` com 8 funcoes
+- Puxa emails dos ultimos 7 dias + analytics individuais
+- Calcula: avg open rate, avg click rate, total opens/clicks/unsubs, subscriber count
+- Top 3 temas mais clicados → injeta no prompt do curador
+- Gera `curator_hint` textual com recomendacoes baseadas em benchmarks
+- Integrado no pipeline: run.py (Step 1.5) + processor.py (prompt injection)
+- Degradacao graceful: se API key ausente ou erro, pipeline continua normalmente
+
+**Item 5 — Template HTML dedicado:**
+- ~400 linhas de HTML com inline CSS (compatibilidade email clients)
+- Layout table-based (600px max-width) com media queries para mobile
+- Paleta branded: orange #FF6B35, dark #1a1a2e, cores por secao
+- MSO conditionals para Outlook
+- Secoes: header, numero do dia, mundo real, hoje no byte, saas & enterprise, tool do dia (com CTA + how_to_use + prompt_of_day), analise do dia, quick links, watch later, footer
+- Heat score visual com emojis 🔥
+- Tags coloridas por categoria ([AI], [BIG TECH], [ENTERPRISE], [BREAKING])
+- Unsubscribe link via Buttondown template variable `{{ unsubscribe_url }}`
+- Preview mode: markdown no terminal + HTML em `/tmp/digest_preview.html`
+
+**Item 6 — Otimizar newsletter_collector.py:**
+- Removido `raw_data` do `to_raw_dict()` (consistente com processor.py, 5x menos tokens)
+- `_fetch_feed()` com fallback: feedparser direto → requests com headers + feedparser
+- RSS inferido automaticamente para Substack (`/feed`) e Beehiiv (`/feed`)
+- `_collect_via_rss()` tenta RSS antes de scraping para todas as fontes
+
+---
+
 ### v2.3 — 22/02/2026 (Tier 1 Expansion + Resiliencia)
 
 **Mudancas implementadas:**
@@ -146,22 +188,38 @@
 
 ## Proximas Evolucoes (Backlog)
 
-### 🗓️ Proximo Domingo (01/03/2026) — Prioridades
+### 🗓️ Proximo Domingo (08/03/2026) — Prioridades
 
-**4. Feedback loop com Buttondown:**
-- [ ] Usar Buttondown API para puxar opens/clicks da semana
-- [ ] Top 3 assuntos mais clicados → informar curador
-- [ ] Metricas basicas: open rate, click rate, growth semanal
+**7. A/B test de subject lines:**
+- [ ] Implementar variantes de subject no sender.py
+- [ ] Tracking via Buttondown analytics
+- [ ] Feedback loop informando qual estilo performa melhor
 
-**5. Template HTML dedicado:**
-- [ ] Substituir markdown puro por template HTML com identidade visual
-- [ ] Logo, cores, layout fixo (header, sections, footer)
-- [ ] Mobile-first (maioria le no celular)
+**8. Dashboard de metricas:**
+- [ ] HTML dashboard com historico de open/click rates
+- [ ] Growth de subscribers ao longo do tempo
+- [ ] Top temas por engajamento
 
-**6. Otimizar newsletter_collector.py:**
-- [ ] Remover `raw_data` do output (mesmo fix do processor.py)
-- [ ] Adicionar `_fetch_feed()` fallback (consistencia com collector.py)
-- [ ] Avaliar quais newsletters scrapers podem migrar pra RSS puro
+**9. Retry automatico para feeds com timeout:**
+- [ ] Implementar retry com backoff no collector.py
+- [ ] Fallback para cache do dia anterior se feed falhar
+
+### ✅ Implementado em v2.4 (01/03/2026)
+
+**4. Feedback loop com Buttondown:** ✅
+- [x] Usar Buttondown API para puxar opens/clicks da semana
+- [x] Top 3 assuntos mais clicados → informar curador
+- [x] Metricas basicas: open rate, click rate, growth semanal
+
+**5. Template HTML dedicado:** ✅
+- [x] Substituir markdown puro por template HTML com identidade visual
+- [x] Cores, layout fixo (header, sections, footer)
+- [x] Mobile-first (media queries, 16px+ text, 44px+ tap targets)
+
+**6. Otimizar newsletter_collector.py:** ✅
+- [x] Remover `raw_data` do output (mesmo fix do processor.py)
+- [x] Adicionar `_fetch_feed()` fallback (consistencia com collector.py)
+- [x] RSS inferido para Substack/Beehiiv automaticamente
 
 ---
 

@@ -109,7 +109,9 @@ class NewsletterItem:
     published_at: Optional[datetime]
 
     def to_raw_dict(self) -> Dict:
-        """Converte para formato compatível com RawItem do collector.py"""
+        """Converte para formato compatível com RawItem do collector.py
+        v2.4: Removido raw_data (token optimization — consistente com processor.py)
+        """
         pub_at = self.published_at or datetime.utcnow()
         hours_ago = (datetime.utcnow() - pub_at).total_seconds() / 3600
 
@@ -123,12 +125,35 @@ class NewsletterItem:
             "published_at": pub_at.isoformat(),
             "hours_ago": round(hours_ago, 1),
             "engagement": {},
-            "raw_data": {
-                "source_key": self.source_key,
-                "language": self.language,
-                "category_hint": self.category_hint,
-            }
+            "language": self.language,
+            "category_hint": self.category_hint,
         }
+
+
+# ============================================
+# RSS FETCH WITH FALLBACK (v2.4)
+# ============================================
+
+def _fetch_feed(url: str, timeout: int = 15):
+    """Tenta feedparser primeiro, fallback para requests + feedparser.
+    Consistente com collector.py — resolve feeds que feedparser nao consegue direto.
+    """
+    # Attempt 1: feedparser direto
+    feed = feedparser.parse(url)
+    if feed.entries:
+        return feed
+
+    # Attempt 2: requests com headers de browser + feedparser no conteudo
+    try:
+        resp = requests.get(url, headers=REQUEST_HEADERS, timeout=timeout)
+        if resp.status_code == 200:
+            feed = feedparser.parse(resp.text)
+            if feed.entries:
+                return feed
+    except Exception as e:
+        print(f"  ⚠️ _fetch_feed fallback falhou para {url}: {e}")
+
+    return feed  # retorna vazio se ambos falharam
 
 
 # ============================================
@@ -330,14 +355,25 @@ def _enrich_post(item: NewsletterItem) -> NewsletterItem:
 # ============================================
 
 def _collect_via_rss(source_key: str, source_config: dict, cutoff: datetime, max_items: int = 5) -> List[Dict]:
-    """Coleta posts via RSS feed (Substack nativo)"""
+    """Coleta posts via RSS feed (Substack nativo ou inferido)
+    v2.4: Usa _fetch_feed() com fallback requests + tenta RSS inferido
+    """
     rss_url = source_config.get('rss_url', '')
+
+    # v2.4: Tenta inferir RSS para Substacks e Beehiiv se nao configurado
+    if not rss_url:
+        base = source_config.get('base_url', '')
+        if 'substack.com' in base:
+            rss_url = base.rstrip('/') + '/feed'
+        elif 'beehiiv.com' in base:
+            rss_url = base.rstrip('/') + '/feed'
+
     if not rss_url:
         return []
 
     items = []
     try:
-        feed = feedparser.parse(rss_url)
+        feed = _fetch_feed(rss_url)
         for entry in feed.entries[:max_items]:
             published = None
             if hasattr(entry, 'published_parsed') and entry.published_parsed:

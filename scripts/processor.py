@@ -18,6 +18,12 @@ except ImportError:
     load_cache = None
     dedup_items = None
 
+# v2.4: Feedback loop — engagement data from Buttondown
+try:
+    from feedback import load_feedback
+except ImportError:
+    load_feedback = None
+
 # ============================================
 # CONFIGURAÇÃO
 # ============================================
@@ -182,6 +188,8 @@ LEMBRE-SE:
 - "subject_hook" é uma frase-gancho de max 6 palavras sobre a notícia mais impactante
 - "number_of_day" é UM data point numérico impressionante extraído das notícias (value + context)
 
+{feedback_section}
+
 ⚠️ REGRA CRÍTICA sobre why_it_matters:
 - CADA item (exceto quick_links) DEVE ter "why_it_matters" com 2-3 frases SUBSTANCIAIS
 - NÃO é resumo — é ANÁLISE do impacto e contexto para C-levels
@@ -238,9 +246,34 @@ def curate_with_claude(raw_data: dict) -> dict:
     # Sort by freshness (hours_ago ascending) then send top 80
     slim_items.sort(key=lambda x: x.get('hours_ago', 999))
 
+    # v2.4: Load feedback data from Buttondown (if available)
+    feedback_section = ""
+    if load_feedback:
+        feedback_data = load_feedback()
+        if feedback_data and feedback_data.get('status') == 'ok':
+            hint = feedback_data.get('curator_hint', '')
+            top_themes = feedback_data.get('top_themes', [])
+            agg = feedback_data.get('aggregate', {})
+
+            feedback_lines = ["📊 FEEDBACK DA SEMANA (dados de engajamento dos últimos 7 dias):"]
+            if hint:
+                feedback_lines.append(f"💡 Dica: {hint}")
+            if agg:
+                feedback_lines.append(f"📈 Open rate médio: {agg.get('avg_open_rate', 0)}% | Click rate: {agg.get('avg_click_rate', 0)}% | Subscribers: {agg.get('subscriber_count', 0)}")
+            if top_themes:
+                theme_strs = [f"  - \"{t.get('hook', '')}\" ({t.get('clicks', 0)} clicks, {t.get('open_rate', 0)}% open rate)" for t in top_themes]
+                feedback_lines.append("🏆 Temas com mais engajamento:\n" + "\n".join(theme_strs))
+            feedback_lines.append("→ Use estes dados para PRIORIZAR temas similares aos que geraram mais engajamento.")
+
+            feedback_section = "\n".join(feedback_lines)
+            print(f"📊 Feedback loop ativo: {len(top_themes)} temas top, open rate {agg.get('avg_open_rate', 0)}%")
+        else:
+            print("📊 Feedback loop: sem dados disponíveis (primeiro run ou API indisponível)")
+
     prompt = CURATOR_USER_TEMPLATE.format(
         total=len(slim_items),
-        items=json.dumps(slim_items[:80], ensure_ascii=False, indent=2)  # v2.3: 80 items (stripped raw_data)
+        items=json.dumps(slim_items[:80], ensure_ascii=False, indent=2),  # v2.3: 80 items (stripped raw_data)
+        feedback_section=feedback_section
     )
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")

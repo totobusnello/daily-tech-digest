@@ -15,6 +15,12 @@ from collector import collect_all
 from processor import process
 from sender import send
 
+# v2.4: Feedback loop
+try:
+    from feedback import collect_feedback
+except ImportError:
+    collect_feedback = None
+
 def main():
     """Pipeline completo do Daily Byte"""
 
@@ -47,6 +53,17 @@ def main():
                 json.dump(raw_data, f, indent=2, ensure_ascii=False)
         else:
             print("⏭️ Pulando coleta (--skip-collect)")
+
+        # Step 1.5: Feedback Loop (v2.4)
+        if collect_feedback and not skip_process:
+            print("\n" + "="*50)
+            print("📊 STEP 1.5: FEEDBACK LOOP")
+            print("="*50)
+            try:
+                feedback = collect_feedback()
+                print(f"   → Status: {feedback.get('status', 'unknown')}")
+            except Exception as e:
+                print(f"   ⚠️ Feedback falhou (não-crítico): {e}")
 
         # Step 2: Process
         if not skip_process:

@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.3 (Tier 1 Expansion — 92 fontes Pulse.bot)
+**Versao atual:** v2.4 (HTML Template + Feedback Loop + Optimizations)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -15,11 +15,14 @@ Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFO
 collector.py          -> /tmp/digest_raw.json
   (RSS + YouTube + X + Newsletters)
        |
-processor.py          -> /tmp/digest_curated.json
-  (Claude Sonnet 4.5 curadoria)
+feedback.py           -> /tmp/digest_feedback.json
+  (Buttondown API: opens, clicks, top temas)
        |
-sender.py             -> Buttondown API -> email
-  (markdown rendering)
+processor.py          -> /tmp/digest_curated.json
+  (Claude Sonnet 4.5 curadoria + feedback metrics)
+       |
+sender.py             -> Buttondown API -> email HTML
+  (template HTML inline CSS, mobile-first)
 ```
 
 **Orquestrador:** `run.py` (ou GitHub Actions via `daily-digest.yml`)
@@ -35,8 +38,9 @@ sender.py             -> Buttondown API -> email
 | `scripts/collector.py` | Coleta RSS, YouTube, X/Twitter, orquestra newsletters |
 | `scripts/newsletter_collector.py` | Scraper BeautifulSoup + RSS para 9 newsletters |
 | `scripts/processor.py` | Curadoria com Claude (CURATOR_SYSTEM + CURATOR_USER_TEMPLATE) |
-| `scripts/sender.py` | Renderiza email markdown e envia via Buttondown |
-| `scripts/run.py` | Pipeline completo (collect -> process -> send) |
+| `scripts/sender.py` | Renderiza email HTML (template inline CSS) e envia via Buttondown |
+| `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas) para informar curadoria |
+| `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send) |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
 | `EVOLUTION-PLAN.md` | Historico de versoes e backlog |
@@ -138,6 +142,10 @@ Threshold minimo: 60 pontos
 
 9. **number_of_day** — data point numerico impressionante extraido das noticias (value + context).
 
+10. **Email HTML** — sender.py envia HTML (inline CSS, table-based). Preview mode gera markdown (terminal) + HTML (`/tmp/digest_preview.html`). Template usa Buttondown `{{ unsubscribe_url }}`.
+
+11. **Feedback loop** — feedback.py roda antes do processor.py (Step 1.5 no run.py). Metricas salvas em `/tmp/digest_feedback.json`. Degradacao graceful se BUTTONDOWN_API_KEY ausente.
+
 ---
 
 ## Como rodar localmente
@@ -161,7 +169,7 @@ python run.py               # envia de verdade
 
 **Env vars necessarias:**
 - `ANTHROPIC_API_KEY` — obrigatoria
-- `BUTTONDOWN_API_KEY` — para envio
+- `BUTTONDOWN_API_KEY` — para envio + feedback loop
 - `X_BEARER_TOKEN` — opcional (coleta do X)
 
 ---
