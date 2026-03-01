@@ -52,6 +52,13 @@ jobs:
           python collector.py
           echo "✅ Collection complete"
 
+      # v2.4: Feedback loop — engagement metrics inform curation
+      - name: 📊 Collect feedback metrics
+        run: |
+          cd scripts
+          python -c "from feedback import collect_feedback; collect_feedback()" || echo "⚠️ Feedback skipped (non-critical)"
+          echo "✅ Feedback complete"
+
       - name: 🤖 Curate with Claude AI
         run: |
           cd scripts
@@ -81,6 +88,8 @@ jobs:
             /tmp/digest_raw.json
             /tmp/digest_curated.json
             /tmp/digest_preview.md
+            /tmp/digest_preview.html
+            /tmp/digest_feedback.json
             /tmp/digest_sent_cache.json
           retention-days: 7
 
