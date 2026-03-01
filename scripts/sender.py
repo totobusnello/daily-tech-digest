@@ -163,7 +163,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="text-align:center;padding-top:6px;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;">News, insights &amp; trends para C-levels</span>
+          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;">News, insights &amp; trends</span>
         </td>
       </tr>
     </table>
