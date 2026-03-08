@@ -4,6 +4,30 @@
 
 ## Changelog
 
+### v2.5 — 08/03/2026 (Retry Resilience + Tracking + API Key Local)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/collector.py` | `_fetch_feed()` com retry + exponential backoff (2s, 4s — max 3 tentativas). `collect_youtube_feeds()` agora usa `_fetch_feed()` em vez de `feedparser.parse()` direto. Import `time` adicionado. User-Agent atualizado para 2.5 |
+| `scripts/newsletter_collector.py` | `_fetch_feed()` com retry + exponential backoff (2s, 4s — max 3 tentativas). Import `time` adicionado |
+| `~/.zshrc` | `BUTTONDOWN_API_KEY` configurado localmente (key "Claude" do dashboard) |
+| Buttondown Dashboard | Tracking habilitado: Replies ON, Email clicks ON, Email opens ON (estavam todos OFF) |
+
+**Item 9 — Retry com backoff:**
+- `_fetch_feed()` em ambos os arquivos agora tenta 3x antes de desistir
+- Backoff exponencial: 2s entre 1a e 2a tentativa, 4s entre 2a e 3a
+- Log visual com emoji ⏳ mostrando retry em andamento
+- YouTube feeds migrados de `feedparser.parse()` direto para `_fetch_feed()` (ganha retry automaticamente)
+
+**Tracking + API Key:**
+- Habilitado Replies, Email clicks, Email opens no Buttondown (Settings > Tracking)
+- API key "Claude" (criada 02/02/2026, nunca usada) configurada em `~/.zshrc`
+- feedback.py agora pode rodar localmente para testes
+
+---
+
 ### v2.4 — 01/03/2026 (HTML Template + Feedback Loop + Optimizations)
 
 **Mudancas implementadas:**
@@ -200,9 +224,27 @@
 - [ ] Growth de subscribers ao longo do tempo
 - [ ] Top temas por engajamento
 
-**9. Retry automatico para feeds com timeout:**
-- [ ] Implementar retry com backoff no collector.py
+**9. Retry automatico para feeds com timeout:** ✅ (v2.5)
+- [x] Implementar retry com backoff no collector.py
+- [x] Implementar retry com backoff no newsletter_collector.py
+- [x] YouTube feeds usando _fetch_feed() com retry
 - [ ] Fallback para cache do dia anterior se feed falhar
+
+**10. Buttondown Feb Updates — Oportunidades (email 03/03/2026):**
+- [ ] Custom domain para click tracking — configurar dominio proprio para melhorar deliverability
+- [ ] Sort/filter por open e click rates via API — melhorar feedback.py com sorting nativo
+- [ ] Avaliar custom template no Buttondown vs HTML raw no sender.py (trade-off: simplicidade vs controle)
+- [ ] Novas settings na API (locale, timezone, reply-to, socials) — automatizar config
+- [ ] Reply tracking como metrica adicional de engajamento no feedback loop
+- [ ] OpenAPI spec para archives — explorar para melhor integracao
+
+### ✅ Implementado em v2.5 (08/03/2026)
+
+**9. Retry com backoff:** ✅
+- [x] Retry exponencial (2s, 4s) em `_fetch_feed()` — collector.py + newsletter_collector.py
+- [x] YouTube feeds migrados para `_fetch_feed()` (ganham retry automatico)
+- [x] BUTTONDOWN_API_KEY configurado localmente
+- [x] Tracking habilitado no Buttondown (opens, clicks, replies)
 
 ### ✅ Implementado em v2.4 (01/03/2026)
 

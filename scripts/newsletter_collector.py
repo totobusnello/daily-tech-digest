@@ -5,6 +5,7 @@ Coleta posts recentes de newsletters no Beehiiv via scraping de HTML
 """
 
 import re
+import time
 import requests
 import feedparser
 from datetime import datetime, timedelta
@@ -134,26 +135,33 @@ class NewsletterItem:
 # RSS FETCH WITH FALLBACK (v2.4)
 # ============================================
 
-def _fetch_feed(url: str, timeout: int = 15):
+def _fetch_feed(url: str, timeout: int = 15, max_retries: int = 3):
     """Tenta feedparser primeiro, fallback para requests + feedparser.
-    Consistente com collector.py — resolve feeds que feedparser nao consegue direto.
+    v2.5: Retry com backoff exponencial (2s, 4s, 8s) — consistente com collector.py.
     """
-    # Attempt 1: feedparser direto
-    feed = feedparser.parse(url)
-    if feed.entries:
-        return feed
+    for attempt in range(max_retries):
+        # Attempt 1: feedparser direto
+        feed = feedparser.parse(url)
+        if feed.entries:
+            return feed
 
-    # Attempt 2: requests com headers de browser + feedparser no conteudo
-    try:
-        resp = requests.get(url, headers=REQUEST_HEADERS, timeout=timeout)
-        if resp.status_code == 200:
-            feed = feedparser.parse(resp.text)
-            if feed.entries:
-                return feed
-    except Exception as e:
-        print(f"  ⚠️ _fetch_feed fallback falhou para {url}: {e}")
+        # Attempt 2: requests com headers de browser + feedparser no conteudo
+        try:
+            resp = requests.get(url, headers=REQUEST_HEADERS, timeout=timeout)
+            if resp.status_code == 200:
+                feed = feedparser.parse(resp.text)
+                if feed.entries:
+                    return feed
+        except Exception as e:
+            print(f"  ⚠️ _fetch_feed falhou para {url}: {e}")
 
-    return feed  # retorna vazio se ambos falharam
+        # Backoff before next retry (skip on last attempt)
+        if attempt < max_retries - 1:
+            wait = 2 ** (attempt + 1)  # 2s, 4s
+            print(f"  ⏳ Retry {attempt + 1}/{max_retries} for {url[:60]}... waiting {wait}s")
+            time.sleep(wait)
+
+    return feed  # retorna vazio se todos falharam
 
 
 # ============================================

@@ -6,6 +6,7 @@ Coleta notícias de X, YouTube, LinkedIn e RSS feeds
 
 import os
 import json
+import time
 import feedparser
 import requests
 from datetime import datetime, timedelta
@@ -217,23 +218,38 @@ class RawItem:
 # COLETORES
 # ============================================
 
-def _fetch_feed(feed_url: str):
-    """Fetch RSS feed with fallback: feedparser direct → requests + feedparser"""
-    feed = feedparser.parse(feed_url)
-    if feed.entries:
-        return feed
-    # Fallback: fetch via requests (handles redirects, user-agent blocks)
-    try:
-        resp = requests.get(
-            feed_url, timeout=15,
-            headers={"User-Agent": "Mozilla/5.0 (compatible; DailyByte/2.3)"},
-            allow_redirects=True
-        )
-        if resp.status_code == 200:
-            feed = feedparser.parse(resp.text)
-    except Exception:
-        pass
-    return feed
+def _fetch_feed(feed_url: str, max_retries: int = 3):
+    """Fetch RSS feed with retry + exponential backoff.
+    v2.5: Retry com backoff (2s, 4s, 8s) antes de desistir.
+    Strategy: feedparser direct → requests fallback, com retry em ambos.
+    """
+    for attempt in range(max_retries):
+        # Attempt: feedparser direto
+        feed = feedparser.parse(feed_url)
+        if feed.entries:
+            return feed
+
+        # Fallback: fetch via requests (handles redirects, user-agent blocks)
+        try:
+            resp = requests.get(
+                feed_url, timeout=15,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; DailyByte/2.5)"},
+                allow_redirects=True
+            )
+            if resp.status_code == 200:
+                feed = feedparser.parse(resp.text)
+                if feed.entries:
+                    return feed
+        except Exception:
+            pass
+
+        # Backoff before next retry (skip on last attempt)
+        if attempt < max_retries - 1:
+            wait = 2 ** (attempt + 1)  # 2s, 4s
+            print(f"  ⏳ Retry {attempt + 1}/{max_retries} for {feed_url[:60]}... waiting {wait}s")
+            time.sleep(wait)
+
+    return feed  # return last result even if empty
 
 
 def _parse_feed_items(feeds: dict, cutoff, source_type_fn=None, max_per_feed: int = 20) -> List[RawItem]:
@@ -303,7 +319,7 @@ def collect_youtube_feeds() -> List[RawItem]:
     for channel_name, channel_id in YOUTUBE_CHANNELS.items():
         feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
         try:
-            feed = feedparser.parse(feed_url)
+            feed = _fetch_feed(feed_url)
             for entry in feed.entries[:5]:  # Max 5 per channel
                 published = None
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
