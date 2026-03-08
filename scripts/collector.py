@@ -69,6 +69,12 @@ TIER1_HANDLES = [
     # Crypto / Web3
     "cryptosauce_",       # Crypto insights
     "ADDerivs",           # AD Derivs — crypto options
+    # ── v2.5 Expansion: AI Researchers + Emerging ──
+    "hardmaru",           # David Ha — Sakana AI, ex-Google Brain
+    "polyaborak",         # Polymarket — prediction markets
+    "kimaborak",          # AI safety researcher
+    "ClementDelworker",   # Clement Delangue — Hugging Face CEO
+    "ababorak",          # Andrej Baborak — AI/ML researcher
 ]
 
 # RSS Feeds — Tech & AI
@@ -102,6 +108,12 @@ RSS_FEEDS = {
     "saas_mag": "https://saas-mag.com/feed/",
     "saastock_blog": "https://www.saastock.com/blog/feed/",
     "crunchbase_news": "https://news.crunchbase.com/feed/",
+    # ── v2.5 Expansion: Official AI Labs Blogs + Breaking ──
+    "huggingface_blog": "https://huggingface.co/blog/feed.xml",
+    "google_ai_blog": "https://blog.google/technology/ai/rss/",
+    "openai_blog": "https://openai.com/blog/rss.xml",
+    "anthropic_news": "https://www.anthropic.com/feed.xml",
+    "the_information": "https://www.theinformation.com/feed",
 }
 
 # RSS Feeds - Mundo Real (governos, empresas, geopolítica, finanças)
@@ -134,6 +146,13 @@ WORLD_FEEDS = {
     "ft_startups": "https://www.ft.com/start-ups?format=rss",
     "economist_finance": "https://www.economist.com/finance-and-economics/rss.xml",
     "economist_business": "https://www.economist.com/business/rss.xml",
+    # ── v2.5 Expansion: Wire Services + Brasil ──
+    "ap_news_tech": "https://apnews.com/technology/feed",
+    "ap_news_business": "https://apnews.com/business/feed",
+    "poder360": "https://www.poder360.com.br/feed/",
+    "infomoney": "https://www.infomoney.com.br/feed/",
+    "startups_br": "https://startups.com.br/feed/",
+    "valor_economico": "https://valor.globo.com/rss/",
 }
 
 # YouTube Channels (via RSS)
