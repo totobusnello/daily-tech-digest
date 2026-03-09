@@ -116,7 +116,7 @@ Threshold minimo: 60 pontos
 
 ## Modelo AI
 
-- **Curadoria:** Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`)
+- **Curadoria:** Claude Sonnet 4.6 (`claude-sonnet-4-6`)
 - **Max tokens:** 8192
 - **Retry:** 3 tentativas com backoff (60s, 120s, 180s) para rate limit
 
