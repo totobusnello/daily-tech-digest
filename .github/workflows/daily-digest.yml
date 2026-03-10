@@ -46,38 +46,56 @@ jobs:
           restore-keys: |
             digest-dedup-
 
-      - name: 📰 Collect news sources
+      - name: 📰 Step 1 — Collect news sources
+        id: collect
         run: |
           cd scripts
           python collector.py
           echo "✅ Collection complete"
 
-      # v2.4: Feedback loop — engagement metrics inform curation
-      - name: 📊 Collect feedback metrics
+      # v2.4: Feedback loop — engagement metrics inform curation (non-critical)
+      - name: 📊 Step 2 — Collect feedback metrics
+        id: feedback
         run: |
           cd scripts
           python -c "from feedback import collect_feedback; collect_feedback()" || echo "⚠️ Feedback skipped (non-critical)"
           echo "✅ Feedback complete"
 
-      - name: 🤖 Curate with Claude AI
+      - name: 🤖 Step 3 — Curate with Claude AI
+        id: curate
         run: |
           cd scripts
           python processor.py
           echo "✅ Curation complete"
 
-      - name: 📧 Send digest
+      - name: 📧 Step 4 — Send digest
+        id: send
         if: ${{ github.event.inputs.preview_only != 'true' }}
         run: |
           cd scripts
           python sender.py
           echo "✅ Email sent!"
 
-      - name: 👀 Preview only (no send)
+      - name: 👀 Step 4 — Preview only (no send)
         if: ${{ github.event.inputs.preview_only == 'true' }}
         run: |
           cd scripts
           python sender.py --preview
           echo "📋 Preview generated (email NOT sent)"
+
+      # Registra qual step falhou para o alerta
+      - name: 🔍 Detect failed step
+        if: failure()
+        run: |
+          if [ "${{ steps.collect.outcome }}" = "failure" ]; then
+            echo "FAILED_STEP=📰 Coleta (collector.py)" >> $GITHUB_ENV
+          elif [ "${{ steps.curate.outcome }}" = "failure" ]; then
+            echo "FAILED_STEP=🤖 Curadoria (processor.py)" >> $GITHUB_ENV
+          elif [ "${{ steps.send.outcome }}" = "failure" ]; then
+            echo "FAILED_STEP=📧 Envio (sender.py)" >> $GITHUB_ENV
+          else
+            echo "FAILED_STEP=❓ Step desconhecido" >> $GITHUB_ENV
+          fi
 
       - name: 📊 Upload artifacts
         uses: actions/upload-artifact@v4
@@ -93,11 +111,13 @@ jobs:
             /tmp/digest_sent_cache.json
           retention-days: 7
 
-  # ── v2.3: Alerta por email se o pipeline falhar ──
+  # ── v2.5: Alerta via GitHub Issue se o pipeline falhar ──
   notify-failure:
     runs-on: ubuntu-latest
     needs: generate-digest
     if: failure()
+    permissions:
+      issues: write
 
     steps:
       - name: 📥 Checkout repository
@@ -108,13 +128,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 📦 Install dependencies
-        run: pip install requests
-
-      - name: 🚨 Send failure alert via Buttondown
+      - name: 🚨 Create failure issue
         env:
-          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           python scripts/alert_failure.py \
             --run-id "${{ github.run_id }}" \
-            --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --failed-step "${{ env.FAILED_STEP || 'Ver logs para detalhes' }}"
