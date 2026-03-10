@@ -111,11 +111,13 @@ jobs:
             /tmp/digest_sent_cache.json
           retention-days: 7
 
-  # ── v2.5: Alerta por email se o pipeline falhar ──
+  # ── v2.5: Alerta via GitHub Issue se o pipeline falhar ──
   notify-failure:
     runs-on: ubuntu-latest
     needs: generate-digest
     if: failure()
+    permissions:
+      issues: write
 
     steps:
       - name: 📥 Checkout repository
@@ -126,12 +128,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 📦 Install dependencies
-        run: pip install requests
-
-      - name: 🚨 Send failure alert
+      - name: 🚨 Create failure issue
         env:
-          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           python scripts/alert_failure.py \
             --run-id "${{ github.run_id }}" \
