@@ -136,16 +136,13 @@ class NewsletterItem:
 # ============================================
 
 def _fetch_feed(url: str, timeout: int = 15, max_retries: int = 3):
-    """Tenta feedparser primeiro, fallback para requests + feedparser.
-    v2.5: Retry com backoff exponencial (2s, 4s, 8s) — consistente com collector.py.
+    """Tenta requests com browser headers primeiro (Substack bloqueia bots),
+    feedparser direto como fallback.
+    v2.5: Retry com backoff exponencial (2s, 4s, 8s).
     """
+    feed = None
     for attempt in range(max_retries):
-        # Attempt 1: feedparser direto
-        feed = feedparser.parse(url)
-        if feed.entries:
-            return feed
-
-        # Attempt 2: requests com headers de browser + feedparser no conteudo
+        # Primary: requests com headers de browser (evita bloqueio Substack)
         try:
             resp = requests.get(url, headers=REQUEST_HEADERS, timeout=timeout)
             if resp.status_code == 200:
@@ -155,13 +152,18 @@ def _fetch_feed(url: str, timeout: int = 15, max_retries: int = 3):
         except Exception as e:
             print(f"  ⚠️ _fetch_feed falhou para {url}: {e}")
 
+        # Fallback: feedparser direto
+        feed = feedparser.parse(url)
+        if feed.entries:
+            return feed
+
         # Backoff before next retry (skip on last attempt)
         if attempt < max_retries - 1:
             wait = 2 ** (attempt + 1)  # 2s, 4s
             print(f"  ⏳ Retry {attempt + 1}/{max_retries} for {url[:60]}... waiting {wait}s")
             time.sleep(wait)
 
-    return feed  # retorna vazio se todos falharam
+    return feed or feedparser.parse('')  # retorna vazio se todos falharam
 
 
 # ============================================
