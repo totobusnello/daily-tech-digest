@@ -58,12 +58,12 @@ O digest de hoje **não foi enviado** porque o pipeline falhou.
         "Content-Type": "application/json"
     }
 
-    # Envia como draft — aparece no painel do Buttondown para revisão
-    # E também envia de verdade para todos subscribers (que é só o Totó por enquanto)
+    # Envia como DRAFT — aparece apenas no painel do Buttondown para revisão
+    # NÃO envia para subscribers (alertas de falha são internos)
     payload = {
         "subject": subject,
         "body": body,
-        "status": "about_to_send"
+        "status": "draft"
     }
 
     print(f"🚨 Enviando alerta de falha...")
