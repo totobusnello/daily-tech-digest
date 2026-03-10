@@ -237,22 +237,25 @@ class RawItem:
 # COLETORES
 # ============================================
 
+_BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
+}
+
+
 def _fetch_feed(feed_url: str, max_retries: int = 3):
     """Fetch RSS feed with retry + exponential backoff.
     v2.5: Retry com backoff (2s, 4s, 8s) antes de desistir.
-    Strategy: feedparser direct → requests fallback, com retry em ambos.
+    Strategy: requests com browser UA primeiro (Substack bloqueia bots),
+    feedparser direto como fallback.
     """
+    feed = None
     for attempt in range(max_retries):
-        # Attempt: feedparser direto
-        feed = feedparser.parse(feed_url)
-        if feed.entries:
-            return feed
-
-        # Fallback: fetch via requests (handles redirects, user-agent blocks)
+        # Primary: requests com browser headers (evita bloqueio Substack)
         try:
             resp = requests.get(
                 feed_url, timeout=15,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; DailyByte/2.5)"},
+                headers=_BROWSER_HEADERS,
                 allow_redirects=True
             )
             if resp.status_code == 200:
@@ -262,13 +265,18 @@ def _fetch_feed(feed_url: str, max_retries: int = 3):
         except Exception:
             pass
 
+        # Fallback: feedparser direto (funciona para feeds que nao bloqueiam)
+        feed = feedparser.parse(feed_url)
+        if feed.entries:
+            return feed
+
         # Backoff before next retry (skip on last attempt)
         if attempt < max_retries - 1:
             wait = 2 ** (attempt + 1)  # 2s, 4s
             print(f"  ⏳ Retry {attempt + 1}/{max_retries} for {feed_url[:60]}... waiting {wait}s")
             time.sleep(wait)
 
-    return feed  # return last result even if empty
+    return feed or feedparser.parse('')  # return empty feed if all failed
 
 
 def _parse_feed_items(feeds: dict, cutoff, source_type_fn=None, max_per_feed: int = 20) -> List[RawItem]:
@@ -477,7 +485,7 @@ def collect_all() -> Dict:
 
     # X/Twitter
     print("🐦 Coletando X...")
-    x_bearer = os.environ.get('X_BEARER_TOKEN', '')
+    x_bearer = os.environ.get('X_BEARER_TOKEN', '').strip()
     x_items = collect_x_posts(x_bearer)
     all_items.extend(x_items)
     print(f"   → {len(x_items)} tweets")
