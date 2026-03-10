@@ -278,10 +278,8 @@ def curate_with_claude(raw_data: dict) -> dict:
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")
 
-    # Use assistant prefill to force JSON output (Claude will continue from '{')
     messages = [
-        {"role": "user", "content": prompt},
-        {"role": "assistant", "content": "{"}
+        {"role": "user", "content": prompt + "\n\nResponda APENAS com o JSON válido. Sem texto antes ou depois."}
     ]
 
     for attempt in range(3):
@@ -300,8 +298,8 @@ def curate_with_claude(raw_data: dict) -> dict:
     else:
         raise RuntimeError("❌ Rate limit persistente após 3 tentativas")
 
-    # Parse response — prepend the '{' from prefill and extract JSON
-    response_text = "{" + response.content[0].text
+    # Parse response
+    response_text = response.content[0].text
     curated = _extract_json(response_text)
 
     # Check if response was truncated (stop_reason)
