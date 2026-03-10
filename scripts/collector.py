@@ -477,7 +477,7 @@ def collect_all() -> Dict:
 
     # X/Twitter
     print("🐦 Coletando X...")
-    x_bearer = os.environ.get('X_BEARER_TOKEN', '')
+    x_bearer = os.environ.get('X_BEARER_TOKEN', '').strip()
     x_items = collect_x_posts(x_bearer)
     all_items.extend(x_items)
     print(f"   → {len(x_items)} tweets")
