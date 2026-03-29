@@ -41,7 +41,8 @@ sender.py             -> Buttondown API -> email HTML
 | `scripts/sender.py` | Renderiza email HTML (template inline CSS, feedback, referral) e envia via Buttondown |
 | `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas, recent_hooks) para informar curadoria |
 | `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
-| `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send) |
+| `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send). Flags: `--preview`, `--skip-collect`, `--skip-process` |
+| `scripts/alert_failure.py` | Cria GitHub Issue quando pipeline falha (via gh CLI no Actions). Notifica owner por email |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
 | `EVOLUTION-PLAN.md` | Historico de versoes e backlog |
@@ -146,7 +147,7 @@ Threshold minimo: 60 pontos
 
 9. **number_of_day** — data point numerico impressionante extraido das noticias (value + context).
 
-10. **Email HTML** — sender.py envia HTML (inline CSS, table-based). Preview mode gera markdown (terminal) + HTML (`/tmp/digest_preview.html`). Template usa Buttondown `{{ unsubscribe_url }}`.
+10. **Email HTML** — sender.py envia HTML (inline CSS, table-based). Preview mode gera markdown (terminal) + HTML (`/tmp/digest_preview.html`). Buttondown adiciona unsubscribe automaticamente; `{{ unsubscribe_url }}` so existe no footer markdown legado.
 
 11. **Feedback loop** — feedback.py roda antes do processor.py (Step 1.5 no run.py). Metricas salvas em `/tmp/digest_feedback.json`. Degradacao graceful se BUTTONDOWN_API_KEY ausente. Inclui `recent_hooks` para evitar subject lines repetidas.
 
@@ -204,6 +205,10 @@ python sender.py --preview
 # Pipeline completo
 python run.py --preview     # sem enviar (salva .md + .html em /tmp/)
 python run.py               # envia de verdade via Buttondown
+
+# Flags de skip (usar dados ja coletados/processados em /tmp/)
+python run.py --skip-collect   # pula coleta, usa /tmp/digest_raw.json existente
+python run.py --skip-process   # pula curadoria, usa /tmp/digest_curated.json existente
 ```
 
 ### Env vars necessarias

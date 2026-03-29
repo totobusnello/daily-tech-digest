@@ -357,15 +357,15 @@
 - [x] Crunchbase News — adicionado v2.3 via RSS
 
 **Formato:**
-- [ ] A/B test de subject lines
-- [ ] Secao de engagement (enquetes, CTA)
+- [x] A/B test de subject lines — emoji prefix + hook dedup (v2.6), tracking pendente
+- [x] Secao de engagement — 1-click feedback + referral CTA (v2.6)
 
 **Curadoria:**
 - [ ] Dedup mais inteligente (embeddings para similaridade semantica)
 - [x] Cache de items ja enviados para evitar repeticao entre dias — implementado v2.3
-- [ ] Feedback loop — rastrear opens/clicks para refinar selecao
+- [x] Feedback loop — rastrear opens/clicks para refinar selecao — implementado v2.4
 
 **Infra:**
-- [x] Monitoring/alertas quando o pipeline falha — implementado v2.3 (email alert)
-- [ ] Retry automatico se um feed der timeout
+- [x] Monitoring/alertas quando o pipeline falha — implementado v2.3 (GitHub Issue alert)
+- [x] Retry automatico se um feed der timeout — implementado v2.5 (backoff exponencial)
 - [ ] Dashboard com metricas (opens, clicks, growth)
