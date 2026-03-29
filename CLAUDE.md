@@ -19,7 +19,7 @@ feedback.py           -> /tmp/digest_feedback.json
   (Buttondown API: opens, clicks, top temas)
        |
 processor.py          -> /tmp/digest_curated.json
-  (Claude Sonnet 4.5 curadoria + feedback metrics)
+  (Claude Sonnet 4.6 curadoria + feedback metrics)
        |
 sender.py             -> Buttondown API -> email HTML
   (template HTML inline CSS, mobile-first)
@@ -76,8 +76,8 @@ sender.py             -> Buttondown API -> email HTML
 
 ## Fontes
 
-### Tier 1 — Primeira Mao (X/Twitter handles)
-@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @aravind_srinivas, @demishassabis, @ethanmollick, etc.
+### Tier 1 — Primeira Mao (51 X/Twitter handles)
+@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @aravind_srinivas, @demishassabis, @ethanmollick, @alliekmiller, @ClementDelworker, @hardmaru, @vkhosla, @benedictevans, etc. Ver `config.yaml` para lista completa.
 
 ### Tier 2 — RSS Feeds
 **Tech:** HN (100+ pts), Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review, The Decoder
@@ -97,8 +97,11 @@ sender.py             -> Buttondown API -> email HTML
 | Import AI | AI policy, research (Jack Clark) | EN |
 | Distrito News Inside VC | VC/startups Brasil | PT-BR |
 
-### YouTube (8 canais)
-Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps
+### Substacks Curados (31 feeds via RSS)
+AI engineering (Latent Space), macro strategy (State of AI), business strategy, fintech, biotech, AI pratico, e-commerce, edtech, sustainability. Ver `config.yaml` para lista completa.
+
+### YouTube (9 canais)
+Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid
 
 ---
 
