@@ -149,7 +149,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
   ],
   "tool_of_day": {{
     "headline": "Nome da ferramenta — o que faz em 5 palavras",
-    "why_it_matters": "2-3 frases sobre por que usar esta ferramenta",
+    "why_it_matters": "1-2 frases INCISIVAS sobre por que usar esta ferramenta",
     "how_to_use": "Prompt ou tutorial copy-paste em 2-3 linhas. Ex: Abra [tool]. Cole: [prompt]. Resultado: [o que esperar].",
     "prompt_of_day": "Um prompt COPY-PASTE ready para ChatGPT/Claude/Gemini ligado à notícia principal ou à ferramenta. Ex: 'Analise o impacto de [notícia] no setor de [setor]. Liste 3 riscos e 2 oportunidades em formato executivo.'",
     "source_url": "URL da ferramenta",
