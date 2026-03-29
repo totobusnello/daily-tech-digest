@@ -439,9 +439,9 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="text-align:center;">
-          <a href="https://buttondown.com/totobusnello/feedback/positive" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44D;</a>
-          <a href="https://buttondown.com/totobusnello/feedback/neutral" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44B;</a>
-          <a href="https://buttondown.com/totobusnello/feedback/negative" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44E;</a>
+          <a href="https://buttondown.com/totobusnello?tag=feedback-positivo" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44D;</a>
+          <a href="https://buttondown.com/totobusnello?tag=feedback-neutro" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44B;</a>
+          <a href="https://buttondown.com/totobusnello?tag=feedback-negativo" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44E;</a>
         </td>
       </tr>
     </table>
