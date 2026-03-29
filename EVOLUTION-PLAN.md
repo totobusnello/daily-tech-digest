@@ -357,7 +357,7 @@
 - [x] Crunchbase News — adicionado v2.3 via RSS
 
 **Formato:**
-- [x] A/B test de subject lines — emoji prefix + hook dedup (v2.6), tracking pendente
+- [ ] A/B test de subject lines (não aprovado — requer segmentação no Buttondown)
 - [x] Secao de engagement — 1-click feedback + referral CTA (v2.6)
 
 **Curadoria:**
