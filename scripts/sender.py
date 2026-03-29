@@ -456,7 +456,7 @@ def generate_email_html(curated: Dict) -> str:
     <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;color:#2d2d2d;">
       &#x1F4E8; Conhece algu&eacute;m que precisa saber disso?
     </span>
-    <br>
+    <br/>
     <a href="https://buttondown.com/totobusnello" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;color:{COLORS["analysis"]};text-decoration:none;">Encaminhe esta edi&ccedil;&atilde;o &#x2197;</a>
   </td>
 </tr>''')

@@ -138,7 +138,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
     {{
       "headline": "Max 12 palavras",
       "tag": "BREAKING|AI|BIG TECH|ENTERPRISE",
-      "why_it_matters": "OBRIGATÓRIO: 2-3 frases de análise explicando POR QUE esta notícia importa para o leitor. Não é resumo — é contexto estratégico e impacto prático.",
+      "why_it_matters": "OBRIGATÓRIO: 1-2 frases INCISIVAS de análise explicando POR QUE esta notícia importa. Direto ao ponto, sem resumo.",
       "source_url": "URL ORIGINAL",
       "source_name": "@handle ou Publicação",
       "source_type": "tweet|article|video|paper|newsletter",
