@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import re
 
 # Import newsletter collector
 try:
@@ -330,10 +329,10 @@ def _parse_feed_items(feeds: dict, cutoff, source_type_fn=None, max_per_feed: in
     """Coleta itens de um dicionário de RSS feeds — v2.6: paralelo com ThreadPool"""
     items = []
     with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {
-            executor.submit(_fetch_single_feed, name, url, cutoff, source_type_fn, max_per_feed): name
+        futures = [
+            executor.submit(_fetch_single_feed, name, url, cutoff, source_type_fn, max_per_feed)
             for name, url in feeds.items()
-        }
+        ]
         for future in as_completed(futures):
             items.extend(future.result())
     return items
