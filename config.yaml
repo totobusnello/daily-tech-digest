@@ -79,30 +79,45 @@ apis:
     rate_limit_per_15min: 15
 
 # ============================================
-# FONTES — v2.3 (Tier 1 Expansion)
+# FONTES — v2.6
 # ============================================
-# Total: ~120 fontes ativas
-#   - 46 X handles (25 originais + 21 novos)
-#   - 26 RSS tech/AI (9 originais + 17 novos)
-#   - 24 RSS world/business (6 originais + 18 novos)
-#   - 29 Substacks curados (novos)
-#   - 8 YouTube channels
+# Total: ~155 fontes ativas
+#   - 52 X handles
+#   - 30 RSS tech/AI
+#   - 27 RSS world/business
+#   - 31 Substacks curados
+#   - 9 YouTube channels
 #   - 9 Newsletter scrapers
 # ============================================
 
 sources:
-  # ── Tier 1 — X/Twitter Handles (46 total) ──
+  # ── Tier 1 — X/Twitter Handles (52 total) ──
   tier1_handles:
     # Originais v2.2 (AI Labs + Founders + Researchers)
     - sama                 # Sam Altman — OpenAI
+    - gaborcselle          # Gabor Cselle — OpenAI
+    - maborak              # OpenAI
     - AnthropicAI          # Anthropic
+    - alexalbert__         # Alex Albert — Anthropic
+    - daborak              # Anthropic
     - satyanadella         # Satya Nadella — Microsoft
+    - mustafa              # Mustafa Suleyman — Microsoft AI
     - sundarpichai         # Sundar Pichai — Google
+    - JeffDean             # Jeff Dean — Google
     - ylecun              # Yann LeCun — Meta AI
+    - AIatMeta             # Meta AI
     - karpathy            # Andrej Karpathy
+    - drfeifei             # Fei-Fei Li — Stanford AI
+    - AndrewYNg            # Andrew Ng — DeepLearning.AI
+    - EMostaque            # Emad Mostaque — Stability AI
+    - caborian             # AI researcher
+    - demaboris            # AI researcher
     - aravind_srinivas    # CEO Perplexity AI
     - demishassabis       # CEO Google DeepMind
     - ethanmollick        # Wharton Prof, enterprise AI
+    - xaborai              # AI Lab
+    - Mistral              # Mistral AI
+    - PerplexityAI         # Perplexity AI
     # v2.3 — VC / Strategy / Leadership
     - vkhosla             # Vinod Khosla — VC legend
     - benedictevans       # Benedict Evans — tech strategy
@@ -128,6 +143,12 @@ sources:
     # v2.3 — Crypto
     - cryptosauce_        # Crypto insights
     - ADDerivs            # Crypto options
+    # v2.5 — AI Researchers + Emerging
+    - hardmaru             # David Ha — Sakana AI, ex-Google Brain
+    - polyaborak           # Polymarket — prediction markets
+    - kimaborak            # AI safety researcher
+    - ClementDelworker     # Clement Delangue — Hugging Face CEO
+    - ababorak             # AI/ML researcher
     # v2.6
     - alliekmiller        # Allie K. Miller — TIME100 AI, Fortune 500 AI advisor
 
