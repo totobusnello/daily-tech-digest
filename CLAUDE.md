@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.4 (HTML Template + Feedback Loop + Optimizations)
+**Versao atual:** v2.6 (Engagement + Subject Dedup + Novas Fontes)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---

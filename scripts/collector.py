@@ -75,6 +75,8 @@ TIER1_HANDLES = [
     "kimaborak",          # AI safety researcher
     "ClementDelworker",   # Clement Delangue — Hugging Face CEO
     "ababorak",          # Andrej Baborak — AI/ML researcher
+    # ── v2.6 Expansion ──
+    "alliekmiller",       # Allie K. Miller — TIME100 AI, Fortune 500 AI advisor
 ]
 
 # RSS Feeds — Tech & AI
@@ -165,6 +167,8 @@ YOUTUBE_CHANNELS = {
     "andrej_karpathy": "UCWN3xxRkmTPmbKwht9FuE5A",
     "ai_daily_brief": "UCKa4vLnfLYnxKZ4fKJttGsA",
     "filipe_deschamps": "UCU5JicSrEM5A63jkJ2QvGYw",
+    # ── v2.6 ──
+    "the_ai_grid": "UCbY9xX3_jW5c2fjlZVBI4cg",
 }
 
 # Substack Feeds — v2.3 (curated newsletters via RSS)
@@ -204,6 +208,9 @@ SUBSTACK_FEEDS = {
     "sub_sustainability_numbers": "https://hannahritchie.substack.com/feed",
     # ── Education / AI in Edu ──
     "sub_toms_ai_edu": "https://tomstakesaitools.substack.com/feed",
+    # ── v2.6 Expansion: AI Engineering + Macro Strategy ──
+    "sub_latent_space": "https://www.latent.space/feed",
+    "sub_state_of_ai": "https://nathanbenaich.substack.com/feed",
 }
 
 # ============================================

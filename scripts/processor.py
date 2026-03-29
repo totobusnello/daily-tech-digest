@@ -53,7 +53,7 @@ REGRAS DE OURO:
 2. PRIMEIRA MÃO - Post do CEO > Artigo sobre o post
 3. IMPACTO PRÁTICO - Priorize notícias que afetam o cotidiano de quem trabalha com tech: lançamentos de produtos, mudanças em plataformas, M&A, regulações. Papers acadêmicos só entram se tiverem aplicação prática imediata.
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
-5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 2-3 frases de análise contextual. Não é resumo — é o "por que um C-level deveria se importar". Este campo é ESSENCIAL para o valor do digest.
+5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 1-2 frases INCISIVAS de análise contextual. Não é resumo — é o "por que um C-level deveria se importar". Seja direto: menos texto, mais impacto. Máximo 2 frases curtas.
 
 LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
 
@@ -73,7 +73,8 @@ LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
 MICRO-SEÇÃO — "number_of_day":
 - UM data point impactante do dia, extraído das notícias analisadas.
 - Formato: {"value": "$600B", "context": "Meta de compute da OpenAI até 2030"}
-- Deve ser um número que impressione e contextualize uma tendência.
+- Deve ser um número que CHOQUE e contextualize uma tendência macro.
+- OUSADIA: prefira valores absolutos grandes ($600B, 10M usuários, 3x mais rápido) sobre percentuais genéricos (15% de crescimento). O número deve fazer o leitor parar e pensar.
 - É um OBJETO SEPARADO no JSON.
 
 TOTAL MÁXIMO: 18 itens (12 principais + 6 quick links)
@@ -191,9 +192,10 @@ LEMBRE-SE:
 {feedback_section}
 
 ⚠️ REGRA CRÍTICA sobre why_it_matters:
-- CADA item (exceto quick_links) DEVE ter "why_it_matters" com 2-3 frases SUBSTANCIAIS
+- CADA item (exceto quick_links) DEVE ter "why_it_matters" com 1-2 frases INCISIVAS
 - NÃO é resumo — é ANÁLISE do impacto e contexto para C-levels
-- NUNCA deixe why_it_matters vazio ou com apenas 1 frase curta
+- Seja DIRETO: menos texto, mais impacto. Máximo 2 frases curtas e densas.
+- NUNCA deixe why_it_matters vazio
 
 ⚠️ REGRA CRÍTICA sobre how_to_use (tool_of_day):
 - DEVE ser PRÁTICO e COPY-PASTE ready

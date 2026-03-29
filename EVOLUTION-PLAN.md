@@ -4,6 +4,42 @@
 
 ## Changelog
 
+### v2.6 — 29/03/2026 (Engagement + Subject Dedup + Novas Fontes)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/feedback.py` | `recent_hooks` — extrai subject hooks dos ultimos 7 dias para evitar repeticao |
+| `scripts/processor.py` | Injeta hooks recentes no prompt com regra de diversificacao. Numero do Dia mais ousado (valores absolutos > percentuais). Why It Matters encurtado para 1-2 frases incisivas |
+| `scripts/sender.py` | +1-click feedback (thumbs up/down no email), +"Leitura: 3 min" no header, +emoji no subject line, +CTA de referral no footer |
+| `scripts/collector.py` | +Latent Space (Substack RSS), +State of AI (Substack RSS), +The AI Grid (YouTube), +@alliekmiller (X handle) |
+| `config.yaml` | +3 Substacks, +1 YouTube, +1 X handle. Total: ~155 fontes |
+| `EVOLUTION-PLAN.md` | v2.6 changelog, backlog atualizado |
+
+**Subject Hook Dedup (fix de titulos repetidos):**
+- feedback.py agora extrai `recent_hooks` dos emails enviados nos ultimos 7 dias
+- processor.py injeta esses hooks no prompt com instrucao explicita: "NAO REPETIR temas similares"
+- Se a noticia mais impactante for do mesmo tema de ontem, curador escolhe o segundo tema
+
+**Engagement (benchmark vs concorrentes):**
+- 1-click feedback: "Esta edicao foi util?" com thumbs up/neutral/down no footer
+- "Leitura: 3 min" badge no header (todos os top competitors fazem isso)
+- Emoji prefix no subject line (The Neuron cresceu rapido com isso, LATAM open rate 30.67%)
+- CTA de referral: "Conhece alguem que precisa saber disso?" com link de compartilhamento
+
+**Novas Fontes (4 adicoes):**
+- Latent Space (swyx) — "AI Engineer newsletter", 200K+ subs, AI infra e agentes
+- State of AI (Nathan Benaich) — Macro mensal, chip policy, enterprise AI spending
+- The AI Grid (YouTube, 374K subs) — Demos praticos de ferramentas AI
+- @alliekmiller (X, 2M followers) — TIME100 AI, Fortune 500 AI advisor
+
+**Prompt Tuning:**
+- Numero do Dia: valores absolutos grandes > percentuais genericos
+- Why It Matters: 1-2 frases incisivas (era 2-3), menos texto mais impacto
+
+---
+
 ### v2.5 — 08/03/2026 (Retry Resilience + Tracking + API Key Local)
 
 **Mudancas implementadas:**
@@ -212,11 +248,12 @@
 
 ## Proximas Evolucoes (Backlog)
 
-### 🗓️ Proximo Domingo (08/03/2026) — Prioridades
+### 🗓️ Proximo Domingo — Prioridades
 
 **7. A/B test de subject lines:**
-- [ ] Implementar variantes de subject no sender.py
-- [ ] Tracking via Buttondown analytics
+- [x] Emoji prefix no subject line (v2.6)
+- [x] Subject hook dedup — evitar repeticao entre dias (v2.6)
+- [ ] Tracking de qual estilo de hook performa melhor (post-v2.6)
 - [ ] Feedback loop informando qual estilo performa melhor
 
 **8. Dashboard de metricas:**
@@ -237,6 +274,29 @@
 - [ ] Novas settings na API (locale, timezone, reply-to, socials) — automatizar config
 - [ ] Reply tracking como metrica adicional de engajamento no feedback loop
 - [ ] OpenAPI spec para archives — explorar para melhor integracao
+
+### ✅ Implementado em v2.6 (29/03/2026)
+
+**Subject Hook Dedup:** ✅
+- [x] Extrair hooks recentes dos ultimos 7 dias via feedback.py
+- [x] Injetar no prompt com instrucao de diversificacao
+- [x] Fix de titulos repetidos (Pentagono/Anthropic em dias consecutivos)
+
+**Engagement Features:** ✅
+- [x] 1-click feedback no email (thumbs up/neutral/down)
+- [x] "Leitura: 3 min" badge no header
+- [x] Emoji prefix no subject line
+- [x] CTA de referral no footer
+
+**Novas Fontes:** ✅
+- [x] Latent Space (AI engineering, Substack RSS)
+- [x] State of AI (macro strategy, Substack RSS)
+- [x] The AI Grid (tool demos, YouTube RSS)
+- [x] @alliekmiller (Fortune 500 AI, X handle)
+
+**Prompt Tuning:** ✅
+- [x] Numero do Dia mais ousado (valores absolutos > percentuais)
+- [x] Why It Matters mais curto (1-2 frases incisivas)
 
 ### ✅ Implementado em v2.5 (08/03/2026)
 
