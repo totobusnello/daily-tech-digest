@@ -11,10 +11,12 @@
 | Arquivo | O que mudou |
 |---------|------------|
 | `scripts/feedback.py` | `recent_hooks` — extrai subject hooks dos ultimos 7 dias para evitar repeticao |
-| `scripts/processor.py` | Injeta hooks recentes no prompt com regra de diversificacao. Numero do Dia mais ousado (valores absolutos > percentuais). Why It Matters encurtado para 1-2 frases incisivas |
-| `scripts/sender.py` | +1-click feedback (thumbs up/down no email), +"Leitura: 3 min" no header, +emoji no subject line, +CTA de referral no footer |
-| `scripts/collector.py` | +Latent Space (Substack RSS), +State of AI (Substack RSS), +The AI Grid (YouTube), +@alliekmiller (X handle) |
-| `config.yaml` | +3 Substacks, +1 YouTube, +1 X handle. Total: ~155 fontes |
+| `scripts/processor.py` | Injeta hooks recentes no prompt com regra de diversificacao. Numero do Dia mais ousado (valores absolutos > percentuais). Why It Matters encurtado para 1-2 frases incisivas (inclui tool_of_day) |
+| `scripts/sender.py` | +1-click feedback (thumbs up/down no email), +"Leitura: 3 min" no header, +emoji no subject line, +CTA de referral no footer. Feedback URLs com ?tag= para tracking via Buttondown analytics |
+| `scripts/collector.py` | +Latent Space (Substack RSS), +State of AI (Substack RSS), +The AI Grid (YouTube), +@alliekmiller (X handle). **Coleta paralela** com ThreadPoolExecutor (10 workers). `raw_data` removido de todos os coletores. YouTube simplificado para reusar `_parse_feed_items`. Dead import `re` removido |
+| `scripts/dedup.py` | Removido dead code (`_title_hash`, `cached_title_hashes`) e imports nao usados (`hashlib`, `Set`) |
+| `config.yaml` | v2.6 header. +2 Substacks, +1 YouTube, +1 X handle. Tier 1 handles sincronizado com collector.py (51 handles). Total: ~155 fontes |
+| `CLAUDE.md` | v2.6 |
 | `EVOLUTION-PLAN.md` | v2.6 changelog, backlog atualizado |
 
 **Subject Hook Dedup (fix de titulos repetidos):**
@@ -37,6 +39,18 @@
 **Prompt Tuning:**
 - Numero do Dia: valores absolutos grandes > percentuais genericos
 - Why It Matters: 1-2 frases incisivas (era 2-3), menos texto mais impacto
+- Consistencia total: tool_of_day alinhado com mesma regra de 1-2 frases
+
+**Performance & Cleanup:**
+- Coleta paralela: `ThreadPoolExecutor(max_workers=10)` — ~155 feeds buscados simultaneamente (era sequencial)
+- YouTube `collect_youtube_feeds()` simplificado para reusar `_parse_feed_items` (eliminou 25 linhas duplicadas)
+- `raw_data` removido de todos os coletores (RSS, YouTube, X) — economia de I/O no `/tmp/digest_raw.json`
+- `to_dict()` faz `pop('raw_data')` como safety net
+- dedup.py: removido `_title_hash()` (nunca chamado), `cached_title_hashes` (nunca populado), imports `hashlib` e `Set`
+- collector.py: removido dead import `re`
+- sender.py: `<br/>` self-closing para compatibilidade email
+- Feedback URLs corrigidas: `?tag=feedback-positivo` (rastreavel pelo Buttondown analytics)
+- config.yaml sincronizado com collector.py (51 X handles, contagens atualizadas)
 
 ---
 
@@ -283,9 +297,9 @@
 - [x] Fix de titulos repetidos (Pentagono/Anthropic em dias consecutivos)
 
 **Engagement Features:** ✅
-- [x] 1-click feedback no email (thumbs up/neutral/down)
+- [x] 1-click feedback no email (thumbs up/neutral/down) com URLs rastreaveis
 - [x] "Leitura: 3 min" badge no header
-- [x] Emoji prefix no subject line
+- [x] Emoji prefix no subject line (🔥)
 - [x] CTA de referral no footer
 
 **Novas Fontes:** ✅
@@ -296,7 +310,15 @@
 
 **Prompt Tuning:** ✅
 - [x] Numero do Dia mais ousado (valores absolutos > percentuais)
-- [x] Why It Matters mais curto (1-2 frases incisivas)
+- [x] Why It Matters mais curto (1-2 frases incisivas, inclui tool_of_day)
+
+**Performance & Cleanup:** ✅
+- [x] Coleta paralela com ThreadPoolExecutor (10 workers)
+- [x] raw_data removido de todos os coletores (RSS, YouTube, X)
+- [x] YouTube simplificado para reusar _parse_feed_items
+- [x] Dead code removido: dedup.py (_title_hash, hashlib, Set), collector.py (import re)
+- [x] sender.py: self-closing br, feedback URLs com ?tag=
+- [x] config.yaml sincronizado com collector.py (51 handles)
 
 ### ✅ Implementado em v2.5 (08/03/2026)
 

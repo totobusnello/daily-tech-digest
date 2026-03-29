@@ -35,11 +35,12 @@ sender.py             -> Buttondown API -> email HTML
 | Arquivo | Funcao |
 |---------|--------|
 | `config.yaml` | Configuracao central: modelo, distribuicao, fontes, temas |
-| `scripts/collector.py` | Coleta RSS, YouTube, X/Twitter, orquestra newsletters |
+| `scripts/collector.py` | Coleta paralela (ThreadPool) de RSS, YouTube, X/Twitter, Substacks, newsletters |
 | `scripts/newsletter_collector.py` | Scraper BeautifulSoup + RSS para 9 newsletters |
 | `scripts/processor.py` | Curadoria com Claude (CURATOR_SYSTEM + CURATOR_USER_TEMPLATE) |
-| `scripts/sender.py` | Renderiza email HTML (template inline CSS) e envia via Buttondown |
-| `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas) para informar curadoria |
+| `scripts/sender.py` | Renderiza email HTML (template inline CSS, feedback, referral) e envia via Buttondown |
+| `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas, recent_hooks) para informar curadoria |
+| `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
 | `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send) |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
@@ -144,7 +145,15 @@ Threshold minimo: 60 pontos
 
 10. **Email HTML** — sender.py envia HTML (inline CSS, table-based). Preview mode gera markdown (terminal) + HTML (`/tmp/digest_preview.html`). Template usa Buttondown `{{ unsubscribe_url }}`.
 
-11. **Feedback loop** — feedback.py roda antes do processor.py (Step 1.5 no run.py). Metricas salvas em `/tmp/digest_feedback.json`. Degradacao graceful se BUTTONDOWN_API_KEY ausente.
+11. **Feedback loop** — feedback.py roda antes do processor.py (Step 1.5 no run.py). Metricas salvas em `/tmp/digest_feedback.json`. Degradacao graceful se BUTTONDOWN_API_KEY ausente. Inclui `recent_hooks` para evitar subject lines repetidas.
+
+12. **Subject hook dedup** — feedback.py extrai hooks dos ultimos 7 dias. processor.py injeta no prompt com regra: "NAO repetir temas similares". Se o tema top for igual ao de ontem, curador escolhe o segundo tema.
+
+13. **Coleta paralela** — collector.py usa `ThreadPoolExecutor(max_workers=10)` para buscar ~155 feeds simultaneamente. `raw_data` removido de todos os coletores para economizar I/O.
+
+14. **Engagement no email** — sender.py inclui: emoji no subject line, "Leitura: 3 min" no header, 1-click feedback (thumbs up/neutral/down com ?tag= para tracking), CTA de referral no footer.
+
+15. **why_it_matters = 1-2 frases** — regra consistente em TODO o prompt (system, user template, tool_of_day, regras criticas). Nunca 2-3.
 
 ---
 
