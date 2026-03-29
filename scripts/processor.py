@@ -265,6 +265,13 @@ def curate_with_claude(raw_data: dict) -> dict:
                 feedback_lines.append("🏆 Temas com mais engajamento:\n" + "\n".join(theme_strs))
             feedback_lines.append("→ Use estes dados para PRIORIZAR temas similares aos que geraram mais engajamento.")
 
+            # v2.6: Hooks recentes para evitar subject lines repetidas
+            recent_hooks = feedback_data.get('recent_hooks', [])
+            if recent_hooks:
+                hook_strs = [f"  - {h.get('date', '?')}: \"{h.get('hook', '')}\"" for h in recent_hooks[:5]]
+                feedback_lines.append("\n⚠️ SUBJECT HOOKS RECENTES (NÃO REPETIR temas similares):\n" + "\n".join(hook_strs))
+                feedback_lines.append("→ O subject_hook de HOJE deve ser sobre um tema DIFERENTE dos listados acima. Diversifique! Se a notícia mais impactante for do mesmo tema, escolha o SEGUNDO tema mais impactante para o hook.")
+
             feedback_section = "\n".join(feedback_lines)
             print(f"📊 Feedback loop ativo: {len(top_themes)} temas top, open rate {agg.get('avg_open_rate', 0)}%")
         else:
