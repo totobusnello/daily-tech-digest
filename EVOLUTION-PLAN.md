@@ -264,24 +264,18 @@
 
 ### 🗓️ Proximo Domingo — Prioridades
 
-**7. A/B test de subject lines:**
-- [x] Emoji prefix no subject line (v2.6)
-- [x] Subject hook dedup — evitar repeticao entre dias (v2.6)
-- [ ] Tracking de qual estilo de hook performa melhor (post-v2.6)
-- [ ] Feedback loop informando qual estilo performa melhor
-
-**8. Dashboard de metricas:**
+**7. Dashboard de metricas:**
 - [ ] HTML dashboard com historico de open/click rates
 - [ ] Growth de subscribers ao longo do tempo
 - [ ] Top temas por engajamento
 
-**9. Retry automatico para feeds com timeout:** ✅ (v2.5)
+**8. Retry automatico para feeds com timeout:** ✅ (v2.5)
 - [x] Implementar retry com backoff no collector.py
 - [x] Implementar retry com backoff no newsletter_collector.py
 - [x] YouTube feeds usando _fetch_feed() com retry
 - [ ] Fallback para cache do dia anterior se feed falhar
 
-**10. Buttondown Feb Updates — Oportunidades (email 03/03/2026):**
+**9. Buttondown Feb Updates — Oportunidades (email 03/03/2026):**
 - [ ] Custom domain para click tracking — configurar dominio proprio para melhorar deliverability
 - [ ] Sort/filter por open e click rates via API — melhorar feedback.py com sorting nativo
 - [ ] Avaliar custom template no Buttondown vs HTML raw no sender.py (trade-off: simplicidade vs controle)
@@ -357,7 +351,6 @@
 - [x] Crunchbase News — adicionado v2.3 via RSS
 
 **Formato:**
-- [ ] A/B test de subject lines (não aprovado — requer segmentação no Buttondown)
 - [x] Secao de engagement — 1-click feedback + referral CTA (v2.6)
 
 **Curadoria:**
