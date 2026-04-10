@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.6 (Engagement + Subject Dedup + Novas Fontes)
+**Versao atual:** v2.7 (Workflow Sexta + Enquete + Why Action + Novas Fontes)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -77,15 +77,15 @@ sender.py             -> Buttondown API -> email HTML
 
 ## Fontes
 
-### Tier 1 — Primeira Mao (51 X/Twitter handles)
-@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @aravind_srinivas, @demishassabis, @ethanmollick, @alliekmiller, @ClementDelworker, @hardmaru, @vkhosla, @benedictevans, etc. Ver `config.yaml` para lista completa.
+### Tier 1 — Primeira Mao (52 X/Twitter handles)
+@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @aravind_srinivas, @demishassabis, @ethanmollick, @alliekmiller, @ClementDelworker, @hardmaru, @vkhosla, @benedictevans, @ziaborak, etc. Ver `config.yaml` para lista completa.
 
 ### Tier 2 — RSS Feeds
 **Tech:** HN (100+ pts), Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review, The Decoder
 **World:** Reuters (world + business), Forbes (business + innovation), BBC (world + business)
 **Research:** arXiv cs.AI
 
-### Tier 3 — Newsletters (9 fontes, via scraping + RSS)
+### Tier 3 — Newsletters (10 fontes, via scraping + RSS)
 | Newsletter | Foco | Idioma |
 |-----------|------|--------|
 | AiDrop | AI, analise profunda | PT-BR |
@@ -97,12 +97,13 @@ sender.py             -> Buttondown API -> email HTML
 | Turing Post | AI strategy, geopolitica | EN |
 | Import AI | AI policy, research (Jack Clark) | EN |
 | Distrito News Inside VC | VC/startups Brasil | PT-BR |
+| The BRIEF | Tech+business diario, tom direto | PT-BR |
 
 ### Substacks Curados (31 feeds via RSS)
 AI engineering (Latent Space), macro strategy (State of AI), business strategy, fintech, biotech, AI pratico, e-commerce, edtech, sustainability. Ver `config.yaml` para lista completa.
 
-### YouTube (9 canais)
-Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid
+### YouTube (10 canais)
+Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov
 
 ---
 
@@ -153,11 +154,15 @@ Threshold minimo: 60 pontos
 
 12. **Subject hook dedup** — feedback.py extrai hooks dos ultimos 7 dias. processor.py injeta no prompt com regra: "NAO repetir temas similares". Se o tema top for igual ao de ontem, curador escolhe o segundo tema.
 
-13. **Coleta paralela** — collector.py usa `ThreadPoolExecutor(max_workers=10)` para buscar ~155 feeds simultaneamente. `raw_data` removido de todos os coletores para economizar I/O.
+13. **Coleta paralela** — collector.py usa `ThreadPoolExecutor(max_workers=10)` para buscar ~163 feeds simultaneamente. `raw_data` removido de todos os coletores para economizar I/O.
 
-14. **Engagement no email** — sender.py inclui: emoji no subject line, "Leitura: 3 min" no header, 1-click feedback (thumbs up/neutral/down com ?tag= para tracking), CTA de referral no footer.
+14. **Engagement no email** — sender.py inclui: emoji no subject line, "Leitura: 3 min" no header, 1-click feedback (thumbs up/neutral/down com ?tag= para tracking), CTA de referral no footer, enquete semanal (sextas).
 
-15. **why_it_matters = 1-2 frases** — regra consistente em TODO o prompt (system, user template, tool_of_day, regras criticas). Nunca 2-3.
+15. **why_it_matters = 1-2 frases PRESCRITIVAS** — regra consistente em TODO o prompt. Deve responder: "O que o CEO/CFO/CMO deve FAZER com essa informacao?" Acao > descricao.
+
+16. **Workflow da Semana (sextas)** — processor.py detecta sexta-feira e pede ao curador um `weekly_workflow` com 3-4 steps praticos. sender.py renderiza apos Tool do Dia. Campo opcional no JSON.
+
+17. **Enquete semanal (sextas)** — sender.py mostra enquete com 4 opcoes (AI Tools, Estrategia, Brasil, Deep Dive) usando ?tag= para tracking. So aparece as sextas.
 
 ---
 

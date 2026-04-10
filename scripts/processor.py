@@ -53,7 +53,7 @@ REGRAS DE OURO:
 2. PRIMEIRA MÃO - Post do CEO > Artigo sobre o post
 3. IMPACTO PRÁTICO - Priorize notícias que afetam o cotidiano de quem trabalha com tech: lançamentos de produtos, mudanças em plataformas, M&A, regulações. Papers acadêmicos só entram se tiverem aplicação prática imediata.
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
-5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 1-2 frases INCISIVAS de análise contextual. Não é resumo — é o "por que um C-level deveria se importar". Seja direto: menos texto, mais impacto. Máximo 2 frases curtas.
+5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 1-2 frases INCISIVAS e PRESCRITIVAS. Não é resumo — é "o que um C-level deve FAZER com essa informação". Responda: qual decisão, ação ou conversa isso deve disparar? Ex: "CFOs: revisem orçamento de cloud para Q3" > "Preços de cloud estão subindo". Máximo 2 frases curtas e densas.
 
 LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
 
@@ -108,7 +108,13 @@ Heat Score mínimo para entrar: 60 pontos
 - Todo item DEVE ter o campo "source_url" preenchido com a URL ORIGINAL do artigo/post
 - COPIE a URL exatamente como veio nos dados de entrada (campo "url")
 - NUNCA deixe source_url vazio, nulo ou inventado
-- Se não tiver URL, NÃO inclua o item"""
+- Se não tiver URL, NÃO inclua o item
+
+🎯 REGRA sobre why_it_matters (AÇÃO para C-level):
+- O why_it_matters deve responder: "O que o CEO/CFO/CMO deve FAZER com essa informação?"
+- NÃO seja descritivo — seja PRESCRITIVO. Qual decisão, ação ou conversa isso deve disparar?
+- Ex: "CFOs devem reavaliar orçamento de cloud" > "Preços de cloud estão subindo"
+- Ex: "CMOs: testem essa ferramenta na campanha de Q2" > "Nova ferramenta de marketing lançada" """
 
 
 CURATOR_USER_TEMPLATE = """Analise estes {total} itens coletados e selecione no MÁXIMO 18 para o digest de hoje.
@@ -192,8 +198,9 @@ LEMBRE-SE:
 {feedback_section}
 
 ⚠️ REGRA CRÍTICA sobre why_it_matters:
-- CADA item (exceto quick_links) DEVE ter "why_it_matters" com 1-2 frases INCISIVAS
-- NÃO é resumo — é ANÁLISE do impacto e contexto para C-levels
+- CADA item (exceto quick_links) DEVE ter "why_it_matters" com 1-2 frases INCISIVAS e PRESCRITIVAS
+- NÃO é resumo — é AÇÃO: "O que o CEO/CFO/CMO deve FAZER com essa informação?"
+- Ex: "CTOs: avaliem migração para esta API antes do Q3" > "Nova API foi lançada"
 - Seja DIRETO: menos texto, mais impacto. Máximo 2 frases curtas e densas.
 - NUNCA deixe why_it_matters vazio
 
@@ -279,10 +286,24 @@ def curate_with_claude(raw_data: dict) -> dict:
         else:
             print("📊 Feedback loop: sem dados disponíveis (primeiro run ou API indisponível)")
 
+    # v2.7: Workflow da Semana (sextas-feiras)
+    is_friday = datetime.utcnow().weekday() == 4  # Monday=0, Friday=4
+    workflow_section = ""
+    if is_friday:
+        workflow_section = """
+
+🗓️ HOJE É SEXTA — INCLUA O "WORKFLOW DA SEMANA":
+- Adicione o campo "weekly_workflow" no JSON com um mini-workflow prático de 3-4 steps
+- Tema: baseado na notícia mais impactante ou na ferramenta do dia
+- Formato: {"title": "Título do workflow", "steps": ["Step 1: ...", "Step 2: ...", "Step 3: ...", "Step 4: ..."]}
+- Cada step deve ser ACIONÁVEL e copy-paste ready para um C-level implementar na empresa
+- Ex: {"title": "Automatize relatórios com Claude", "steps": ["1. Exporte seu dashboard em CSV", "2. Abra Claude e cole: 'Analise este CSV...'", "3. Peça: 'Gere um resumo executivo...'", "4. Configure agendamento semanal no Zapier"]}
+"""
+
     prompt = CURATOR_USER_TEMPLATE.format(
         total=len(slim_items),
         items=json.dumps(slim_items[:80], ensure_ascii=False, indent=2),  # v2.3: 80 items (stripped raw_data)
-        feedback_section=feedback_section
+        feedback_section=feedback_section + workflow_section
     )
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")

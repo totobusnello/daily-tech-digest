@@ -83,6 +83,14 @@ NEWSLETTER_SOURCES = {
         "category_hint": "saas_enterprise",
         "description": "Brazil VC/startup ecosystem. Funding rounds, valuations, exits. PT-BR."
     },
+    # ── v2.7 ──
+    "the_brief": {
+        "name": "The BRIEF",
+        "base_url": "https://thebrief-newsletter.beehiiv.com",
+        "language": "pt-br",
+        "category_hint": "world",
+        "description": "Daily Brazilian tech+business newsletter. Direct tone, 7am delivery."
+    },
 }
 
 # Headers to mimic a browser request

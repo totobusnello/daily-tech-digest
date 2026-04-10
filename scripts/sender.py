@@ -338,6 +338,31 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())
 
+    # ── 4b. WORKFLOW DA SEMANA (sextas) ────────
+    workflow = curated.get('weekly_workflow', {})
+    if workflow and workflow.get('title'):
+        wf_title = _esc(workflow.get('title', ''))
+        wf_steps = workflow.get('steps', [])
+        if wf_steps:
+            body_rows.append(_section_header('&#x1F4CB;', 'WORKFLOW DA SEMANA', COLORS["tool"]))
+            body_rows.append(_card_start())
+            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:12px;">
+          {wf_title}
+        </td>
+      </tr>''')
+            for step in wf_steps:
+                body_rows.append(f'''      <tr>
+        <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;padding-bottom:8px;padding-left:8px;border-left:3px solid {COLORS["tool"]};">
+          {_esc(str(step))}
+        </td>
+      </tr>''')
+            body_rows.append('''    </table>''')
+            body_rows.append(_card_end())
+            body_rows.append(_card_bottom())
+            body_rows.append(_spacer())
+
     # ── 5. ANÁLISE DO DIA ───────────────────────
     analysis = curated.get('daily_analysis', '')
     if analysis:
@@ -427,6 +452,34 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_card_end())
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())
+
+    # ── v2.7: ENQUETE SEMANAL (sextas) ──────────
+    if datetime.utcnow().weekday() == 4:  # Friday
+        body_rows.append(f'''<tr>
+  <td style="background-color:#fffbeb;padding:20px;text-align:center;border:1px solid {COLORS["tool"]};border-radius:8px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="text-align:center;padding-bottom:10px;">
+          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#1a1a2e;">&#x1F4CA; Enquete da Semana</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align:center;padding-bottom:12px;">
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;">Qual tema voc&ecirc; quer ver mais no Daily Byte?</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align:center;">
+          <a href="https://buttondown.com/totobusnello?tag=tema-ai-tools" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["tool"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">AI Tools</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-estrategia" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["analysis"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Estrat&eacute;gia</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-brasil" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["saas"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Brasil</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-deep-dive" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["world"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Deep Dive</a>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>''')
+        body_rows.append(_spacer(12))
 
     # ── v2.6: 1-CLICK FEEDBACK ─────────────────
     body_rows.append(f'''<tr>

@@ -77,6 +77,8 @@ TIER1_HANDLES = [
     "ababorak",          # Andrej Baborak — AI/ML researcher
     # ── v2.6 Expansion ──
     "alliekmiller",       # Allie K. Miller — TIME100 AI, Fortune 500 AI advisor
+    # ── v2.7 Expansion ──
+    "ziaborak",           # Zia Burak — AI policy, regulation, geopolitics
 ]
 
 # RSS Feeds — Tech & AI
@@ -169,6 +171,8 @@ YOUTUBE_CHANNELS = {
     "filipe_deschamps": "UCU5JicSrEM5A63jkJ2QvGYw",
     # ── v2.6 ──
     "the_ai_grid": "UCbY9xX3_jW5c2fjlZVBI4cg",
+    # ── v2.7 ──
+    "sabrina_ramonov": "UCorkSRA1cR9v5MiTaigpLtw",
 }
 
 # Substack Feeds — v2.3 (curated newsletters via RSS)

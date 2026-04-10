@@ -4,6 +4,44 @@
 
 ## Changelog
 
+### v2.7 — 10/04/2026 (Workflow Sexta + Enquete + Why Action + Novas Fontes)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | Why It Matters prescritivo ("O que o C-level deve FAZER?"). Workflow da Semana: sextas geram campo `weekly_workflow` com 3-4 steps praticos. Regra reforçada em CURATOR_SYSTEM + USER_TEMPLATE |
+| `scripts/sender.py` | +Seção Workflow da Semana (renderiza `weekly_workflow` após Tool do Dia). +Enquete semanal (sextas): 4 opções com ?tag= tracking (AI Tools, Estratégia, Brasil, Deep Dive) |
+| `scripts/collector.py` | +Sabrina Ramonov (YouTube, 1.4M+ followers, AI agents/automação). +@ziaborak (X, AI policy/regulação) |
+| `scripts/newsletter_collector.py` | +The BRIEF (PT-BR, Beehiiv, tech+negócios diário) |
+| `config.yaml` | v2.7 header. +1 newsletter, +1 YouTube, +1 X handle. Total: ~163 fontes |
+| `CLAUDE.md` | v2.7 |
+| `EVOLUTION-PLAN.md` | v2.7 changelog |
+
+**Novas Fontes (3 adicoes):**
+- The BRIEF (PT-BR, Beehiiv) — newsletter brasileira de tech+negócios, tom direto, envio diário 7h
+- Sabrina Ramonov (YouTube, 1.4M+ followers) — AI agents, automação, workflows para negócios. 5 vídeos/semana
+- @ziaborak (X) — AI policy, regulação, geopolítica de AI. Complementa @benedictevans
+
+**Workflow da Semana (sextas):**
+- processor.py detecta sexta-feira (weekday == 4) e injeta instrução extra no prompt
+- Curador gera `weekly_workflow`: {title, steps[3-4]} com passos copy-paste para C-levels
+- sender.py renderiza como seção separada entre Tool do Dia e Análise do Dia
+- Inspirado no "AI Skill of the Day" do The Neuron (675K+ subs)
+
+**Enquete Semanal (sextas):**
+- sender.py mostra enquete com 4 opções: AI Tools, Estratégia, Brasil, Deep Dive
+- Cada opção usa ?tag=tema-X para tracking no Buttondown analytics
+- Inspirado no "Rundown Roundtable" do The Rundown AI (2M+ subs)
+
+**Why It Matters Prescritivo:**
+- Regra reforçada em 3 locais: CURATOR_SYSTEM (regra 5), USER_TEMPLATE (regra crítica), e nova seção final
+- Agora exige: "O que o CEO/CFO/CMO deve FAZER?" em vez de descrição passiva
+- Ex: "CFOs: revisem orçamento de cloud para Q3" > "Preços de cloud estão subindo"
+- Benchmark: The Rundown AI e Superhuman AI já fazem isso com "Why it matters for your business"
+
+---
+
 ### v2.6 — 29/03/2026 (Engagement + Subject Dedup + Novas Fontes)
 
 **Mudancas implementadas:**
