@@ -4,6 +4,94 @@
 
 ## Changelog
 
+### v2.7 — 10/04/2026 (Workflow Sexta + Enquete + Why Action + Novas Fontes)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | Why It Matters prescritivo ("O que o C-level deve FAZER?"). Workflow da Semana: sextas geram campo `weekly_workflow` com 3-4 steps praticos. Regra reforçada em CURATOR_SYSTEM + USER_TEMPLATE |
+| `scripts/sender.py` | +Seção Workflow da Semana (renderiza `weekly_workflow` após Tool do Dia). +Enquete semanal (sextas): 4 opções com ?tag= tracking (AI Tools, Estratégia, Brasil, Deep Dive) |
+| `scripts/collector.py` | +Sabrina Ramonov (YouTube, 1.4M+ followers, AI agents/automação). +@ziaborak (X, AI policy/regulação) |
+| `scripts/newsletter_collector.py` | +The BRIEF (PT-BR, Beehiiv, tech+negócios diário) |
+| `config.yaml` | v2.7 header. +1 newsletter, +1 YouTube, +1 X handle. Total: ~163 fontes |
+| `CLAUDE.md` | v2.7 |
+| `EVOLUTION-PLAN.md` | v2.7 changelog |
+
+**Novas Fontes (3 adicoes):**
+- The BRIEF (PT-BR, Beehiiv) — newsletter brasileira de tech+negócios, tom direto, envio diário 7h
+- Sabrina Ramonov (YouTube, 1.4M+ followers) — AI agents, automação, workflows para negócios. 5 vídeos/semana
+- @ziaborak (X) — AI policy, regulação, geopolítica de AI. Complementa @benedictevans
+
+**Workflow da Semana (sextas):**
+- processor.py detecta sexta-feira (weekday == 4) e injeta instrução extra no prompt
+- Curador gera `weekly_workflow`: {title, steps[3-4]} com passos copy-paste para C-levels
+- sender.py renderiza como seção separada entre Tool do Dia e Análise do Dia
+- Inspirado no "AI Skill of the Day" do The Neuron (675K+ subs)
+
+**Enquete Semanal (sextas):**
+- sender.py mostra enquete com 4 opções: AI Tools, Estratégia, Brasil, Deep Dive
+- Cada opção usa ?tag=tema-X para tracking no Buttondown analytics
+- Inspirado no "Rundown Roundtable" do The Rundown AI (2M+ subs)
+
+**Why It Matters Prescritivo:**
+- Regra reforçada em 3 locais: CURATOR_SYSTEM (regra 5), USER_TEMPLATE (regra crítica), e nova seção final
+- Agora exige: "O que o CEO/CFO/CMO deve FAZER?" em vez de descrição passiva
+- Ex: "CFOs: revisem orçamento de cloud para Q3" > "Preços de cloud estão subindo"
+- Benchmark: The Rundown AI e Superhuman AI já fazem isso com "Why it matters for your business"
+
+---
+
+### v2.6 — 29/03/2026 (Engagement + Subject Dedup + Novas Fontes)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/feedback.py` | `recent_hooks` — extrai subject hooks dos ultimos 7 dias para evitar repeticao |
+| `scripts/processor.py` | Injeta hooks recentes no prompt com regra de diversificacao. Numero do Dia mais ousado (valores absolutos > percentuais). Why It Matters encurtado para 1-2 frases incisivas (inclui tool_of_day) |
+| `scripts/sender.py` | +1-click feedback (thumbs up/down no email), +"Leitura: 3 min" no header, +emoji no subject line, +CTA de referral no footer. Feedback URLs com ?tag= para tracking via Buttondown analytics |
+| `scripts/collector.py` | +Latent Space (Substack RSS), +State of AI (Substack RSS), +The AI Grid (YouTube), +@alliekmiller (X handle). **Coleta paralela** com ThreadPoolExecutor (10 workers). `raw_data` removido de todos os coletores. YouTube simplificado para reusar `_parse_feed_items`. Dead import `re` removido |
+| `scripts/dedup.py` | Removido dead code (`_title_hash`, `cached_title_hashes`) e imports nao usados (`hashlib`, `Set`) |
+| `config.yaml` | v2.6 header. +2 Substacks, +1 YouTube, +1 X handle. Tier 1 handles sincronizado com collector.py (51 handles). Total: ~155 fontes |
+| `CLAUDE.md` | v2.6 |
+| `EVOLUTION-PLAN.md` | v2.6 changelog, backlog atualizado |
+
+**Subject Hook Dedup (fix de titulos repetidos):**
+- feedback.py agora extrai `recent_hooks` dos emails enviados nos ultimos 7 dias
+- processor.py injeta esses hooks no prompt com instrucao explicita: "NAO REPETIR temas similares"
+- Se a noticia mais impactante for do mesmo tema de ontem, curador escolhe o segundo tema
+
+**Engagement (benchmark vs concorrentes):**
+- 1-click feedback: "Esta edicao foi util?" com thumbs up/neutral/down no footer
+- "Leitura: 3 min" badge no header (todos os top competitors fazem isso)
+- Emoji prefix no subject line (The Neuron cresceu rapido com isso, LATAM open rate 30.67%)
+- CTA de referral: "Conhece alguem que precisa saber disso?" com link de compartilhamento
+
+**Novas Fontes (4 adicoes):**
+- Latent Space (swyx) — "AI Engineer newsletter", 200K+ subs, AI infra e agentes
+- State of AI (Nathan Benaich) — Macro mensal, chip policy, enterprise AI spending
+- The AI Grid (YouTube, 374K subs) — Demos praticos de ferramentas AI
+- @alliekmiller (X, 2M followers) — TIME100 AI, Fortune 500 AI advisor
+
+**Prompt Tuning:**
+- Numero do Dia: valores absolutos grandes > percentuais genericos
+- Why It Matters: 1-2 frases incisivas (era 2-3), menos texto mais impacto
+- Consistencia total: tool_of_day alinhado com mesma regra de 1-2 frases
+
+**Performance & Cleanup:**
+- Coleta paralela: `ThreadPoolExecutor(max_workers=10)` — ~155 feeds buscados simultaneamente (era sequencial)
+- YouTube `collect_youtube_feeds()` simplificado para reusar `_parse_feed_items` (eliminou 25 linhas duplicadas)
+- `raw_data` removido de todos os coletores (RSS, YouTube, X) — economia de I/O no `/tmp/digest_raw.json`
+- `to_dict()` faz `pop('raw_data')` como safety net
+- dedup.py: removido `_title_hash()` (nunca chamado), `cached_title_hashes` (nunca populado), imports `hashlib` e `Set`
+- collector.py: removido dead import `re`
+- sender.py: `<br/>` self-closing para compatibilidade email
+- Feedback URLs corrigidas: `?tag=feedback-positivo` (rastreavel pelo Buttondown analytics)
+- config.yaml sincronizado com collector.py (51 X handles, contagens atualizadas)
+
+---
+
 ### v2.5 — 08/03/2026 (Retry Resilience + Tracking + API Key Local)
 
 **Mudancas implementadas:**
@@ -212,31 +300,57 @@
 
 ## Proximas Evolucoes (Backlog)
 
-### 🗓️ Proximo Domingo (08/03/2026) — Prioridades
+### 🗓️ Proximo Domingo — Prioridades
 
-**7. A/B test de subject lines:**
-- [ ] Implementar variantes de subject no sender.py
-- [ ] Tracking via Buttondown analytics
-- [ ] Feedback loop informando qual estilo performa melhor
-
-**8. Dashboard de metricas:**
+**7. Dashboard de metricas:**
 - [ ] HTML dashboard com historico de open/click rates
 - [ ] Growth de subscribers ao longo do tempo
 - [ ] Top temas por engajamento
 
-**9. Retry automatico para feeds com timeout:** ✅ (v2.5)
+**8. Retry automatico para feeds com timeout:** ✅ (v2.5)
 - [x] Implementar retry com backoff no collector.py
 - [x] Implementar retry com backoff no newsletter_collector.py
 - [x] YouTube feeds usando _fetch_feed() com retry
 - [ ] Fallback para cache do dia anterior se feed falhar
 
-**10. Buttondown Feb Updates — Oportunidades (email 03/03/2026):**
+**9. Buttondown Feb Updates — Oportunidades (email 03/03/2026):**
 - [ ] Custom domain para click tracking — configurar dominio proprio para melhorar deliverability
 - [ ] Sort/filter por open e click rates via API — melhorar feedback.py com sorting nativo
 - [ ] Avaliar custom template no Buttondown vs HTML raw no sender.py (trade-off: simplicidade vs controle)
 - [ ] Novas settings na API (locale, timezone, reply-to, socials) — automatizar config
 - [ ] Reply tracking como metrica adicional de engajamento no feedback loop
 - [ ] OpenAPI spec para archives — explorar para melhor integracao
+
+### ✅ Implementado em v2.6 (29/03/2026)
+
+**Subject Hook Dedup:** ✅
+- [x] Extrair hooks recentes dos ultimos 7 dias via feedback.py
+- [x] Injetar no prompt com instrucao de diversificacao
+- [x] Fix de titulos repetidos (Pentagono/Anthropic em dias consecutivos)
+
+**Engagement Features:** ✅
+- [x] 1-click feedback no email (thumbs up/neutral/down) com URLs rastreaveis
+- [x] "Leitura: 3 min" badge no header
+- [x] Emoji prefix no subject line (🔥)
+- [x] CTA de referral no footer
+
+**Novas Fontes:** ✅
+- [x] Latent Space (AI engineering, Substack RSS)
+- [x] State of AI (macro strategy, Substack RSS)
+- [x] The AI Grid (tool demos, YouTube RSS)
+- [x] @alliekmiller (Fortune 500 AI, X handle)
+
+**Prompt Tuning:** ✅
+- [x] Numero do Dia mais ousado (valores absolutos > percentuais)
+- [x] Why It Matters mais curto (1-2 frases incisivas, inclui tool_of_day)
+
+**Performance & Cleanup:** ✅
+- [x] Coleta paralela com ThreadPoolExecutor (10 workers)
+- [x] raw_data removido de todos os coletores (RSS, YouTube, X)
+- [x] YouTube simplificado para reusar _parse_feed_items
+- [x] Dead code removido: dedup.py (_title_hash, hashlib, Set), collector.py (import re)
+- [x] sender.py: self-closing br, feedback URLs com ?tag=
+- [x] config.yaml sincronizado com collector.py (51 handles)
 
 ### ✅ Implementado em v2.5 (08/03/2026)
 
@@ -275,15 +389,14 @@
 - [x] Crunchbase News — adicionado v2.3 via RSS
 
 **Formato:**
-- [ ] A/B test de subject lines
-- [ ] Secao de engagement (enquetes, CTA)
+- [x] Secao de engagement — 1-click feedback + referral CTA (v2.6)
 
 **Curadoria:**
 - [ ] Dedup mais inteligente (embeddings para similaridade semantica)
 - [x] Cache de items ja enviados para evitar repeticao entre dias — implementado v2.3
-- [ ] Feedback loop — rastrear opens/clicks para refinar selecao
+- [x] Feedback loop — rastrear opens/clicks para refinar selecao — implementado v2.4
 
 **Infra:**
-- [x] Monitoring/alertas quando o pipeline falha — implementado v2.3 (email alert)
-- [ ] Retry automatico se um feed der timeout
+- [x] Monitoring/alertas quando o pipeline falha — implementado v2.3 (GitHub Issue alert)
+- [x] Retry automatico se um feed der timeout — implementado v2.5 (backoff exponencial)
 - [ ] Dashboard com metricas (opens, clicks, growth)

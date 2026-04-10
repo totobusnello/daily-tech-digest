@@ -53,7 +53,7 @@ REGRAS DE OURO:
 2. PRIMEIRA MÃO - Post do CEO > Artigo sobre o post
 3. IMPACTO PRÁTICO - Priorize notícias que afetam o cotidiano de quem trabalha com tech: lançamentos de produtos, mudanças em plataformas, M&A, regulações. Papers acadêmicos só entram se tiverem aplicação prática imediata.
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
-5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 2-3 frases de análise contextual. Não é resumo — é o "por que um C-level deveria se importar". Este campo é ESSENCIAL para o valor do digest.
+5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 1-2 frases INCISIVAS e PRESCRITIVAS. Não é resumo — é "o que um C-level deve FAZER com essa informação". Responda: qual decisão, ação ou conversa isso deve disparar? Ex: "CFOs: revisem orçamento de cloud para Q3" > "Preços de cloud estão subindo". Máximo 2 frases curtas e densas.
 
 LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
 
@@ -73,7 +73,8 @@ LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
 MICRO-SEÇÃO — "number_of_day":
 - UM data point impactante do dia, extraído das notícias analisadas.
 - Formato: {"value": "$600B", "context": "Meta de compute da OpenAI até 2030"}
-- Deve ser um número que impressione e contextualize uma tendência.
+- Deve ser um número que CHOQUE e contextualize uma tendência macro.
+- OUSADIA: prefira valores absolutos grandes ($600B, 10M usuários, 3x mais rápido) sobre percentuais genéricos (15% de crescimento). O número deve fazer o leitor parar e pensar.
 - É um OBJETO SEPARADO no JSON.
 
 TOTAL MÁXIMO: 18 itens (12 principais + 6 quick links)
@@ -107,7 +108,13 @@ Heat Score mínimo para entrar: 60 pontos
 - Todo item DEVE ter o campo "source_url" preenchido com a URL ORIGINAL do artigo/post
 - COPIE a URL exatamente como veio nos dados de entrada (campo "url")
 - NUNCA deixe source_url vazio, nulo ou inventado
-- Se não tiver URL, NÃO inclua o item"""
+- Se não tiver URL, NÃO inclua o item
+
+🎯 REGRA sobre why_it_matters (AÇÃO para C-level):
+- O why_it_matters deve responder: "O que o CEO/CFO/CMO deve FAZER com essa informação?"
+- NÃO seja descritivo — seja PRESCRITIVO. Qual decisão, ação ou conversa isso deve disparar?
+- Ex: "CFOs devem reavaliar orçamento de cloud" > "Preços de cloud estão subindo"
+- Ex: "CMOs: testem essa ferramenta na campanha de Q2" > "Nova ferramenta de marketing lançada" """
 
 
 CURATOR_USER_TEMPLATE = """Analise estes {total} itens coletados e selecione no MÁXIMO 18 para o digest de hoje.
@@ -137,7 +144,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
     {{
       "headline": "Max 12 palavras",
       "tag": "BREAKING|AI|BIG TECH|ENTERPRISE",
-      "why_it_matters": "OBRIGATÓRIO: 2-3 frases de análise explicando POR QUE esta notícia importa para o leitor. Não é resumo — é contexto estratégico e impacto prático.",
+      "why_it_matters": "OBRIGATÓRIO: 1-2 frases INCISIVAS de análise explicando POR QUE esta notícia importa. Direto ao ponto, sem resumo.",
       "source_url": "URL ORIGINAL",
       "source_name": "@handle ou Publicação",
       "source_type": "tweet|article|video|paper|newsletter",
@@ -148,7 +155,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
   ],
   "tool_of_day": {{
     "headline": "Nome da ferramenta — o que faz em 5 palavras",
-    "why_it_matters": "2-3 frases sobre por que usar esta ferramenta",
+    "why_it_matters": "1-2 frases INCISIVAS sobre por que usar esta ferramenta",
     "how_to_use": "Prompt ou tutorial copy-paste em 2-3 linhas. Ex: Abra [tool]. Cole: [prompt]. Resultado: [o que esperar].",
     "prompt_of_day": "Um prompt COPY-PASTE ready para ChatGPT/Claude/Gemini ligado à notícia principal ou à ferramenta. Ex: 'Analise o impacto de [notícia] no setor de [setor]. Liste 3 riscos e 2 oportunidades em formato executivo.'",
     "source_url": "URL da ferramenta",
@@ -191,9 +198,11 @@ LEMBRE-SE:
 {feedback_section}
 
 ⚠️ REGRA CRÍTICA sobre why_it_matters:
-- CADA item (exceto quick_links) DEVE ter "why_it_matters" com 2-3 frases SUBSTANCIAIS
-- NÃO é resumo — é ANÁLISE do impacto e contexto para C-levels
-- NUNCA deixe why_it_matters vazio ou com apenas 1 frase curta
+- CADA item (exceto quick_links) DEVE ter "why_it_matters" com 1-2 frases INCISIVAS e PRESCRITIVAS
+- NÃO é resumo — é AÇÃO: "O que o CEO/CFO/CMO deve FAZER com essa informação?"
+- Ex: "CTOs: avaliem migração para esta API antes do Q3" > "Nova API foi lançada"
+- Seja DIRETO: menos texto, mais impacto. Máximo 2 frases curtas e densas.
+- NUNCA deixe why_it_matters vazio
 
 ⚠️ REGRA CRÍTICA sobre how_to_use (tool_of_day):
 - DEVE ser PRÁTICO e COPY-PASTE ready
@@ -265,15 +274,36 @@ def curate_with_claude(raw_data: dict) -> dict:
                 feedback_lines.append("🏆 Temas com mais engajamento:\n" + "\n".join(theme_strs))
             feedback_lines.append("→ Use estes dados para PRIORIZAR temas similares aos que geraram mais engajamento.")
 
+            # v2.6: Hooks recentes para evitar subject lines repetidas
+            recent_hooks = feedback_data.get('recent_hooks', [])
+            if recent_hooks:
+                hook_strs = [f"  - {h.get('date', '?')}: \"{h.get('hook', '')}\"" for h in recent_hooks[:5]]
+                feedback_lines.append("\n⚠️ SUBJECT HOOKS RECENTES (NÃO REPETIR temas similares):\n" + "\n".join(hook_strs))
+                feedback_lines.append("→ O subject_hook de HOJE deve ser sobre um tema DIFERENTE dos listados acima. Diversifique! Se a notícia mais impactante for do mesmo tema, escolha o SEGUNDO tema mais impactante para o hook.")
+
             feedback_section = "\n".join(feedback_lines)
             print(f"📊 Feedback loop ativo: {len(top_themes)} temas top, open rate {agg.get('avg_open_rate', 0)}%")
         else:
             print("📊 Feedback loop: sem dados disponíveis (primeiro run ou API indisponível)")
 
+    # v2.7: Workflow da Semana (sextas-feiras)
+    is_friday = datetime.utcnow().weekday() == 4  # Monday=0, Friday=4
+    workflow_section = ""
+    if is_friday:
+        workflow_section = """
+
+🗓️ HOJE É SEXTA — INCLUA O "WORKFLOW DA SEMANA":
+- Adicione o campo "weekly_workflow" no JSON com um mini-workflow prático de 3-4 steps
+- Tema: baseado na notícia mais impactante ou na ferramenta do dia
+- Formato: {"title": "Título do workflow", "steps": ["Step 1: ...", "Step 2: ...", "Step 3: ...", "Step 4: ..."]}
+- Cada step deve ser ACIONÁVEL e copy-paste ready para um C-level implementar na empresa
+- Ex: {"title": "Automatize relatórios com Claude", "steps": ["1. Exporte seu dashboard em CSV", "2. Abra Claude e cole: 'Analise este CSV...'", "3. Peça: 'Gere um resumo executivo...'", "4. Configure agendamento semanal no Zapier"]}
+"""
+
     prompt = CURATOR_USER_TEMPLATE.format(
         total=len(slim_items),
         items=json.dumps(slim_items[:80], ensure_ascii=False, indent=2),  # v2.3: 80 items (stripped raw_data)
-        feedback_section=feedback_section
+        feedback_section=feedback_section + workflow_section
     )
 
     print(f"🤖 Enviando {len(items)} itens para Claude curar...")

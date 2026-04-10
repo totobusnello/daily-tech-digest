@@ -180,6 +180,7 @@ def generate_email_html(curated: Dict) -> str:
     body_rows.append(f'''<tr>
   <td style="background-color:{COLORS["dark"]};padding:0 20px 16px 20px;text-align:center;border-radius:0 0 8px 8px;">
     <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;">{date_str}</span>
+    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: 3 min</span>
   </td>
 </tr>''')
 
@@ -337,6 +338,31 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())
 
+    # ── 4b. WORKFLOW DA SEMANA (sextas) ────────
+    workflow = curated.get('weekly_workflow', {})
+    if workflow and workflow.get('title'):
+        wf_title = _esc(workflow.get('title', ''))
+        wf_steps = workflow.get('steps', [])
+        if wf_steps:
+            body_rows.append(_section_header('&#x1F4CB;', 'WORKFLOW DA SEMANA', COLORS["tool"]))
+            body_rows.append(_card_start())
+            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:12px;">
+          {wf_title}
+        </td>
+      </tr>''')
+            for step in wf_steps:
+                body_rows.append(f'''      <tr>
+        <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;padding-bottom:8px;padding-left:8px;border-left:3px solid {COLORS["tool"]};">
+          {_esc(str(step))}
+        </td>
+      </tr>''')
+            body_rows.append('''    </table>''')
+            body_rows.append(_card_end())
+            body_rows.append(_card_bottom())
+            body_rows.append(_spacer())
+
     # ── 5. ANÁLISE DO DIA ───────────────────────
     analysis = curated.get('daily_analysis', '')
     if analysis:
@@ -426,6 +452,69 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_card_end())
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())
+
+    # ── v2.7: ENQUETE SEMANAL (sextas) ──────────
+    if datetime.utcnow().weekday() == 4:  # Friday
+        body_rows.append(f'''<tr>
+  <td style="background-color:#fffbeb;padding:20px;text-align:center;border:1px solid {COLORS["tool"]};border-radius:8px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="text-align:center;padding-bottom:10px;">
+          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#1a1a2e;">&#x1F4CA; Enquete da Semana</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align:center;padding-bottom:12px;">
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;">Qual tema voc&ecirc; quer ver mais no Daily Byte?</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align:center;">
+          <a href="https://buttondown.com/totobusnello?tag=tema-ai-tools" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["tool"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">AI Tools</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-estrategia" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["analysis"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Estrat&eacute;gia</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-brasil" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["saas"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Brasil</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-deep-dive" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["world"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Deep Dive</a>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>''')
+        body_rows.append(_spacer(12))
+
+    # ── v2.6: 1-CLICK FEEDBACK ─────────────────
+    body_rows.append(f'''<tr>
+  <td style="background-color:#ffffff;padding:20px;text-align:center;border:1px solid #e5e7eb;border-radius:8px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="text-align:center;padding-bottom:10px;">
+          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#1a1a2e;">Esta edi&ccedil;&atilde;o foi &uacute;til?</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align:center;">
+          <a href="https://buttondown.com/totobusnello?tag=feedback-positivo" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44D;</a>
+          <a href="https://buttondown.com/totobusnello?tag=feedback-neutro" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44B;</a>
+          <a href="https://buttondown.com/totobusnello?tag=feedback-negativo" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44E;</a>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>''')
+
+    body_rows.append(_spacer(12))
+
+    # ── v2.6: REFERRAL CTA ─────────────────────
+    body_rows.append(f'''<tr>
+  <td style="background-color:#f8f4ff;padding:16px 20px;text-align:center;border:1px dashed {COLORS["analysis"]};border-radius:8px;">
+    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;color:#2d2d2d;">
+      &#x1F4E8; Conhece algu&eacute;m que precisa saber disso?
+    </span>
+    <br/>
+    <a href="https://buttondown.com/totobusnello" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;color:{COLORS["analysis"]};text-decoration:none;">Encaminhe esta edi&ccedil;&atilde;o &#x2197;</a>
+  </td>
+</tr>''')
+
+    body_rows.append(_spacer(12))
 
     # ── FOOTER ──────────────────────────────────
     body_rows.append(f'''<tr>
@@ -695,12 +784,13 @@ def send(preview: bool = False):
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
     # Dynamic subject with hook from curated data
+    # v2.6: Emoji prefix for higher open rates (benchmark: The Neuron, Superhuman)
     hook = curated.get('subject_hook', '')
     date_str = f"{weekdays_pt[today.weekday()]}, {today.day} de {months_pt[today.month]}"
     if hook:
-        subject = f"{hook} | Daily Byte - {date_str}"
+        subject = f"\U0001F525 {hook} | Daily Byte - {date_str}"
     else:
-        subject = f"🔥 Daily Byte - {date_str}"
+        subject = f"\U0001F525 Daily Byte - {date_str}"
 
     # Generate content — HTML for sending, markdown for terminal preview
     html_content = generate_email_html(curated)

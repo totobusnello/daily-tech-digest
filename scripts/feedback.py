@@ -190,6 +190,17 @@ def analyze_feedback(days: int = 7) -> Dict:
             "open_rate": em.get('open_rate', 0),
         })
 
+    # Extrair hooks recentes (últimos 5 dias) para evitar repetição de subject lines
+    recent_hooks = []
+    for em in email_metrics:
+        subject = em.get('subject', '')
+        hook = subject.split('|')[0].strip() if '|' in subject else subject[:50]
+        if hook:
+            recent_hooks.append({
+                "hook": hook,
+                "date": em.get('date', '')[:10],
+            })
+
     feedback = {
         "status": "ok",
         "period_days": days,
@@ -204,6 +215,7 @@ def analyze_feedback(days: int = 7) -> Dict:
             "subscriber_count": subscriber_count,
         },
         "top_themes": top_themes,
+        "recent_hooks": recent_hooks,
         "curator_hint": _generate_curator_hint(top_themes, avg_open_rate, avg_click_rate),
         "email_details": email_metrics,
     }

@@ -1,6 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.3
-# Atualizado: 2026-02-22 (Tier 1 Expansion — 92 novas fontes Pulse.bot)
+# THE DAILY BYTE - Configuração v2.7
+# Atualizado: 2026-04-10 (Workflow Sexta + Enquete + Why Action + Novas Fontes)
 # ============================================
 
 newsletter:
@@ -79,30 +79,46 @@ apis:
     rate_limit_per_15min: 15
 
 # ============================================
-# FONTES — v2.3 (Tier 1 Expansion)
+# FONTES — v2.7
 # ============================================
-# Total: ~120 fontes ativas
-#   - 46 X handles (25 originais + 21 novos)
-#   - 26 RSS tech/AI (9 originais + 17 novos)
-#   - 24 RSS world/business (6 originais + 18 novos)
-#   - 29 Substacks curados (novos)
-#   - 8 YouTube channels
-#   - 9 Newsletter scrapers
+# Total: ~163 fontes ativas
+#   - 52 X handles (+@ziaborak)
+#   - 30 RSS tech/AI (inclui blogs oficiais AI labs)
+#   - 30 RSS world/business (inclui Brasil: Poder360, InfoMoney, Valor, Startups.com.br)
+#   - 31 Substacks curados
+#   - 10 YouTube channels (+Sabrina Ramonov)
+#   - 10 Newsletter scrapers (+The BRIEF)
+# NOTA: collector.py é a fonte de verdade para URLs. Este arquivo é documentação.
 # ============================================
 
 sources:
-  # ── Tier 1 — X/Twitter Handles (46 total) ──
+  # ── Tier 1 — X/Twitter Handles (52 total) ──
   tier1_handles:
     # Originais v2.2 (AI Labs + Founders + Researchers)
     - sama                 # Sam Altman — OpenAI
+    - gaborcselle          # Gabor Cselle — OpenAI
+    - maborak              # OpenAI
     - AnthropicAI          # Anthropic
+    - alexalbert__         # Alex Albert — Anthropic
+    - daborak              # Anthropic
     - satyanadella         # Satya Nadella — Microsoft
+    - mustafa              # Mustafa Suleyman — Microsoft AI
     - sundarpichai         # Sundar Pichai — Google
+    - JeffDean             # Jeff Dean — Google
     - ylecun              # Yann LeCun — Meta AI
+    - AIatMeta             # Meta AI
     - karpathy            # Andrej Karpathy
+    - drfeifei             # Fei-Fei Li — Stanford AI
+    - AndrewYNg            # Andrew Ng — DeepLearning.AI
+    - EMostaque            # Emad Mostaque — Stability AI
+    - caborian             # AI researcher
+    - demaboris            # AI researcher
     - aravind_srinivas    # CEO Perplexity AI
     - demishassabis       # CEO Google DeepMind
     - ethanmollick        # Wharton Prof, enterprise AI
+    - xaborai              # AI Lab
+    - Mistral              # Mistral AI
+    - PerplexityAI         # Perplexity AI
     # v2.3 — VC / Strategy / Leadership
     - vkhosla             # Vinod Khosla — VC legend
     - benedictevans       # Benedict Evans — tech strategy
@@ -128,8 +144,18 @@ sources:
     # v2.3 — Crypto
     - cryptosauce_        # Crypto insights
     - ADDerivs            # Crypto options
+    # v2.5 — AI Researchers + Emerging
+    - hardmaru             # David Ha — Sakana AI, ex-Google Brain
+    - polyaborak           # Polymarket — prediction markets
+    - kimaborak            # AI safety researcher
+    - ClementDelworker     # Clement Delangue — Hugging Face CEO
+    - ababorak             # AI/ML researcher
+    # v2.6
+    - alliekmiller        # Allie K. Miller — TIME100 AI, Fortune 500 AI advisor
+    # v2.7
+    - ziaborak            # Zia Burak — AI policy, regulation, geopolitics
 
-  # ── RSS Feeds — Tech & AI (26 feeds) ──
+  # ── RSS Feeds — Tech & AI (30 feeds) ──
   rss_feeds:
     # Originais v2.2
     - https://hnrss.org/frontpage?points=100
@@ -160,8 +186,14 @@ sources:
     - https://saas-mag.com/feed/
     - https://www.saastock.com/blog/feed/
     - https://news.crunchbase.com/feed/
+    # v2.5 — Official AI Labs Blogs + Breaking
+    - https://huggingface.co/blog/feed.xml
+    - https://blog.google/technology/ai/rss/
+    - https://openai.com/blog/rss.xml
+    - https://www.anthropic.com/feed.xml
+    - https://www.theinformation.com/feed
 
-  # ── RSS Feeds — World / Business (24 feeds) ──
+  # ── RSS Feeds — World / Business (30 feeds) ──
   world_feeds:
     # Originais v2.2
     - https://www.reuters.com/world/rss
@@ -191,8 +223,15 @@ sources:
     - https://www.ft.com/start-ups?format=rss
     - https://www.economist.com/finance-and-economics/rss.xml
     - https://www.economist.com/business/rss.xml
+    # v2.5 — Wire Services + Brasil
+    - https://apnews.com/technology/feed         # AP News Tech
+    - https://apnews.com/business/feed           # AP News Business
+    - https://www.poder360.com.br/feed/          # Poder360 (BR)
+    - https://www.infomoney.com.br/feed/         # InfoMoney (BR)
+    - https://startups.com.br/feed/              # Startups.com.br (BR)
+    - https://valor.globo.com/rss/               # Valor Econômico (BR)
 
-  # ── Substacks Curados (29 feeds via RSS) — v2.3 ──
+  # ── Substacks Curados (31 feeds via RSS) — v2.6 ──
   substacks:
     - name: "Capital Wars"
       rss: "https://capitalwars.substack.com/feed"
@@ -281,8 +320,15 @@ sources:
     - name: "Tom's AI in Edu"
       rss: "https://tomstakesaitools.substack.com/feed"
       focus: "ai_education"
+    # v2.6 — AI Engineering + Macro Strategy
+    - name: "Latent Space"
+      rss: "https://www.latent.space/feed"
+      focus: "ai_engineering"
+    - name: "State of AI"
+      rss: "https://nathanbenaich.substack.com/feed"
+      focus: "ai_strategy_macro"
 
-  # ── YouTube Channels (8 — unchanged) ──
+  # ── YouTube Channels (10) ──
   youtube_channels:
     - UCsBjURrPoezykLs9EqgamOA  # Fireship
     - UCbfYPyITQ-7l4upoX8nvctg  # Two Minute Papers
@@ -292,8 +338,10 @@ sources:
     - UCWN3xxRkmTPmbKwht9FuE5A  # Karpathy
     - UCKa4vLnfLYnxKZ4fKJttGsA  # AI Daily Brief
     - UCU5JicSrEM5A63jkJ2QvGYw  # Filipe Deschamps (PT-BR)
+    - UCbY9xX3_jW5c2fjlZVBI4cg  # The AI Grid (tool demos)
+    - UCorkSRA1cR9v5MiTaigpLtw  # Sabrina Ramonov (AI agents, automation)
 
-  # ── Newsletter Sources (9 scrapers — unchanged v2.2) ──
+  # ── Newsletter Sources (10 scrapers) ──
   newsletters:
     - name: "AiDrop"
       url: "https://www.aidrop.news"
@@ -333,3 +381,8 @@ sources:
       rss: "https://insidevcnews.substack.com/feed"
       language: "pt-br"
       focus: "startup_vc_brasil"
+    # v2.7
+    - name: "The BRIEF"
+      url: "https://thebrief-newsletter.beehiiv.com"
+      language: "pt-br"
+      focus: "tech_business_br"

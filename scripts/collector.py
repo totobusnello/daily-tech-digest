@@ -12,7 +12,7 @@ import requests
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
-import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Import newsletter collector
 try:
@@ -75,6 +75,10 @@ TIER1_HANDLES = [
     "kimaborak",          # AI safety researcher
     "ClementDelworker",   # Clement Delangue — Hugging Face CEO
     "ababorak",          # Andrej Baborak — AI/ML researcher
+    # ── v2.6 Expansion ──
+    "alliekmiller",       # Allie K. Miller — TIME100 AI, Fortune 500 AI advisor
+    # ── v2.7 Expansion ──
+    "ziaborak",           # Zia Burak — AI policy, regulation, geopolitics
 ]
 
 # RSS Feeds — Tech & AI
@@ -165,6 +169,10 @@ YOUTUBE_CHANNELS = {
     "andrej_karpathy": "UCWN3xxRkmTPmbKwht9FuE5A",
     "ai_daily_brief": "UCKa4vLnfLYnxKZ4fKJttGsA",
     "filipe_deschamps": "UCU5JicSrEM5A63jkJ2QvGYw",
+    # ── v2.6 ──
+    "the_ai_grid": "UCbY9xX3_jW5c2fjlZVBI4cg",
+    # ── v2.7 ──
+    "sabrina_ramonov": "UCorkSRA1cR9v5MiTaigpLtw",
 }
 
 # Substack Feeds — v2.3 (curated newsletters via RSS)
@@ -204,6 +212,9 @@ SUBSTACK_FEEDS = {
     "sub_sustainability_numbers": "https://hannahritchie.substack.com/feed",
     # ── Education / AI in Edu ──
     "sub_toms_ai_edu": "https://tomstakesaitools.substack.com/feed",
+    # ── v2.6 Expansion: AI Engineering + Macro Strategy ──
+    "sub_latent_space": "https://www.latent.space/feed",
+    "sub_state_of_ai": "https://nathanbenaich.substack.com/feed",
 }
 
 # ============================================
@@ -230,6 +241,7 @@ class RawItem:
         d = asdict(self)
         d['published_at'] = self.published_at.isoformat()
         d['hours_ago'] = round(self.hours_ago(), 1)
+        d.pop('raw_data', None)  # v2.6: removido para economizar I/O
         return d
 
 
@@ -279,46 +291,54 @@ def _fetch_feed(feed_url: str, max_retries: int = 3):
     return feed or feedparser.parse('')  # return empty feed if all failed
 
 
-def _parse_feed_items(feeds: dict, cutoff, source_type_fn=None, max_per_feed: int = 20) -> List[RawItem]:
-    """Coleta itens de um dicionário de RSS feeds"""
+def _fetch_single_feed(source_name: str, feed_url: str, cutoff, source_type_fn=None, max_per_feed: int = 20) -> List[RawItem]:
+    """Coleta itens de um único RSS feed (para uso em paralelo)"""
     items = []
+    try:
+        feed = _fetch_feed(feed_url)
+        for entry in feed.entries[:max_per_feed]:
+            published = None
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                published = datetime(*entry.published_parsed[:6])
+            elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
+                published = datetime(*entry.updated_parsed[:6])
+            else:
+                published = datetime.utcnow()
 
-    for source_name, feed_url in feeds.items():
-        try:
-            feed = _fetch_feed(feed_url)
-            for entry in feed.entries[:max_per_feed]:
-                # Parse date
-                published = None
-                if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                    published = datetime(*entry.published_parsed[:6])
-                elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
-                    published = datetime(*entry.updated_parsed[:6])
-                else:
-                    published = datetime.utcnow()
+            if published < cutoff:
+                continue
 
-                # Skip old items
-                if published < cutoff:
-                    continue
+            if source_type_fn:
+                stype = source_type_fn(source_name)
+            else:
+                stype = 'article' if 'arxiv' not in source_name else 'paper'
 
-                if source_type_fn:
-                    stype = source_type_fn(source_name)
-                else:
-                    stype = 'article' if 'arxiv' not in source_name else 'paper'
+            items.append(RawItem(
+                title=entry.get('title', ''),
+                content=entry.get('summary', ''),
+                url=entry.get('link', ''),
+                source_name=source_name,
+                source_type=stype,
+                author=entry.get('author', source_name),
+                published_at=published,
+                engagement={},
+                raw_data={}
+            ))
+    except Exception as e:
+        print(f"Error fetching {source_name}: {e}")
+    return items
 
-                items.append(RawItem(
-                    title=entry.get('title', ''),
-                    content=entry.get('summary', ''),
-                    url=entry.get('link', ''),
-                    source_name=source_name,
-                    source_type=stype,
-                    author=entry.get('author', source_name),
-                    published_at=published,
-                    engagement={},
-                    raw_data=dict(entry)
-                ))
-        except Exception as e:
-            print(f"Error fetching {source_name}: {e}")
 
+def _parse_feed_items(feeds: dict, cutoff, source_type_fn=None, max_per_feed: int = 20) -> List[RawItem]:
+    """Coleta itens de um dicionário de RSS feeds — v2.6: paralelo com ThreadPool"""
+    items = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [
+            executor.submit(_fetch_single_feed, name, url, cutoff, source_type_fn, max_per_feed)
+            for name, url in feeds.items()
+        ]
+        for future in as_completed(futures):
+            items.extend(future.result())
     return items
 
 
@@ -339,39 +359,13 @@ def collect_world_feeds() -> List[RawItem]:
 
 
 def collect_youtube_feeds() -> List[RawItem]:
-    """Coleta vídeos recentes via YouTube RSS"""
-    items = []
-    cutoff = datetime.utcnow() - timedelta(hours=48)  # 48h for videos
-
-    for channel_name, channel_id in YOUTUBE_CHANNELS.items():
-        feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-        try:
-            feed = _fetch_feed(feed_url)
-            for entry in feed.entries[:5]:  # Max 5 per channel
-                published = None
-                if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                    published = datetime(*entry.published_parsed[:6])
-                else:
-                    published = datetime.utcnow()
-
-                if published < cutoff:
-                    continue
-
-                items.append(RawItem(
-                    title=entry.get('title', ''),
-                    content=entry.get('summary', ''),
-                    url=entry.get('link', ''),
-                    source_name=channel_name,
-                    source_type='video',
-                    author=entry.get('author', channel_name),
-                    published_at=published,
-                    engagement={},
-                    raw_data=dict(entry)
-                ))
-        except Exception as e:
-            print(f"Error fetching YouTube {channel_name}: {e}")
-
-    return items
+    """Coleta vídeos recentes via YouTube RSS — v2.6: paralelo"""
+    cutoff = datetime.utcnow() - timedelta(hours=48)
+    yt_feeds = {
+        name: f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}"
+        for name, cid in YOUTUBE_CHANNELS.items()
+    }
+    return _parse_feed_items(yt_feeds, cutoff, source_type_fn=lambda _: 'video', max_per_feed=5)
 
 
 def collect_substack_feeds() -> List[RawItem]:
@@ -441,7 +435,7 @@ def collect_x_posts(bearer_token: str) -> List[RawItem]:
                         'retweets': metrics.get('retweet_count', 0),
                         'replies': metrics.get('reply_count', 0)
                     },
-                    raw_data=tweet
+                    raw_data={}
                 ))
         except Exception as e:
             print(f"Error fetching X @{handle}: {e}")

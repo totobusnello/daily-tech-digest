@@ -6,10 +6,9 @@ Cache é um JSON com {url: date_sent} — guardado via GitHub Actions cache.
 """
 
 import json
-import hashlib
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, List, Set
+from typing import Dict, List
 
 CACHE_PATH = Path("/tmp/digest_sent_cache.json")
 CACHE_MAX_DAYS = 5  # Guarda 5 dias de histórico, depois limpa
@@ -49,25 +48,9 @@ def _normalize_url(url: str) -> str:
     return url.lower()
 
 
-def _title_hash(title: str) -> str:
-    """Hash do título normalizado para pegar duplicatas com URL diferente"""
-    normalized = title.strip().lower()
-    # Remove pontuação e espaços extras
-    normalized = ''.join(c for c in normalized if c.isalnum() or c == ' ')
-    normalized = ' '.join(normalized.split())
-    return hashlib.md5(normalized.encode()).hexdigest()[:12]
-
-
 def dedup_items(items: List[Dict], cache: Dict[str, str]) -> List[Dict]:
     """Remove itens que já foram enviados em dias anteriores"""
     cached_urls = {_normalize_url(url) for url in cache.keys()}
-
-    # Também cria set de hashes de títulos do cache
-    # (para pegar mesma notícia com URL diferente — ex: RSS vs tweet)
-    cached_title_hashes: Set[str] = set()
-    for url in cache.keys():
-        # O cache guarda url como key; não temos título, mas o hash de URL basta
-        pass
 
     clean = []
     duped = 0
