@@ -216,7 +216,22 @@ LEMBRE-SE:
 - ⚠️ 100% EM PORTUGUÊS. Nunca misture inglês (ex: "Expect" → "Espere", "Open" → "Abra").
 
 ⚠️ ÚLTIMO LEMBRETE — IDIOMA:
-Todo texto que você gerar DEVE estar em português brasileiro. Se você perceber qualquer palavra em inglês no meio de uma frase portuguesa, substitua pelo equivalente em PT-BR. Nomes próprios de empresas/produtos/pessoas são a ÚNICA exceção. """
+Todo texto que você gerar DEVE estar em português brasileiro. Se você perceber qualquer palavra em inglês no meio de uma frase portuguesa, substitua pelo equivalente em PT-BR. Nomes próprios de empresas/produtos/pessoas são a ÚNICA exceção.
+
+⚠️ REGRA CRÍTICA — ORTOGRAFIA PORTUGUESA:
+- Revise CADA palavra antes de escrever. Use apenas palavras que EXISTEM no português brasileiro.
+- NÃO invente palavras. Ex: "céfico" NÃO EXISTE — o correto é "cético" (com S, não C).
+- Acentuação correta obrigatória: "análise" (não "analise"), "estratégia" (não "estrategia"), "mercê" (não "merce").
+- Em caso de dúvida sobre grafia, escolha uma palavra mais simples que você tenha 100% de certeza.
+- Palavras comumente erradas que você NÃO pode escrever errado: cético, análise, estratégia, trajetória, até, já, está, não.
+
+⚠️ REGRA CRÍTICA — DEDUPLICAÇÃO ENTRE SEÇÕES (ANTI-REPETIÇÃO):
+- A MESMA notícia NÃO pode aparecer em múltiplas seções do digest.
+- Se uma notícia sobre "X" está em "hoje_no_byte", ela NÃO PODE estar em "world", "saas_enterprise", "quick_links" ou "watch_later".
+- Antes de finalizar, FAÇA UMA VERIFICAÇÃO: percorra todas as seções e confira se há notícias sobre o mesmo fato/empresa/evento em seções diferentes.
+- Se detectar duplicata, MANTENHA na seção mais relevante e REMOVA das outras.
+- Ex: "Fundadores da Manus proibidos de sair da China" não pode estar em "world" E em "hoje_no_byte" — escolha UMA.
+- O mesmo vale para quick_links: não repetir headline que já foi coberta em item completo acima. """
 
 
 # ============================================
@@ -410,6 +425,99 @@ def _extract_json(text: str):
     return None
 
 
+def _normalize_for_dedup(text: str) -> str:
+    """Normaliza texto (URL ou título) para comparação de duplicatas"""
+    if not text:
+        return ""
+    t = text.lower().strip()
+    # Remove querystring de URLs
+    if '?' in t and ('http' in t or '/' in t):
+        t = t.split('?')[0]
+    # Remove trailing slash
+    t = t.rstrip('/')
+    return t
+
+
+def _title_signature(headline: str) -> str:
+    """Cria assinatura de título: primeiras 5 palavras normalizadas"""
+    if not headline:
+        return ""
+    words = headline.lower().split()
+    # Remove stopwords curtas e pontuação
+    sig_words = [w.strip('.,;:!?"\'') for w in words if len(w) > 3][:5]
+    return " ".join(sig_words)
+
+
+def dedup_across_sections(curated: dict) -> dict:
+    """
+    Remove notícias duplicadas entre seções do digest.
+    Prioridade (quem fica): items > world > tool_of_day > quick_links.
+    Compara por URL normalizada E assinatura de título.
+    """
+    seen_urls = set()
+    seen_sigs = set()
+    removed_count = 0
+
+    def _is_dup(url: str, headline: str) -> bool:
+        u = _normalize_for_dedup(url)
+        s = _title_signature(headline)
+        if u and u in seen_urls:
+            return True
+        if s and s in seen_sigs:
+            return True
+        return False
+
+    def _mark(url: str, headline: str):
+        u = _normalize_for_dedup(url)
+        s = _title_signature(headline)
+        if u:
+            seen_urls.add(u)
+        if s:
+            seen_sigs.add(s)
+
+    # 1. items (prioridade máxima — seção principal)
+    new_items = []
+    for item in curated.get('items', []):
+        if _is_dup(item.get('source_url', ''), item.get('headline', '')):
+            removed_count += 1
+            continue
+        _mark(item.get('source_url', ''), item.get('headline', ''))
+        new_items.append(item)
+    curated['items'] = new_items
+
+    # 2. world
+    new_world = []
+    for item in curated.get('world', []):
+        if _is_dup(item.get('source_url', ''), item.get('headline', '')):
+            removed_count += 1
+            continue
+        _mark(item.get('source_url', ''), item.get('headline', ''))
+        new_world.append(item)
+    curated['world'] = new_world
+
+    # 3. tool_of_day (objeto único)
+    tool = curated.get('tool_of_day')
+    if tool and _is_dup(tool.get('source_url', ''), tool.get('headline', '')):
+        removed_count += 1
+    elif tool:
+        _mark(tool.get('source_url', ''), tool.get('headline', ''))
+
+    # 4. quick_links
+    new_quick = []
+    for item in curated.get('quick_links', []):
+        if _is_dup(item.get('source_url', ''), item.get('headline', '')):
+            removed_count += 1
+            continue
+        _mark(item.get('source_url', ''), item.get('headline', ''))
+        new_quick.append(item)
+    curated['quick_links'] = new_quick
+
+    if removed_count > 0:
+        print(f"🔁 Dedup intra-edição: {removed_count} duplicata(s) removida(s) entre seções")
+
+    return curated
+
+
 def save_curated(data: dict, path: str = "/tmp/digest_curated.json"):
     """Salva dados curados"""
     with open(path, 'w') as f:
@@ -441,6 +549,9 @@ def process():
 
     # Curate with Claude
     curated = curate_with_claude(raw_data)
+
+    # Post-process: remove duplicatas entre seções (rede de segurança)
+    curated = dedup_across_sections(curated)
 
     # Add metadata
     curated['processed_at'] = datetime.utcnow().isoformat()
