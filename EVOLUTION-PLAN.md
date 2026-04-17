@@ -4,6 +4,45 @@
 
 ## Changelog
 
+### v2.8 — 17/04/2026 (Resiliência + Dedup Forte + Idioma + Alertas Privados)
+
+**Mudanças implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | Modelo atualizado para `claude-sonnet-4-6`. Removido assistant prefill (não suportado pelo 4.6) — agora usa instrução explícita "Responda APENAS com JSON". Injeção de `recent_hooks` no prompt para evitar título repetido entre edições. Regra de idioma PT-BR 100% reforçada em 4 pontos do prompt (incl. lista de palavras em inglês proibidas: Expect→Espere, Open→Abra etc). Regra crítica de ortografia: proibido inventar palavras (ex: "céfico" não existe, é "cético"). Regra anti-duplicação entre seções com exemplo real. **Nova função `dedup_across_sections()`**: rede de segurança programática que remove duplicatas por URL normalizada OU assinatura de título (primeiras 5 palavras > 3 letras) entre `items`/`world`/`tool_of_day`/`quick_links`. |
+| `scripts/collector.py` | X bearer token com `.strip()` para remover whitespace/EOF. User-Agent Chrome (macOS) substituindo UA bot que era bloqueado por Substacks. Fetch invertido: `requests` com headers de browser primeiro, `feedparser` como fallback. Safe fallback para variável unbound. |
+| `scripts/newsletter_collector.py` | Mesma inversão de fetch (browser UA first, feedparser fallback). Safe fallback. |
+| `scripts/dedup.py` | Ativado dedup por hash de título (cruza edições): previne mesma notícia de fontes diferentes. Novo store `digest_sent_hooks.json` com histórico de `subject_hook` dos últimos 7 dias. Funções: `_register_hook()`, `load_hooks()`, `save_hooks()`, `get_recent_hooks(days=3)`. |
+| `scripts/alert_failure.py` | **Reescrito**: antes enviava email para toda lista via Buttondown broadcast — agora cria GitHub Issue via `gh` CLI (owner recebe só por email do GitHub). Aceita `--failed-step` para mostrar qual step quebrou. |
+| `.github/workflows/daily-digest.yml` | Step IDs (`collect`, `curate`, `send`) + detecção do step que falhou via `steps.*.outcome`. `notify-failure` agora usa `permissions: issues: write` + `GH_TOKEN`. Cache path inclui `/tmp/digest_sent_hooks.json`. |
+| `config.yaml` | Modelo: `claude-sonnet-4-6`. |
+| `CLAUDE.md` | v2.8 + modelo atualizado. |
+| `EVOLUTION-PLAN.md` | v2.8 changelog. |
+
+**Problemas resolvidos:**
+- Pipeline falhando silenciosamente: modelo deprecado (`claude-sonnet-4-5-20250929`) e prefill do assistant incompatível com `claude-sonnet-4-6`
+- Alerta de falha indo para todos os subscribers: agora só o owner é notificado (GitHub Issue)
+- X/Twitter retornando 0 items: bearer token com whitespace no final
+- Substacks retornando 0 items: User-Agent bot bloqueado, trocado para Chrome UA
+- Detecção genérica de falha: agora o alerta diz exatamente qual step quebrou (collector/processor/sender)
+- **Título repetido entre edições** (dedup fraco): ativado hash de título + hooks recentes injetados no prompt
+- **Inglês misturado em PT-BR** ("Expect" no how_to_use): regras reforçadas em 4 pontos do prompt com exemplos de palavras proibidas
+- **Palavras inventadas** ("céfico" em vez de "cético"): regra crítica de ortografia + lista de palavras comuns
+- **Mesma notícia em 2 seções** (Manus em `world` E `hoje_no_byte`): prompt anti-dup + nova função `dedup_across_sections()` como rede de segurança programática
+
+**Dedup em 3 camadas (anti-repetição):**
+1. **Cross-edition por URL** (já existia) — `dedup.py` filtra URLs já enviadas nos últimos 5 dias
+2. **Cross-edition por título** (NOVO) — hash MD5 do título normalizado evita mesma notícia de fontes diferentes
+3. **Intra-edition por URL + assinatura** (NOVO) — `dedup_across_sections()` remove duplicatas entre `items`/`world`/`tool_of_day`/`quick_links` dentro da mesma edição
+
+**Alertas Privados (owner-only):**
+- Antes: `alert_failure.py` enviava broadcast via Buttondown quando pipeline falhava → todos os subscribers recebiam email de falha
+- Agora: cria GitHub Issue com label `pipeline-failure` → owner recebe notificação por email do GitHub (configurado em github.com/settings/notifications)
+- Label `pipeline-failure` precisa existir no repo (criar em Issues → Labels)
+
+---
+
 ### v2.7 — 10/04/2026 (Workflow Sexta + Enquete + Why Action + Novas Fontes)
 
 **Mudancas implementadas:**
