@@ -1,9 +1,9 @@
 name: 🔥 THE DAILY BYTE - Daily Digest
 
 on:
-  # Executa todo dia às 09:45 UTC (06:45 BRT) - margem para fila de runners
+  # Executa todo dia às 09:00 UTC (06:00 BRT) - margem para atrasos do GitHub
   schedule:
-    - cron: '45 9 * * *'
+    - cron: '0 9 * * *'
 
   # Permite executar manualmente
   workflow_dispatch:
