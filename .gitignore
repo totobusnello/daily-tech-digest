@@ -5,3 +5,7 @@ venv/
 /tmp/digest_*.json
 /tmp/digest_*.md
 /tmp/digest_*.html
+.DS_Store
+.graphifyignore
+graphify-out/
+.remember/
