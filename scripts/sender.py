@@ -78,14 +78,13 @@ def _heat_bar(score: int) -> str:
 
 
 def _section_header(emoji: str, title: str, color: str) -> str:
-    """Generates a section header row"""
+    """Generates a section header row — v2.8 pill badge style"""
     return f'''<tr>
   <td style="padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td style="background-color:{color};padding:12px 20px;border-radius:8px 8px 0 0;">
-          <span style="font-size:20px;line-height:1;">{emoji}</span>
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;padding-left:6px;">{_esc(title)}</span>
+        <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px 10px 20px;border:1px solid #e5e7eb;border-bottom:none;border-radius:12px 12px 0 0;">
+          <span style="display:inline-block;background-color:{color};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">{emoji}&nbsp; {_esc(title)}</span>
         </td>
       </tr>
     </table>
@@ -95,7 +94,7 @@ def _section_header(emoji: str, title: str, color: str) -> str:
 
 def _card_start() -> str:
     return '''<tr>
-  <td style="background-color:#ffffff;padding:16px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">'''
+  <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">'''
 
 
 def _card_end() -> str:
@@ -105,7 +104,7 @@ def _card_end() -> str:
 
 def _card_bottom() -> str:
     return '''<tr>
-  <td style="background-color:#ffffff;padding:0 20px 12px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+  <td class="card-bg card-border" style="background-color:#ffffff;padding:0 20px 12px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;border-radius:0 0 12px 12px;">
   </td>
 </tr>'''
 
@@ -154,19 +153,8 @@ def generate_email_html(curated: Dict) -> str:
 
     # ── HEADER ──────────────────────────────────
     body_rows.append(f'''<tr>
-  <td style="background-color:{COLORS["dark"]};padding:24px 20px;text-align:center;border-radius:8px 8px 0 0;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="text-align:center;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">&#x1F525; THE DAILY BYTE</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:center;padding-top:6px;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;">News, insights &amp; trends</span>
-        </td>
-      </tr>
-    </table>
+  <td class="dark-header" style="background-color:{COLORS["dark"]};padding:18px 20px;text-align:center;border-radius:12px 12px 0 0;">
+    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;">THE DAILY BYTE</span>
   </td>
 </tr>''')
 
@@ -178,8 +166,8 @@ def generate_email_html(curated: Dict) -> str:
     date_str = f"{weekdays[today.weekday()]}, {today.day} de {months[today.month]} de {today.year}"
 
     body_rows.append(f'''<tr>
-  <td style="background-color:{COLORS["dark"]};padding:0 20px 16px 20px;text-align:center;border-radius:0 0 8px 8px;">
-    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;">{date_str}</span>
+  <td class="dark-header" style="background-color:{COLORS["dark"]};padding:0 20px 14px 20px;text-align:center;border-radius:0 0 12px 12px;">
+    <span class="text-muted" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#94a3b8;">{date_str}</span>
     <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: 3 min</span>
   </td>
 </tr>''')
@@ -294,7 +282,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="padding-bottom:12px;">
-          <a href="{tool_url}" style="display:inline-block;background-color:{COLORS["tool"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:6px;text-decoration:none;">&#x1F680; Experimentar</a>
+          <a href="{tool_url}" style="display:inline-block;background-color:{COLORS["tool"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;box-shadow:0 2px 8px rgba(245,158,11,0.35);">&#x1F680; Experimentar</a>
           <span style="font-size:13px;color:#6b7280;padding-left:8px;">{tool_source}</span>
         </td>
       </tr>
@@ -445,7 +433,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td>
-          <a href="{url}" style="display:inline-block;background-color:{COLORS["video"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:6px;text-decoration:none;">&#x25B6;&#xFE0F; Assistir</a>
+          <a href="{url}" style="display:inline-block;background-color:{COLORS["video"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;box-shadow:0 2px 8px rgba(239,68,68,0.35);">&#x25B6;&#xFE0F; Assistir</a>
         </td>
       </tr>
     </table>''')
@@ -456,7 +444,7 @@ def generate_email_html(curated: Dict) -> str:
     # ── v2.7: ENQUETE SEMANAL (sextas) ──────────
     if datetime.utcnow().weekday() == 4:  # Friday
         body_rows.append(f'''<tr>
-  <td style="background-color:#fffbeb;padding:20px;text-align:center;border:1px solid {COLORS["tool"]};border-radius:8px;">
+  <td style="background-color:#fffbeb;padding:20px;text-align:center;border:1px solid {COLORS["tool"]};border-radius:12px;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="text-align:center;padding-bottom:10px;">
@@ -470,10 +458,10 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="text-align:center;">
-          <a href="https://buttondown.com/totobusnello?tag=tema-ai-tools" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["tool"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">AI Tools</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-estrategia" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["analysis"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Estrat&eacute;gia</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-brasil" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["saas"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Brasil</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-deep-dive" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background-color:{COLORS["world"]};color:#ffffff;padding:8px 16px;border-radius:6px;text-decoration:none;margin:4px;">Deep Dive</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-ai-tools" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["tool"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">AI Tools</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-estrategia" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["analysis"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Estrat&eacute;gia</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-brasil" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["saas"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Brasil</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-deep-dive" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["world"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Deep Dive</a>
         </td>
       </tr>
     </table>
@@ -483,7 +471,7 @@ def generate_email_html(curated: Dict) -> str:
 
     # ── v2.6: 1-CLICK FEEDBACK ─────────────────
     body_rows.append(f'''<tr>
-  <td style="background-color:#ffffff;padding:20px;text-align:center;border:1px solid #e5e7eb;border-radius:8px;">
+  <td style="background-color:#ffffff;padding:20px;text-align:center;border:1px solid #e5e7eb;border-radius:12px;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="text-align:center;padding-bottom:10px;">
@@ -505,7 +493,7 @@ def generate_email_html(curated: Dict) -> str:
 
     # ── v2.6: REFERRAL CTA ─────────────────────
     body_rows.append(f'''<tr>
-  <td style="background-color:#f8f4ff;padding:16px 20px;text-align:center;border:1px dashed {COLORS["analysis"]};border-radius:8px;">
+  <td style="background-color:#f8f4ff;padding:16px 20px;text-align:center;border:1px dashed {COLORS["analysis"]};border-radius:12px;">
     <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;color:#2d2d2d;">
       &#x1F4E8; Conhece algu&eacute;m que precisa saber disso?
     </span>
@@ -518,7 +506,7 @@ def generate_email_html(curated: Dict) -> str:
 
     # ── FOOTER ──────────────────────────────────
     body_rows.append(f'''<tr>
-  <td style="background-color:{COLORS["dark"]};padding:24px 20px;text-align:center;border-radius:8px;">
+  <td class="dark-header" style="background-color:{COLORS["dark"]};padding:20px;text-align:center;border-radius:12px;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="text-align:center;padding-bottom:8px;">
@@ -550,11 +538,17 @@ def generate_email_html(curated: Dict) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
 <title>The Daily Byte</title>
 <!--[if mso]>
 <style>table,td {{font-family:Arial,sans-serif !important;}}</style>
 <![endif]-->
 <style type="text/css">
+:root {{
+  color-scheme: light dark;
+  supported-color-schemes: light dark;
+}}
 @media only screen and (max-width: 620px) {{
   .email-container {{
     width: 100% !important;
@@ -563,6 +557,27 @@ def generate_email_html(curated: Dict) -> str:
   .mobile-padding {{
     padding-left: 12px !important;
     padding-right: 12px !important;
+  }}
+}}
+@media (prefers-color-scheme: dark) {{
+  body, .email-bg {{
+    background-color: #1a1a1a !important;
+  }}
+  .card-bg, .card-border {{
+    background-color: #2d2d2d !important;
+    border-color: #404040 !important;
+  }}
+  .dark-header {{
+    background-color: #111111 !important;
+  }}
+  .text-dark {{
+    color: #f5f5f5 !important;
+  }}
+  .text-muted {{
+    color: #a0a0a0 !important;
+  }}
+  a {{
+    color: #4da6ff !important;
   }}
 }}
 body {{
@@ -579,7 +594,7 @@ a {{
 </head>
 <body style="margin:0;padding:0;background-color:{COLORS["bg"]};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{COLORS["bg"]};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{COLORS["bg"]};" class="email-bg">
   <tr>
     <td align="center" style="padding:16px 8px;" class="mobile-padding">
       <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;margin:0 auto;">
