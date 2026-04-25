@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.7 (Workflow Sexta + Enquete + Why Action + Novas Fontes)
+**Versao atual:** v2.8 (Redesign Visual + Dark Mode)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -163,6 +163,12 @@ Threshold minimo: 60 pontos
 16. **Workflow da Semana (sextas)** — processor.py detecta sexta-feira e pede ao curador um `weekly_workflow` com 3-4 steps praticos. sender.py renderiza apos Tool do Dia. Campo opcional no JSON.
 
 17. **Enquete semanal (sextas)** — sender.py mostra enquete com 4 opcoes (AI Tools, Estrategia, Brasil, Deep Dive) usando ?tag= para tracking. So aparece as sextas.
+
+18. **Subject line limpo** — So a manchete, sem marca e sem data. Formato: `🔥 {hook}`. Marca e data aparecem apenas no corpo do email (header). Fallback sem hook: `🔥 Daily Byte`.
+
+19. **Dark mode CSS** — sender.py inclui `@media (prefers-color-scheme: dark)` com paleta adaptada: fundo #1a1a1a, cards #2d2d2d, texto #f5f5f5, links #4da6ff. Meta tags `color-scheme` no head.
+
+20. **Visual v2.8** — Section headers sao pill badges coloridos (border-radius:20px) em fundo branco. Cards com border-radius:12px e borda sutil. Botoes CTA com box-shadow colorido e touch targets 44px+. Header compacto (20px, sem tagline).
 
 ---
 
