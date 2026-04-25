@@ -4,6 +4,43 @@
 
 ## Changelog
 
+### v2.8 — 25/04/2026 (Redesign Visual)
+
+**Mudancas implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/sender.py` | Subject line: só manchete, sem marca/data. Header: 20px (era 28px), tagline removida. Section headers: pill badges coloridos em fundo branco (era barra colorida full-width). Cards: border-radius 12px, bordas sutis. Botões: box-shadow colorido, touch targets 44px+. Dark mode: CSS `prefers-color-scheme: dark` com paleta completa. Todos os border-radius unificados em 12px |
+
+**Subject Line Limpo:**
+- Formato: `🔥 Google despeja $40B na Anthropic` (só manchete)
+- Marca e data já aparecem no corpo do email ("THE DAILY BYTE · data")
+- Fallback sem hook: `🔥 Daily Byte`
+
+**Dark Mode CSS:**
+- Meta tags: `color-scheme: light dark` + `supported-color-schemes`
+- `@media (prefers-color-scheme: dark)`: fundo #1a1a1a, cards #2d2d2d, texto #f5f5f5, links #4da6ff
+- Classes CSS: `.email-bg`, `.card-bg`, `.card-border`, `.dark-header`, `.text-dark`, `.text-muted`
+- Suporte: Apple Mail, iOS Mail, Outlook 2019+, Samsung Mail, Thunderbird
+
+**Cards com Bordas Suaves:**
+- Section headers: pill badge com border-radius:20px sobre fundo branco
+- Cards: border-radius 12px (era 8px), borda 1px solid #e5e7eb
+- Estilo inspirado no Morning Brew (referência em design de newsletter)
+
+**Header Mais Limpo:**
+- Título: 20px bold (era 28px) — menos peso visual
+- Tagline "News, insights & trends" removida (redundante)
+- Data: 12px (era 13px)
+
+**Botões com Profundidade:**
+- `box-shadow: 0 2px 8px rgba(cor,0.35)` nos CTAs (Experimentar, Assistir)
+- `box-shadow: 0 2px 6px rgba(0,0,0,0.15)` nos botões da enquete
+- Padding: 12px 28px nos CTAs principais (touch target ≥44px)
+- border-radius: 8px (era 6px)
+
+---
+
 ### v2.7 — 10/04/2026 (Workflow Sexta + Enquete + Why Action + Novas Fontes)
 
 **Mudancas implementadas:**
