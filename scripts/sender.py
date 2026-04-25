@@ -784,13 +784,12 @@ def send(preview: bool = False):
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
     # Dynamic subject with hook from curated data
-    # v2.6: Emoji prefix for higher open rates (benchmark: The Neuron, Superhuman)
     hook = curated.get('subject_hook', '')
     date_str = f"{weekdays_pt[today.weekday()]}, {today.day} de {months_pt[today.month]}"
     if hook:
-        subject = f"\U0001F525 {hook} | Daily Byte - {date_str}"
+        subject = f"\U0001F525 {hook} — {date_str}"
     else:
-        subject = f"\U0001F525 Daily Byte - {date_str}"
+        subject = f"\U0001F525 Daily Byte — {date_str}"
 
     # Generate content — HTML for sending, markdown for terminal preview
     html_content = generate_email_html(curated)
