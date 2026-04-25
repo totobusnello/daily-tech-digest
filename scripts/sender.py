@@ -785,11 +785,10 @@ def send(preview: bool = False):
 
     # Dynamic subject with hook from curated data
     hook = curated.get('subject_hook', '')
-    date_str = f"{weekdays_pt[today.weekday()]}, {today.day} de {months_pt[today.month]}"
     if hook:
-        subject = f"\U0001F525 {hook} — {date_str}"
+        subject = f"\U0001F525 {hook}"
     else:
-        subject = f"\U0001F525 Daily Byte — {date_str}"
+        subject = f"\U0001F525 Daily Byte"
 
     # Generate content — HTML for sending, markdown for terminal preview
     html_content = generate_email_html(curated)
