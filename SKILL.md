@@ -142,7 +142,7 @@ python run.py --skip-collect   # Pula coleta, usa /tmp/digest_raw.json existente
 python run.py --skip-process   # Pula curadoria, usa /tmp/digest_curated.json existente
 ```
 
-**Schedule:** Diário às 06:45 BRT via GitHub Actions.
+**Schedule:** Diário às 06:00 BRT via GitHub Actions.
 
 ## Anti-Patterns a Evitar
 

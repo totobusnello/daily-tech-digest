@@ -26,7 +26,7 @@ sender.py             -> Buttondown API -> email HTML
 ```
 
 **Orquestrador:** `run.py` (ou GitHub Actions via `daily-digest.yml`)
-**Schedule:** Diario as 06:45 BRT (09:45 UTC) via GitHub Actions
+**Schedule:** Diario as 06:00 BRT (09:00 UTC) via GitHub Actions
 
 ---
 
@@ -263,7 +263,7 @@ Ver `EVOLUTION-PLAN.md` para historico e backlog.
 
 ## Deploy
 
-Push para `main` -> GitHub Actions pega automaticamente no proximo run (06:45 BRT).
+Push para `main` -> GitHub Actions pega automaticamente no proximo run (06:00 BRT).
 Nao precisa de deploy manual. O workflow faz `checkout@v4` fresh toda vez.
 
 Para rodar manualmente: GitHub Actions -> "Run workflow" -> preview_only true/false.

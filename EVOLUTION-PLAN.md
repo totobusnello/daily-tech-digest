@@ -11,6 +11,8 @@
 | Arquivo | O que mudou |
 |---------|------------|
 | `scripts/sender.py` | Subject line: só manchete, sem marca/data. Header: 20px (era 28px), tagline removida. Section headers: pill badges coloridos em fundo branco (era barra colorida full-width). Cards: border-radius 12px, bordas sutis. Botões: box-shadow colorido, touch targets 44px+. Dark mode: CSS `prefers-color-scheme: dark` com paleta completa. Todos os border-radius unificados em 12px |
+| `.github/workflows/daily-digest.yml` | Schedule adiantado de 06:45 BRT (09:45 UTC) para 06:00 BRT (09:00 UTC) |
+| `config.yaml` | Schedule atualizado para 06:00 BRT |
 
 **Subject Line Limpo:**
 - Formato: `🔥 Google despeja $40B na Anthropic` (só manchete)
@@ -330,7 +332,7 @@
 - Fontes: RSS feeds (HN, TechCrunch, The Verge, Reuters, etc), YouTube RSS, X/Twitter API
 - Curadoria: Claude Sonnet via Anthropic API
 - Envio: Buttondown API
-- Deploy: GitHub Actions (diario 06:45 BRT)
+- Deploy: GitHub Actions (diario 06:00 BRT)
 - Heat Score: Freshness (40pts) + Fonte (30pts) + Impacto (30pts), threshold 60
 
 ---
