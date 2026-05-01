@@ -107,9 +107,21 @@ REGRAS PARA ITENS DE NEWSLETTER (source_type "newsletter"):
 
 Heat Score mínimo para entrar: 60 pontos
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
-- Fonte (30 pts): Fundador=30, Jornalista=25, Release=20, Newsletter curada=15, Agregador=0
+- Fonte (30 pts): Fundador/blog oficial=30, Jornalista=25, Release=20, Newsletter curada=15, Agregador=0
 - Impacto (30 pts): Lançamento=30, M&A=25, Drama=20, Incremental=5
 - Newsletter Bonus: Insight exclusivo=+10, Cross-validação=+5
+- Ineditismo Bonus: Fonte primária (blog oficial, tweet de fundador)=+15, Community-driven (Reddit, HN Show, Lobsters)=+10, Indie builder/practitioner=+10
+- Penalidade Mainstream: Se 3+ fontes mainstream (TechCrunch, Wired, Verge, Reuters, BBC) cobriram a mesma história=-10 pontos. Se todo mundo já cobriu, não é notícia — é eco.
+
+HIERARQUIA DE FONTES (do mais ao menos valioso):
+1. FONTE PRIMÁRIA — Blog oficial do lab/empresa, tweet do CEO/fundador, press release, paper original. É a notícia ANTES da cobertura.
+2. INDIE/BUILDER — Simon Willison, Lilian Weng, Chip Huyen, Latent Space, Stratechery, Pragmatic Engineer. Análise original com ponto de vista único.
+3. COMMUNITY — Reddit r/MachineLearning, r/LocalLLaMA, HN Show, Lobsters. O que practitioners estão discutindo ANTES da mídia cobrir.
+4. NEWSLETTER CURADA — AiDrop, AlphaSignal, Import AI. Contexto e análise que agrega valor.
+5. MÍDIA ESPECIALIZADA — TechCrunch, The Decoder, VentureBeat. Boa cobertura mas todo mundo já leu.
+6. MAINSTREAM — Reuters, BBC, CNBC. Útil para "mundo real" mas zero ineditismo em tech.
+
+⚠️ SE TIVER QUE ESCOLHER: prefira a análise do Simon Willison sobre um novo modelo ao artigo do TechCrunch sobre o mesmo modelo. O leitor do Daily Byte quer o que ELE NÃO ENCONTRA sozinho scrollando o feed.
 
 ⚠️ REGRA CRÍTICA sobre source_url:
 - Todo item DEVE ter o campo "source_url" preenchido com a URL ORIGINAL do artigo/post

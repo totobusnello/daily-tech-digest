@@ -79,15 +79,16 @@ apis:
     rate_limit_per_15min: 15
 
 # ============================================
-# FONTES — v2.7
+# FONTES — v2.9 (Ineditismo)
 # ============================================
-# Total: ~163 fontes ativas
-#   - 52 X handles (+@ziaborak)
-#   - 30 RSS tech/AI (inclui blogs oficiais AI labs)
-#   - 30 RSS world/business (inclui Brasil: Poder360, InfoMoney, Valor, Startups.com.br)
-#   - 31 Substacks curados
-#   - 10 YouTube channels (+Sabrina Ramonov)
-#   - 10 Newsletter scrapers (+The BRIEF)
+# Total: ~200 fontes ativas
+#   - 65+ X handles (inclui indie builders: @simonw, @chipro, @levelsio, @GergelyOrosz)
+#   - 45+ RSS tech/AI (inclui labs primários: DeepMind, Meta AI, NVIDIA, MS Research)
+#                     (inclui community: Reddit ML, LocalLLaMA, HN Show, Lobsters, Product Hunt)
+#   - 37 RSS world/business (inclui Brasil expandido: NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal)
+#   - 41 Substacks curados (inclui indie voices: Simon Willison, Lilian Weng, Chip Huyen, SemiAnalysis, Stratechery)
+#   - 10 YouTube channels
+#   - 10 Newsletter scrapers
 # NOTA: collector.py é a fonte de verdade para URLs. Este arquivo é documentação.
 # ============================================
 

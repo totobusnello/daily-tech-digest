@@ -75,14 +75,26 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Fontes
+## Fontes (~200 feeds ativos)
 
-### Tier 1 — Primeira Mao (52 X/Twitter handles)
-@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @aravind_srinivas, @demishassabis, @ethanmollick, @alliekmiller, @ClementDelworker, @hardmaru, @vkhosla, @benedictevans, @ziaborak, etc. Ver `config.yaml` para lista completa.
+### Filosofia de Fontes (v2.9)
+**O Daily Byte existe para trazer o que C-levels NAO encontram sozinhos.**
+Prioridade: fonte primaria > indie/builder > community > newsletter curada > midia especializada > mainstream.
+Mainstream (Reuters, BBC, CNBC) serve para "Mundo Real" mas NUNCA deve dominar as secoes de tech/AI.
 
-### Tier 2 — RSS Feeds
-**Tech:** HN (100+ pts), Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review, The Decoder
-**World:** Reuters (world + business), Forbes (business + innovation), BBC (world + business)
+### Tier 1 — Primeira Mao (65+ X/Twitter handles)
+**Fundadores/Labs:** @sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @demishassabis, @aravind_srinivas, @ClementDelworker, etc.
+**Indie/Builders:** @simonw, @chipro, @swaborak, @GergelyOrosz, @levelsio, @danshipper, @filipedeschamps
+**Estrategia/VC:** @vkhosla, @benedictevans, @alliekmiller, @hardmaru, @ziaborak
+Ver `collector.py` para lista completa.
+
+### Tier 2 — RSS Feeds (45+ tech/AI + 37 world)
+**Labs (primeira mao):** DeepMind, Meta AI, NVIDIA, Microsoft Research, OpenAI, Anthropic, HuggingFace, Stability, Mistral, Cohere
+**Community-driven:** Reddit r/MachineLearning, r/LocalLLaMA, HN Show (50+ pts), Lobsters AI, Product Hunt
+**Developer:** Changelog, InfoQ AI/ML
+**Tech media:** HN (100+ pts), TechCrunch AI, MIT Tech Review, The Decoder
+**World:** Reuters, BBC, Forbes, CNBC, WSJ
+**Brasil:** Poder360, InfoMoney, Startups.com.br, Valor Economico, NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech
 **Research:** arXiv cs.AI
 
 ### Tier 3 — Newsletters (10 fontes, via scraping + RSS)
@@ -99,8 +111,12 @@ sender.py             -> Buttondown API -> email HTML
 | Distrito News Inside VC | VC/startups Brasil | PT-BR |
 | The BRIEF | Tech+business diario, tom direto | PT-BR |
 
-### Substacks Curados (31 feeds via RSS)
-AI engineering (Latent Space), macro strategy (State of AI), business strategy, fintech, biotech, AI pratico, e-commerce, edtech, sustainability. Ver `config.yaml` para lista completa.
+### Substacks Curados (41 feeds via RSS)
+**Indie/Practitioners (v2.9):** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter
+**AI Engineering:** Latent Space, State of AI
+**Business/Strategy:** Capital Wars, Doomberg, CFO Dynamics
+**Verticais:** fintech, biotech, e-commerce, edtech, sustainability
+Ver `collector.py` para lista completa.
 
 ### YouTube (10 canais)
 Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov
@@ -111,9 +127,11 @@ Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI
 
 ```
 Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
-Fonte (30 pts):     Fundador=30, Jornalista=25, Release=20, Newsletter=15, Agregador=0
+Fonte (30 pts):     Fundador/blog oficial=30, Jornalista=25, Release=20, Newsletter=15, Agregador=0
 Impacto (30 pts):   Lancamento=30, M&A=25, Drama=20, Incremental=5
 Newsletter Bonus:   Insight exclusivo=+10, Cross-validacao=+5
+Ineditismo Bonus:   Fonte primaria=+15, Community-driven=+10, Indie builder=+10
+Penalidade:         3+ fontes mainstream cobrindo mesma historia=-10
 
 Threshold minimo: 60 pontos
 ```
