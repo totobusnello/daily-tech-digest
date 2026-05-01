@@ -58,6 +58,8 @@ REGRAS DE OURO:
 3. IMPACTO PRÁTICO - Priorize notícias que afetam o cotidiano de quem trabalha com tech: lançamentos de produtos, mudanças em plataformas, M&A, regulações. Papers acadêmicos só entram se tiverem aplicação prática imediata.
 4. EXCLUSIVO - Se já vi em 3 newsletters, não é breaking
 5. ANÁLISE OBRIGATÓRIA - Cada item DEVE ter "why_it_matters" com 1-2 frases INCISIVAS e PRESCRITIVAS. Não é resumo — é "o que um C-level deve FAZER com essa informação". Responda: qual decisão, ação ou conversa isso deve disparar? Ex: "CFOs: revisem orçamento de cloud para Q3" > "Preços de cloud estão subindo". Máximo 2 frases curtas e densas.
+6. INEDITISMO OBRIGATÓRIO - Pelo menos 30% dos itens (4+ de 12) devem ser notícias que NÃO apareceram em outros digests/newsletters populares. Busque fontes primárias, anúncios diretos, tweets de fundadores, papers originais. Histórias que todo mundo já cobriu valem MENOS do que um dado exclusivo de uma fonte primária.
+7. DIVERSIDADE TEMÁTICA - NÃO coloque 3+ itens sobre o mesmo tema/empresa. Se há 5 notícias sobre OpenAI, escolha a MELHOR e mova as outras para quick_links (se merecerem menção).
 
 LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
 
@@ -226,12 +228,18 @@ Todo texto que você gerar DEVE estar em português brasileiro. Se você percebe
 - Palavras comumente erradas que você NÃO pode escrever errado: cético, análise, estratégia, trajetória, até, já, está, não.
 
 ⚠️ REGRA CRÍTICA — DEDUPLICAÇÃO ENTRE SEÇÕES (ANTI-REPETIÇÃO):
-- A MESMA notícia NÃO pode aparecer em múltiplas seções do digest.
+- A MESMA notícia NÃO pode aparecer em múltiplas seções do digest — nem com headline diferente!
 - Se uma notícia sobre "X" está em "hoje_no_byte", ela NÃO PODE estar em "world", "saas_enterprise", "quick_links" ou "watch_later".
-- Antes de finalizar, FAÇA UMA VERIFICAÇÃO: percorra todas as seções e confira se há notícias sobre o mesmo fato/empresa/evento em seções diferentes.
+- Isso vale para o MESMO TÓPICO/EVENTO/EMPRESA, mesmo com ângulos diferentes. Ex: "regulação EU de AI" não pode estar em "world" (como política) E em "hoje_no_byte" (como tech) — escolha UMA seção.
+- Antes de finalizar, FAÇA UMA VERIFICAÇÃO ITEM A ITEM: percorra CADA headline de CADA seção e confira se há notícias sobre o mesmo fato/empresa/evento em seções diferentes.
 - Se detectar duplicata, MANTENHA na seção mais relevante e REMOVA das outras.
-- Ex: "Fundadores da Manus proibidos de sair da China" não pode estar em "world" E em "hoje_no_byte" — escolha UMA.
-- O mesmo vale para quick_links: não repetir headline que já foi coberta em item completo acima. """
+- O mesmo vale para quick_links: não repetir headline que já foi coberta em item completo acima.
+- TESTE FINAL: liste mentalmente todas as empresas/eventos mencionados — se algum aparece em 2+ seções, remova a duplicata.
+
+⚠️ REGRA CRÍTICA — INEDITISMO E FRESCOR:
+- PRIORIZE notícias de fontes primárias (tweets de fundadores, blogs oficiais, press releases) sobre artigos de cobertura (TechCrunch, The Verge cobrindo o mesmo lançamento).
+- Quando o campo "_cluster_size" existir no item, ele indica quantas fontes cobriram a mesma história. Itens com _cluster_size alto (>3) são amplamente cobertos = MENOS inéditos. Prefira itens com _cluster_size=1 ou sem esse campo.
+- Se todos os itens são "óbvios" (cobertos por toda a mídia), procure pelo menos 2-3 itens de nicho, análise original ou dados exclusivos para balancear. """
 
 
 # ============================================
@@ -242,6 +250,68 @@ def load_raw_data(path: str = "/tmp/digest_raw.json") -> dict:
     """Carrega dados brutos do coletor"""
     with open(path, 'r') as f:
         return json.load(f)
+
+
+_SOURCE_PRIORITY = {
+    'tweet': 4, 'newsletter': 3, 'article': 2, 'paper': 2,
+    'video': 1, 'world': 2,
+}
+
+
+def _cluster_and_pick_best(items: list) -> list:
+    """
+    Agrupa itens sobre o mesmo assunto e mantém apenas o melhor de cada cluster.
+    'Melhor' = mais fresco + fonte de maior prioridade.
+    Itens únicos passam direto.
+    """
+    clusters = []
+    for item in items:
+        title = item.get('title', '') or item.get('headline', '')
+        matched = False
+        for cluster in clusters:
+            rep_title = cluster[0].get('title', '') or cluster[0].get('headline', '')
+            if _titles_overlap(title, rep_title):
+                cluster.append(item)
+                matched = True
+                break
+        if not matched:
+            clusters.append([item])
+
+    result = []
+    clustered_count = 0
+    for cluster in clusters:
+        if len(cluster) == 1:
+            result.append(cluster[0])
+        else:
+            clustered_count += len(cluster) - 1
+            best = min(cluster, key=lambda x: (
+                -_SOURCE_PRIORITY.get(x.get('source_type', ''), 0),
+                x.get('hours_ago', 999),
+            ))
+            best['_cluster_size'] = len(cluster)
+            result.append(best)
+
+    if clustered_count > 0:
+        print(f"🔗 Pré-clustering: {clustered_count} itens redundantes removidos ({len(clusters)} clusters)")
+
+    return result
+
+
+def _cap_per_source(items: list, max_per_source: int = 5) -> list:
+    """Limita itens por fonte para forçar diversidade"""
+    counts = {}
+    result = []
+    capped = 0
+    for item in items:
+        src = (item.get('source_name', '') or '').lower()
+        counts[src] = counts.get(src, 0) + 1
+        if counts[src] <= max_per_source:
+            result.append(item)
+        else:
+            capped += 1
+    if capped > 0:
+        print(f"✂️ Cap por fonte: {capped} itens cortados (max {max_per_source}/fonte)")
+    return result
 
 
 def curate_with_claude(raw_data: dict) -> dict:
@@ -267,7 +337,7 @@ def curate_with_claude(raw_data: dict) -> dict:
         items = dedup_items(items, cache)
 
     # Trim content and strip heavy fields to save tokens
-    CURATOR_FIELDS = ['title', 'content', 'url', 'source_name', 'source_type', 'author', 'published_at', 'hours_ago', 'engagement']
+    CURATOR_FIELDS = ['title', 'content', 'url', 'source_name', 'source_type', 'author', 'published_at', 'hours_ago', 'engagement', '_cluster_size']
     slim_items = []
     for item in items:
         slim = {k: item.get(k) for k in CURATOR_FIELDS if item.get(k) is not None}
@@ -275,6 +345,12 @@ def curate_with_claude(raw_data: dict) -> dict:
         if len(slim.get('content', '')) > 500:
             slim['content'] = slim['content'][:500] + '...'
         slim_items.append(slim)
+
+    # v2.9: Pre-cluster — agrupar itens sobre o mesmo assunto e manter apenas o melhor representante
+    slim_items = _cluster_and_pick_best(slim_items)
+
+    # v2.9: Cap por fonte — max 5 itens por source_name para forçar diversidade
+    slim_items = _cap_per_source(slim_items, max_per_source=5)
 
     # Sort by freshness (hours_ago ascending) then send top 80
     slim_items.sort(key=lambda x: x.get('hours_ago', 999))
@@ -438,42 +514,96 @@ def _normalize_for_dedup(text: str) -> str:
     return t
 
 
-def _title_signature(headline: str) -> str:
-    """Cria assinatura de título: primeiras 5 palavras normalizadas"""
+_STOPWORDS_PT = {
+    'para', 'como', 'mais', 'pela', 'pelo', 'seus', 'suas', 'esta', 'este',
+    'esse', 'essa', 'isso', 'isto', 'aqui', 'pode', 'novo', 'nova', 'novos',
+    'novas', 'sobre', 'após', 'apos', 'ante', 'deve', 'será', 'sera', 'dois',
+    'três', 'tres', 'muito', 'toda', 'todo', 'cada', 'qual', 'quem', 'onde',
+    'entre', 'ainda', 'assim', 'mesmo', 'desde', 'with', 'from', 'that',
+    'this', 'have', 'will', 'what', 'your', 'they', 'their', 'been', 'into',
+    'than', 'just', 'also', 'more', 'most', 'some', 'when', 'could', 'after',
+    'says', 'said', 'gets', 'amid', 'over', 'first', 'major',
+}
+
+
+def _extract_entities(headline: str) -> set:
+    """Extrai entidades-chave (empresas, produtos, siglas) de um título"""
     if not headline:
-        return ""
+        return set()
+    import re
+    entities = set()
+    for match in re.findall(r'[A-Z][A-Za-z0-9]+(?:\s+[A-Z][A-Za-z0-9]+)*', headline):
+        if len(match) > 2 and match.lower() not in _STOPWORDS_PT:
+            entities.add(match.lower())
+    for match in re.findall(r'\b[A-Z]{2,}\b', headline):
+        entities.add(match.lower())
+    return entities
+
+
+def _title_keywords(headline: str) -> set:
+    """Extrai keywords significativas de um título (remove stopwords)"""
+    if not headline:
+        return set()
     words = headline.lower().split()
-    # Remove stopwords curtas e pontuação
-    sig_words = [w.strip('.,;:!?"\'') for w in words if len(w) > 3][:5]
-    return " ".join(sig_words)
+    return {w.strip('.,;:!?"\'()[]') for w in words
+            if len(w) > 3 and w.strip('.,;:!?"\'()[]') not in _STOPWORDS_PT}
+
+
+def _title_signature(headline: str) -> str:
+    """Cria assinatura de título: keywords ordenadas (sem stopwords)"""
+    kw = _title_keywords(headline)
+    return " ".join(sorted(kw)) if kw else ""
+
+
+def _titles_overlap(headline_a: str, headline_b: str) -> bool:
+    """Verifica se dois títulos falam do mesmo assunto via overlap de keywords + entidades"""
+    kw_a = _title_keywords(headline_a)
+    kw_b = _title_keywords(headline_b)
+    if not kw_a or not kw_b:
+        return False
+
+    overlap = kw_a & kw_b
+    min_len = min(len(kw_a), len(kw_b))
+    if min_len == 0:
+        return False
+    ratio = len(overlap) / min_len
+    if ratio >= 0.6:
+        return True
+
+    ent_a = _extract_entities(headline_a)
+    ent_b = _extract_entities(headline_b)
+    if ent_a and ent_b and ent_a & ent_b:
+        if ratio >= 0.4:
+            return True
+
+    return False
 
 
 def dedup_across_sections(curated: dict) -> dict:
     """
     Remove notícias duplicadas entre seções do digest.
     Prioridade (quem fica): items > world > tool_of_day > quick_links.
-    Compara por URL normalizada E assinatura de título.
+    Compara por URL normalizada, keywords de título E overlap semântico.
     """
     seen_urls = set()
-    seen_sigs = set()
+    seen_headlines = []
     removed_count = 0
 
     def _is_dup(url: str, headline: str) -> bool:
         u = _normalize_for_dedup(url)
-        s = _title_signature(headline)
         if u and u in seen_urls:
             return True
-        if s and s in seen_sigs:
-            return True
+        for prev_hl in seen_headlines:
+            if _titles_overlap(headline, prev_hl):
+                return True
         return False
 
     def _mark(url: str, headline: str):
         u = _normalize_for_dedup(url)
-        s = _title_signature(headline)
         if u:
             seen_urls.add(u)
-        if s:
-            seen_sigs.add(s)
+        if headline:
+            seen_headlines.append(headline)
 
     # 1. items (prioridade máxima — seção principal)
     new_items = []

@@ -37,11 +37,13 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      # v2.3: Restore dedup cache from previous runs
+      # v2.9: Restore dedup caches (URLs + title hashes) from previous runs
       - name: 🔄 Restore dedup cache
         uses: actions/cache@v4
         with:
-          path: /tmp/digest_sent_cache.json
+          path: |
+            /tmp/digest_sent_cache.json
+            /tmp/digest_sent_titles.json
           key: digest-dedup-${{ github.run_number }}
           restore-keys: |
             digest-dedup-
@@ -109,6 +111,7 @@ jobs:
             /tmp/digest_preview.html
             /tmp/digest_feedback.json
             /tmp/digest_sent_cache.json
+            /tmp/digest_sent_titles.json
           retention-days: 7
 
   # ── v2.5: Alerta via GitHub Issue se o pipeline falhar ──

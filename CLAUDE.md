@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.8 (Resiliencia + Dedup Forte + Idioma + Alertas Privados)
+**Versao atual:** v2.9 (Dedup 5 Camadas + Pre-Clustering + Ineditismo)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -164,7 +164,7 @@ Threshold minimo: 60 pontos
 
 17. **Enquete semanal (sextas)** — sender.py mostra enquete com 4 opcoes (AI Tools, Estrategia, Brasil, Deep Dive) usando ?tag= para tracking. So aparece as sextas.
 
-18. **Dedup em 3 camadas** — (1) cross-edition por URL em `dedup.py` (5 dias), (2) cross-edition por hash de titulo (evita mesma noticia de fontes diferentes), (3) intra-edition em `dedup_across_sections()` do processor.py (remove duplicatas entre items/world/tool_of_day/quick_links dentro da mesma edicao). Prioridade: items > world > tool_of_day > quick_links.
+18. **Dedup em 5 camadas (v2.9)** — (1) cross-edition por URL em `dedup.py` (5 dias), (2) cross-edition por hash de titulo em `dedup.py` (evita mesma noticia de fontes diferentes), (3) pre-clustering em `processor.py` (agrupa itens sobre o mesmo assunto antes de enviar ao Claude, mantendo so o melhor representante), (4) cap por fonte (max 5 itens/fonte para forcar diversidade), (5) intra-edition em `dedup_across_sections()` com entity extraction + keyword overlap (remove duplicatas entre items/world/tool_of_day/quick_links dentro da mesma edicao). Prioridade: items > world > tool_of_day > quick_links.
 
 19. **Idioma PT-BR 100%** — regra reforcada em 4 pontos do CURATOR_SYSTEM/USER_TEMPLATE. Palavras proibidas com traducao explicita: Expect→Espere, Open→Abra, Result→Resultado, Click→Clique. So URLs, nomes proprios (empresas/produtos/pessoas) e handles ficam em ingles.
 
@@ -177,6 +177,10 @@ Threshold minimo: 60 pontos
 23. **Hooks recentes no prompt** — dedup.py mantem `digest_sent_hooks.json` com subject_hooks dos ultimos 7 dias. processor.py injeta no prompt com regra: "NAO repetir temas similares". Se o tema top for igual ao de ontem, curador escolhe o segundo tema.
 
 24. **Browser UA obrigatorio para RSS** — collector.py e newsletter_collector.py usam User-Agent Chrome (macOS) para nao ser bloqueado por Substacks. Fetch order: `requests` com headers de browser primeiro, `feedparser` puro como fallback.
+
+25. **Pre-clustering obrigatorio (v2.9)** — processor.py agrupa itens sobre o mesmo assunto ANTES de enviar ao Claude via `_cluster_and_pick_best()`. Usa keyword overlap (60%+ match) + entity extraction. O melhor representante de cada cluster recebe campo `_cluster_size` que indica quantas fontes cobriram a mesma historia. Claude usa esse campo para priorizar noticias exclusivas (cluster_size=1) sobre amplamente cobertas.
+
+26. **Ineditismo minimo 30% (v2.9)** — prompt exige que pelo menos 4 dos 12 itens principais sejam de fontes primarias ou noticias nao amplamente cobertas. Regra 6 do CURATOR_SYSTEM: "INEDITISMO OBRIGATORIO".
 
 ---
 
