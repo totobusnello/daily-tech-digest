@@ -4,6 +4,35 @@
 
 ## Changelog
 
+### v2.9 — 01/05/2026 (Dedup 5 Camadas + Pré-Clustering + Ineditismo + Fontes Alternativas)
+
+**Mudanças implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | Dedup intra-edição reescrito com entity extraction + keyword overlap (60%+ match) em vez de primeiras 5 palavras. Novas funções: `_extract_entities()`, `_title_keywords()`, `_titles_overlap()`, `_cluster_and_pick_best()`, `_cap_per_source()`. Stopwords PT+EN. Pré-clustering agrupa itens sobre o mesmo assunto e mantém melhor representante (`_cluster_size`). Cap 5 itens/fonte. Prompt reforçado: regras 6 (INEDITISMO OBRIGATÓRIO, 30% mínimo) e 7 (DIVERSIDADE TEMÁTICA, max 2/tema). Hierarquia de fontes no prompt (primária > indie > community > newsletter > mídia > mainstream). Heat score com bonus ineditismo (+15/+10) e penalidade mainstream (-10). Regra anti-repetição expandida com teste final por empresa/evento. |
+| `scripts/dedup.py` | Title hash cross-edição implementado (prometido v2.6, nunca ativado). `_title_hash()` normaliza títulos: remove stopwords PT+EN, ordena 8 keywords. `load_title_cache()` / `save_title_cache()` para persistência. `dedup_items()` agora filtra por URL + title hash. `register_sent()` consolidado: salva URLs + title hashes de todas as seções. |
+| `scripts/collector.py` | +45 fontes alternativas: 7 labs primários (DeepMind, Meta AI, NVIDIA, MS Research, Stability, Mistral, Cohere), 5 community (Reddit ML, LocalLLaMA, HN Show 50+pts, Lobsters AI, Product Hunt), 2 developer (Changelog, InfoQ), 10 Substacks indie (Simon Willison, Lilian Weng, Chip Huyen, SemiAnalysis, Stratechery, etc.), 7 Brasil (NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech), 14 X handles indie/builders (@simonw, @chipro, @levelsio, @GergelyOrosz, @filipedeschamps, etc.). |
+| `.github/workflows/daily-digest.yml` | Cron adiantado 09:45→09:00 UTC (06:00 BRT). Cache inclui `digest_sent_titles.json`. Artifacts atualizados. |
+| `config.yaml` | v2.9. Fontes: ~200 ativas. |
+| `CLAUDE.md` | v2.9. Filosofia de fontes. Heat score com ineditismo. Dedup 5 camadas. Regras 25 (pré-clustering) e 26 (ineditismo 30%). |
+
+**Dedup em 5 camadas:**
+1. Cross-edição por URL (existia)
+2. Cross-edição por title hash (novo — normaliza, remove stopwords, ordena keywords)
+3. Pré-clustering (novo — agrupa itens sobre mesmo assunto, mantém melhor representante)
+4. Cap por fonte (novo — max 5 itens/fonte para forçar diversidade)
+5. Intra-edição semântica (melhorado — entity extraction + keyword overlap 60%)
+
+**Fontes ~153 → ~200 (+45):**
+- Filosofia: fonte primária > indie/builder > community > newsletter > mídia > mainstream
+- Labs primários: decisões técnicas em primeira mão
+- Community: o que practitioners discutem ANTES da mídia cobrir
+- Indie voices: análise original com ponto de vista único
+- Brasil expandido: cobertura tech/negócios BR de 4→11 fontes
+
+---
+
 ### v2.8 — 17/04/2026 (Resiliência + Dedup Forte + Idioma + Alertas Privados)
 
 **Mudanças implementadas:**
@@ -418,24 +447,55 @@
 
 ---
 
+### ✅ Implementado em v2.9 (01/05/2026)
+
+**Dedup 5 Camadas:** ✅
+- [x] Cross-edição por title hash (prometido v2.6, implementado agora)
+- [x] Pré-clustering de itens sobre mesmo assunto
+- [x] Cap por fonte (max 5/fonte)
+- [x] Intra-edição com entity extraction + keyword overlap 60%
+- [x] Dedup semântico (substitui primeiras 5 palavras)
+
+**Fontes Alternativas (ineditismo):** ✅
+- [x] 7 blogs primários de AI labs (DeepMind, Meta AI, NVIDIA, etc.)
+- [x] 5 community-driven (Reddit ML, LocalLLaMA, HN Show, Lobsters, Product Hunt)
+- [x] 10 Substacks indie (Simon Willison, Lilian Weng, Chip Huyen, SemiAnalysis, Stratechery, etc.)
+- [x] 7 fontes Brasil (NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech)
+- [x] 14 X handles indie/builders
+- [x] StartSe — adicionado v2.9
+- [x] Stratechery — adicionado v2.9 via RSS
+
+**Prompt Ineditismo:** ✅
+- [x] Hierarquia de fontes (primária > indie > community > newsletter > mídia > mainstream)
+- [x] Ineditismo mínimo 30% (4+ de 12 itens de fontes exclusivas)
+- [x] Heat score com bonus ineditismo e penalidade mainstream
+
+---
+
 ### Backlog Geral
 
 **Fontes:**
-- [ ] StartSe — adicionar se trouxer conteudo inovador/inedito
+- [x] StartSe — adicionado v2.9
 - [x] Filipe Deschamps (YouTube BR) — adicionado v2.2
 - [x] Import AI (Jack Clark) — adicionado v2.2 via Substack RSS
-- [ ] The Batch (Andrew Ng), Stratechery — fontes aspiracionais sem scraper
+- [x] Stratechery — adicionado v2.9 via RSS
 - [x] Crunchbase News — adicionado v2.3 via RSS
 
 **Formato:**
 - [x] Secao de engagement — 1-click feedback + referral CTA (v2.6)
+- [ ] Secao "Deep Dive" semanal — 1 analise longa por semana sobre tema trending
+- [ ] "Radar Brasil" — mini-secao dedicada a tech/AI BR (1-2 itens, destacando o ecossistema local)
 
 **Curadoria:**
-- [ ] Dedup mais inteligente (embeddings para similaridade semantica)
+- [x] Dedup mais inteligente — implementado v2.9 (entity extraction + keyword overlap + clustering)
 - [x] Cache de items ja enviados para evitar repeticao entre dias — implementado v2.3
 - [x] Feedback loop — rastrear opens/clicks para refinar selecao — implementado v2.4
+- [ ] Classificacao automatica de ineditismo — usar _cluster_size para pontuar items programaticamente
+- [ ] Score de "trending velocity" — itens que ganham engajamento rapido nas ultimas 2h valem mais
 
 **Infra:**
 - [x] Monitoring/alertas quando o pipeline falha — implementado v2.3 (GitHub Issue alert)
 - [x] Retry automatico se um feed der timeout — implementado v2.5 (backoff exponencial)
 - [ ] Dashboard com metricas (opens, clicks, growth)
+- [ ] Health check de fontes — detectar feeds que nao retornam itens ha 3+ dias
+- [ ] Fallback para cache do dia anterior se coleta falhar completamente
