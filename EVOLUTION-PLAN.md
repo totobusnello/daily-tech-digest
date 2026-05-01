@@ -385,7 +385,7 @@
 - Fontes: RSS feeds (HN, TechCrunch, The Verge, Reuters, etc), YouTube RSS, X/Twitter API
 - Curadoria: Claude Sonnet via Anthropic API
 - Envio: Buttondown API
-- Deploy: GitHub Actions (diario 06:45 BRT)
+- Deploy: GitHub Actions (diario 06:00 BRT)
 - Heat Score: Freshness (40pts) + Fonte (30pts) + Impacto (30pts), threshold 60
 
 ---
