@@ -4,42 +4,95 @@
 
 ## Changelog
 
-### v2.8 — 25/04/2026 (Redesign Visual)
+### v2.10 — 01/05/2026 (Health Check + Radar Brasil + Deep Dive + Trending Velocity + Fallback Cache + TF-IDF Dedup)
 
-**Mudancas implementadas:**
+**Mudanças implementadas:**
 
 | Arquivo | O que mudou |
 |---------|------------|
-| `scripts/sender.py` | Subject line: só manchete, sem marca/data. Header: 20px (era 28px), tagline removida. Section headers: pill badges coloridos em fundo branco (era barra colorida full-width). Cards: border-radius 12px, bordas sutis. Botões: box-shadow colorido, touch targets 44px+. Dark mode: CSS `prefers-color-scheme: dark` com paleta completa. Todos os border-radius unificados em 12px |
-| `.github/workflows/daily-digest.yml` | Schedule adiantado de 06:45 BRT (09:45 UTC) para 06:00 BRT (09:00 UTC) |
-| `config.yaml` | Schedule atualizado para 06:00 BRT |
+| `scripts/health_check.py` | **NOVO.** Monitora ~200 feeds com ThreadPoolExecutor(15 workers). Timeout 10s, browser UA + feedparser fallback. Rastreia falhas consecutivas em `/tmp/digest_feed_health.json`. Alerta em 3+ falhas. |
+| `scripts/processor.py` | Radar Brasil no CURATOR_SYSTEM (seção 3b) + CURATOR_USER_TEMPLATE (campo `radar_brasil[]`). Deep Dive semanal (sextas): campo `deep_dive` com {title, body}. Trending velocity: calcula `trending_score` (likes/retweets + recência) e injeta no prompt. TF-IDF dedup: `_tfidf_similarity()` com cosine similarity stdlib-only, threshold 0.45, integrado em `_titles_overlap()` como 3º check. `radar_brasil` no `dedup_across_sections()` (step 2.5). Console summary mostra Radar Brasil. |
+| `scripts/sender.py` | Radar Brasil: HTML (bandeira BR + cor verde #16a34a) + markdown. Deep Dive: HTML (microscópio + azul escuro #1e40af) + markdown. Cores adicionadas ao COLORS dict. |
+| `scripts/run.py` | Fallback cache: se coleta falhar e `/tmp/digest_raw.json` tem <48h, continua com dados antigos. Log de warning com idade do cache. |
+| `.github/workflows/daily-digest.yml` | Health check step (continue-on-error). Raw data cache: restore antes da coleta + save após coleta (actions/cache@v4). `digest_feed_health.json` nos artifacts. |
+| `config.yaml` | v2.10. |
+| `CLAUDE.md` | v2.10. Regras 27-32 (health check, Radar Brasil, Deep Dive, trending velocity, fallback cache, TF-IDF dedup). Dedup 5→6 camadas. Layout atualizado com seções 3b e 5b. |
 
-**Subject Line Limpo:**
-- Formato: `🔥 Google despeja $40B na Anthropic` (só manchete)
-- Marca e data já aparecem no corpo do email ("THE DAILY BYTE · data")
-- Fallback sem hook: `🔥 Daily Byte`
+**Novas funcionalidades:**
+- **Health Check**: monitoramento proativo de ~200 feeds antes da coleta
+- **Radar Brasil**: seção dedicada ao ecossistema brasileiro (1-2 itens diários)
+- **Deep Dive**: análise profunda semanal (sextas) — 3-5 parágrafos conectando pontos da semana
+- **Trending Velocity**: bonus no heat score baseado em engagement (likes/retweets) + recência
+- **Fallback Cache**: resiliência — se coleta falha, reutiliza dados anteriores (<48h)
+- **TF-IDF Dedup**: similaridade semântica leve (stdlib-only) como 6ª camada de dedup
 
-**Dark Mode CSS:**
-- Meta tags: `color-scheme: light dark` + `supported-color-schemes`
-- `@media (prefers-color-scheme: dark)`: fundo #1a1a1a, cards #2d2d2d, texto #f5f5f5, links #4da6ff
-- Classes CSS: `.email-bg`, `.card-bg`, `.card-border`, `.dark-header`, `.text-dark`, `.text-muted`
-- Suporte: Apple Mail, iOS Mail, Outlook 2019+, Samsung Mail, Thunderbird
+---
 
-**Cards com Bordas Suaves:**
-- Section headers: pill badge com border-radius:20px sobre fundo branco
-- Cards: border-radius 12px (era 8px), borda 1px solid #e5e7eb
-- Estilo inspirado no Morning Brew (referência em design de newsletter)
+### v2.9 — 01/05/2026 (Dedup 5 Camadas + Pré-Clustering + Ineditismo + Fontes Alternativas)
 
-**Header Mais Limpo:**
-- Título: 20px bold (era 28px) — menos peso visual
-- Tagline "News, insights & trends" removida (redundante)
-- Data: 12px (era 13px)
+**Mudanças implementadas:**
 
-**Botões com Profundidade:**
-- `box-shadow: 0 2px 8px rgba(cor,0.35)` nos CTAs (Experimentar, Assistir)
-- `box-shadow: 0 2px 6px rgba(0,0,0,0.15)` nos botões da enquete
-- Padding: 12px 28px nos CTAs principais (touch target ≥44px)
-- border-radius: 8px (era 6px)
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | Dedup intra-edição reescrito com entity extraction + keyword overlap (60%+ match) em vez de primeiras 5 palavras. Novas funções: `_extract_entities()`, `_title_keywords()`, `_titles_overlap()`, `_cluster_and_pick_best()`, `_cap_per_source()`. Stopwords PT+EN. Pré-clustering agrupa itens sobre o mesmo assunto e mantém melhor representante (`_cluster_size`). Cap 5 itens/fonte. Prompt reforçado: regras 6 (INEDITISMO OBRIGATÓRIO, 30% mínimo) e 7 (DIVERSIDADE TEMÁTICA, max 2/tema). Hierarquia de fontes no prompt (primária > indie > community > newsletter > mídia > mainstream). Heat score com bonus ineditismo (+15/+10) e penalidade mainstream (-10). Regra anti-repetição expandida com teste final por empresa/evento. |
+| `scripts/dedup.py` | Title hash cross-edição implementado (prometido v2.6, nunca ativado). `_title_hash()` normaliza títulos: remove stopwords PT+EN, ordena 8 keywords. `load_title_cache()` / `save_title_cache()` para persistência. `dedup_items()` agora filtra por URL + title hash. `register_sent()` consolidado: salva URLs + title hashes de todas as seções. |
+| `scripts/collector.py` | +45 fontes alternativas: 7 labs primários (DeepMind, Meta AI, NVIDIA, MS Research, Stability, Mistral, Cohere), 5 community (Reddit ML, LocalLLaMA, HN Show 50+pts, Lobsters AI, Product Hunt), 2 developer (Changelog, InfoQ), 10 Substacks indie (Simon Willison, Lilian Weng, Chip Huyen, SemiAnalysis, Stratechery, etc.), 7 Brasil (NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech), 14 X handles indie/builders (@simonw, @chipro, @levelsio, @GergelyOrosz, @filipedeschamps, etc.). |
+| `.github/workflows/daily-digest.yml` | Cron adiantado 09:45→09:00 UTC (06:00 BRT). Cache inclui `digest_sent_titles.json`. Artifacts atualizados. |
+| `config.yaml` | v2.9. Fontes: ~200 ativas. |
+| `CLAUDE.md` | v2.9. Filosofia de fontes. Heat score com ineditismo. Dedup 5 camadas. Regras 25 (pré-clustering) e 26 (ineditismo 30%). |
+
+**Dedup em 5 camadas:**
+1. Cross-edição por URL (existia)
+2. Cross-edição por title hash (novo — normaliza, remove stopwords, ordena keywords)
+3. Pré-clustering (novo — agrupa itens sobre mesmo assunto, mantém melhor representante)
+4. Cap por fonte (novo — max 5 itens/fonte para forçar diversidade)
+5. Intra-edição semântica (melhorado — entity extraction + keyword overlap 60%)
+
+**Fontes ~153 → ~200 (+45):**
+- Filosofia: fonte primária > indie/builder > community > newsletter > mídia > mainstream
+- Labs primários: decisões técnicas em primeira mão
+- Community: o que practitioners discutem ANTES da mídia cobrir
+- Indie voices: análise original com ponto de vista único
+- Brasil expandido: cobertura tech/negócios BR de 4→11 fontes
+
+---
+
+### v2.8 — 17/04/2026 (Resiliência + Dedup Forte + Idioma + Alertas Privados)
+
+**Mudanças implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | Modelo atualizado para `claude-sonnet-4-6`. Removido assistant prefill (não suportado pelo 4.6) — agora usa instrução explícita "Responda APENAS com JSON". Injeção de `recent_hooks` no prompt para evitar título repetido entre edições. Regra de idioma PT-BR 100% reforçada em 4 pontos do prompt (incl. lista de palavras em inglês proibidas: Expect→Espere, Open→Abra etc). Regra crítica de ortografia: proibido inventar palavras (ex: "céfico" não existe, é "cético"). Regra anti-duplicação entre seções com exemplo real. **Nova função `dedup_across_sections()`**: rede de segurança programática que remove duplicatas por URL normalizada OU assinatura de título (primeiras 5 palavras > 3 letras) entre `items`/`world`/`tool_of_day`/`quick_links`. |
+| `scripts/collector.py` | X bearer token com `.strip()` para remover whitespace/EOF. User-Agent Chrome (macOS) substituindo UA bot que era bloqueado por Substacks. Fetch invertido: `requests` com headers de browser primeiro, `feedparser` como fallback. Safe fallback para variável unbound. |
+| `scripts/newsletter_collector.py` | Mesma inversão de fetch (browser UA first, feedparser fallback). Safe fallback. |
+| `scripts/dedup.py` | Ativado dedup por hash de título (cruza edições): previne mesma notícia de fontes diferentes. Novo store `digest_sent_hooks.json` com histórico de `subject_hook` dos últimos 7 dias. Funções: `_register_hook()`, `load_hooks()`, `save_hooks()`, `get_recent_hooks(days=3)`. |
+| `scripts/alert_failure.py` | **Reescrito**: antes enviava email para toda lista via Buttondown broadcast — agora cria GitHub Issue via `gh` CLI (owner recebe só por email do GitHub). Aceita `--failed-step` para mostrar qual step quebrou. |
+| `.github/workflows/daily-digest.yml` | Step IDs (`collect`, `curate`, `send`) + detecção do step que falhou via `steps.*.outcome`. `notify-failure` agora usa `permissions: issues: write` + `GH_TOKEN`. Cache path inclui `/tmp/digest_sent_hooks.json`. |
+| `config.yaml` | Modelo: `claude-sonnet-4-6`. |
+| `CLAUDE.md` | v2.8 + modelo atualizado. |
+| `EVOLUTION-PLAN.md` | v2.8 changelog. |
+
+**Problemas resolvidos:**
+- Pipeline falhando silenciosamente: modelo deprecado (`claude-sonnet-4-5-20250929`) e prefill do assistant incompatível com `claude-sonnet-4-6`
+- Alerta de falha indo para todos os subscribers: agora só o owner é notificado (GitHub Issue)
+- X/Twitter retornando 0 items: bearer token com whitespace no final
+- Substacks retornando 0 items: User-Agent bot bloqueado, trocado para Chrome UA
+- Detecção genérica de falha: agora o alerta diz exatamente qual step quebrou (collector/processor/sender)
+- **Título repetido entre edições** (dedup fraco): ativado hash de título + hooks recentes injetados no prompt
+- **Inglês misturado em PT-BR** ("Expect" no how_to_use): regras reforçadas em 4 pontos do prompt com exemplos de palavras proibidas
+- **Palavras inventadas** ("céfico" em vez de "cético"): regra crítica de ortografia + lista de palavras comuns
+- **Mesma notícia em 2 seções** (Manus em `world` E `hoje_no_byte`): prompt anti-dup + nova função `dedup_across_sections()` como rede de segurança programática
+
+**Dedup em 3 camadas (anti-repetição):**
+1. **Cross-edition por URL** (já existia) — `dedup.py` filtra URLs já enviadas nos últimos 5 dias
+2. **Cross-edition por título** (NOVO) — hash MD5 do título normalizado evita mesma notícia de fontes diferentes
+3. **Intra-edition por URL + assinatura** (NOVO) — `dedup_across_sections()` remove duplicatas entre `items`/`world`/`tool_of_day`/`quick_links` dentro da mesma edição
+
+**Alertas Privados (owner-only):**
+- Antes: `alert_failure.py` enviava broadcast via Buttondown quando pipeline falhava → todos os subscribers recebiam email de falha
+- Agora: cria GitHub Issue com label `pipeline-failure` → owner recebe notificação por email do GitHub (configurado em github.com/settings/notifications)
+- Label `pipeline-failure` precisa existir no repo (criar em Issues → Labels)
 
 ---
 
@@ -418,24 +471,67 @@
 
 ---
 
+### ✅ Implementado em v2.9 (01/05/2026)
+
+**Dedup 5 Camadas:** ✅
+- [x] Cross-edição por title hash (prometido v2.6, implementado agora)
+- [x] Pré-clustering de itens sobre mesmo assunto
+- [x] Cap por fonte (max 5/fonte)
+- [x] Intra-edição com entity extraction + keyword overlap 60%
+- [x] Dedup semântico (substitui primeiras 5 palavras)
+
+**Fontes Alternativas (ineditismo):** ✅
+- [x] 7 blogs primários de AI labs (DeepMind, Meta AI, NVIDIA, etc.)
+- [x] 5 community-driven (Reddit ML, LocalLLaMA, HN Show, Lobsters, Product Hunt)
+- [x] 10 Substacks indie (Simon Willison, Lilian Weng, Chip Huyen, SemiAnalysis, Stratechery, etc.)
+- [x] 7 fontes Brasil (NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech)
+- [x] 14 X handles indie/builders
+- [x] StartSe — adicionado v2.9
+- [x] Stratechery — adicionado v2.9 via RSS
+
+**Prompt Ineditismo:** ✅
+- [x] Hierarquia de fontes (primária > indie > community > newsletter > mídia > mainstream)
+- [x] Ineditismo mínimo 30% (4+ de 12 itens de fontes exclusivas)
+- [x] Heat score com bonus ineditismo e penalidade mainstream
+
+---
+
 ### Backlog Geral
 
 **Fontes:**
-- [ ] StartSe — adicionar se trouxer conteudo inovador/inedito
+- [x] StartSe — adicionado v2.9
 - [x] Filipe Deschamps (YouTube BR) — adicionado v2.2
 - [x] Import AI (Jack Clark) — adicionado v2.2 via Substack RSS
-- [ ] The Batch (Andrew Ng), Stratechery — fontes aspiracionais sem scraper
+- [x] Stratechery — adicionado v2.9 via RSS
 - [x] Crunchbase News — adicionado v2.3 via RSS
 
 **Formato:**
 - [x] Secao de engagement — 1-click feedback + referral CTA (v2.6)
+- [ ] Secao "Deep Dive" semanal — 1 analise longa por semana sobre tema trending
+- [ ] "Radar Brasil" — mini-secao dedicada a tech/AI BR (1-2 itens, destacando o ecossistema local)
 
 **Curadoria:**
-- [ ] Dedup mais inteligente (embeddings para similaridade semantica)
+- [x] Dedup mais inteligente — implementado v2.9 (entity extraction + keyword overlap + clustering)
 - [x] Cache de items ja enviados para evitar repeticao entre dias — implementado v2.3
 - [x] Feedback loop — rastrear opens/clicks para refinar selecao — implementado v2.4
+- [ ] Classificacao automatica de ineditismo — usar _cluster_size para pontuar items programaticamente
+- [ ] Score de "trending velocity" — itens que ganham engajamento rapido nas ultimas 2h valem mais
 
 **Infra:**
 - [x] Monitoring/alertas quando o pipeline falha — implementado v2.3 (GitHub Issue alert)
 - [x] Retry automatico se um feed der timeout — implementado v2.5 (backoff exponencial)
 - [ ] Dashboard com metricas (opens, clicks, growth)
+- [ ] Health check de fontes — detectar feeds que nao retornam itens ha 3+ dias
+- [ ] Fallback para cache do dia anterior se coleta falhar completamente
+- [ ] Custom domain para click tracking — configurar dominio proprio no Buttondown para melhorar deliverability
+
+**Custom Domain Tracking (instruções):**
+Para configurar dominio proprio no Buttondown:
+1. Escolher subdominio: ex. `byte.nuvini.ai` ou `news.nuvini.ai`
+2. No Buttondown Settings > Custom domain > Adicionar dominio
+3. Configurar DNS no registrador:
+   - CNAME `byte.nuvini.ai` → `buttondown-proxy.fly.dev`
+   - TXT record para verificacao SPF/DKIM (Buttondown fornece)
+4. Aguardar propagacao DNS (24-48h)
+5. Testar deliverability com mail-tester.com
+Beneficio: links no email apontam para `byte.nuvini.ai` em vez de `buttondown.com`, melhor reputacao de dominio e open rates.

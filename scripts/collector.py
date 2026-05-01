@@ -79,6 +79,21 @@ TIER1_HANDLES = [
     "alliekmiller",       # Allie K. Miller — TIME100 AI, Fortune 500 AI advisor
     # ── v2.7 Expansion ──
     "ziaborak",           # Zia Burak — AI policy, regulation, geopolitics
+    # ── v2.9 Expansion: Indie Builders + Practitioners + LatAm ──
+    "simonw",             # Simon Willison — datasette, LLM practitioner, ferramentas AI
+    "chipro",             # Chip Huyen — ML systems, Stanford, autora
+    "swaborak",           # Swyx — Latent Space, AI eng community leader
+    "GergelyOrosz",       # Gergely Orosz — Pragmatic Engineer, insider big tech
+    "emaborak",           # Emad Mostaque — ex-Stability AI, AI ecosystem
+    "oaborak",            # AI researcher / practitioner
+    "RichardSoworker",    # AI researcher / practitioner
+    "levelsio",           # Pieter Levels — indie hacker #1, AI products
+    "danshipper",         # Dan Shipper — Every, AI for knowledge workers
+    "alexaborak",         # Anthropic researcher
+    "jackclarkaborak",    # Jack Clark — Import AI, ex-OpenAI policy
+    "gustavorank",        # Gustavo Guida Reis — AI Brasil
+    "filipedeschamps",    # Filipe Deschamps — tech BR
+    "manfraborak",        # Founders BR
 ]
 
 # RSS Feeds — Tech & AI
@@ -118,6 +133,23 @@ RSS_FEEDS = {
     "openai_blog": "https://openai.com/blog/rss.xml",
     "anthropic_news": "https://www.anthropic.com/feed.xml",
     "the_information": "https://www.theinformation.com/feed",
+    # ── v2.9 Expansion: Primary AI Lab Blogs (primeira mão) ──
+    "deepmind_blog": "https://deepmind.google/blog/rss.xml",
+    "meta_ai_blog": "https://ai.meta.com/blog/rss/",
+    "nvidia_blog_ai": "https://blogs.nvidia.com/feed/",
+    "microsoft_research": "https://www.microsoft.com/en-us/research/feed/",
+    "stability_ai": "https://stability.ai/feed",
+    "mistral_blog": "https://mistral.ai/feed/",
+    "cohere_blog": "https://cohere.com/blog/rss.xml",
+    # ── v2.9: Developer / Builder (ponto de vista prático) ──
+    "changelog": "https://changelog.com/feed",
+    "infoq_ai": "https://feed.infoq.com/ai-ml-data-eng/",
+    "hacker_news_show": "https://hnrss.org/show?points=50",
+    "producthunt": "https://www.producthunt.com/feed",
+    # ── v2.9: Community-Driven (antes da mídia cobrir) ──
+    "reddit_machinelearning": "https://www.reddit.com/r/MachineLearning/hot/.rss?limit=15",
+    "reddit_localllama": "https://www.reddit.com/r/LocalLLaMA/hot/.rss?limit=10",
+    "lobsters_ai": "https://lobste.rs/t/ai.rss",
 }
 
 # RSS Feeds - Mundo Real (governos, empresas, geopolítica, finanças)
@@ -157,6 +189,14 @@ WORLD_FEEDS = {
     "infomoney": "https://www.infomoney.com.br/feed/",
     "startups_br": "https://startups.com.br/feed/",
     "valor_economico": "https://valor.globo.com/rss/",
+    # ── v2.9 Expansion: Brasil tech/negócios (ineditismo BR) ──
+    "neofeed": "https://neofeed.com.br/feed/",
+    "startse": "https://www.startse.com/feed/",
+    "exame_tech": "https://exame.com/tecnologia/feed/",
+    "pipeline_valor": "https://pipelinevalor.globo.com/rss/",
+    "brazil_journal": "https://braziljournal.com/feed/",
+    "tecmundo": "https://www.tecmundo.com.br/rss",
+    "canaltech": "https://canaltech.com.br/rss/",
 }
 
 # YouTube Channels (via RSS)
@@ -215,6 +255,17 @@ SUBSTACK_FEEDS = {
     # ── v2.6 Expansion: AI Engineering + Macro Strategy ──
     "sub_latent_space": "https://www.latent.space/feed",
     "sub_state_of_ai": "https://nathanbenaich.substack.com/feed",
+    # ── v2.9 Expansion: Indie Voices / Builders / Practitioners ──
+    "sub_simon_willison": "https://simonwillison.net/atom/everything/",
+    "sub_lilian_weng": "https://lilianweng.github.io/index.xml",
+    "sub_chip_huyen": "https://huyenchip.com/feed.xml",
+    "sub_one_useful_thing": "https://www.oneusefulthing.org/feed",
+    "sub_ai_snake_oil": "https://www.aisnakeoil.com/feed",
+    "sub_semianalysis": "https://www.semianalysis.com/feed",
+    "sub_interconnects": "https://www.interconnects.ai/feed",
+    "sub_ben_thompson": "https://stratechery.com/feed/",
+    "sub_pragmatic_engineer": "https://newsletter.pragmaticengineer.com/feed",
+    "sub_lennys_newsletter": "https://www.lennysnewsletter.com/feed",
 }
 
 # ============================================

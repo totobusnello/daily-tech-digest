@@ -6,7 +6,7 @@ Orquestra coleta → curadoria → envio
 
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add scripts dir to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -45,12 +45,34 @@ def main():
             print("\n" + "="*50)
             print("📥 STEP 1: COLETA")
             print("="*50)
-            raw_data = collect_all()
 
-            # Save
             import json
-            with open("/tmp/digest_raw.json", 'w') as f:
-                json.dump(raw_data, f, indent=2, ensure_ascii=False)
+            try:
+                raw_data = collect_all()
+
+                # Save
+                with open("/tmp/digest_raw.json", 'w') as f:
+                    json.dump(raw_data, f, indent=2, ensure_ascii=False)
+            except Exception as collect_err:
+                print(f"\n⚠️ Coleta falhou: {collect_err}")
+
+                # Fallback: try to use cached raw data from previous run
+                cache_path = "/tmp/digest_raw.json"
+                if os.path.exists(cache_path):
+                    cache_age_seconds = (datetime.now(timezone.utc) - datetime.fromtimestamp(
+                        os.path.getmtime(cache_path), tz=timezone.utc
+                    )).total_seconds()
+                    cache_age_hours = cache_age_seconds / 3600
+
+                    if cache_age_hours < 48:
+                        print(f"⚠️ Coleta falhou, usando cache de {cache_age_hours:.1f} horas atrás")
+                        print(f"   Arquivo: {cache_path}")
+                    else:
+                        print(f"❌ Cache muito antigo ({cache_age_hours:.1f}h > 48h). Abortando.")
+                        raise collect_err
+                else:
+                    print("❌ Nenhum cache disponível em /tmp/digest_raw.json. Abortando.")
+                    raise collect_err
         else:
             print("⏭️ Pulando coleta (--skip-collect)")
 

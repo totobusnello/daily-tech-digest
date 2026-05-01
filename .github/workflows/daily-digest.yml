@@ -1,7 +1,7 @@
 name: 🔥 THE DAILY BYTE - Daily Digest
 
 on:
-  # Executa todo dia às 09:00 UTC (06:00 BRT)
+  # Executa todo dia às 09:00 UTC (06:00 BRT) - margem para atrasos do GitHub
   schedule:
     - cron: '0 9 * * *'
 
@@ -37,14 +37,30 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      # v2.3: Restore dedup cache from previous runs
+      # v2.9: Restore dedup caches (URLs + title hashes) from previous runs
       - name: 🔄 Restore dedup cache
         uses: actions/cache@v5
         with:
-          path: /tmp/digest_sent_cache.json
+          path: |
+            /tmp/digest_sent_cache.json
+            /tmp/digest_sent_titles.json
           key: digest-dedup-${{ github.run_number }}
           restore-keys: |
             digest-dedup-
+
+      # v2.10: Restore raw data cache (fallback if collection fails)
+      - name: 🔄 Restore raw data cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/digest_raw.json
+          key: digest-raw-latest-${{ github.run_number }}
+          restore-keys: |
+            digest-raw-latest-
+
+      - name: 🏥 Health check feeds
+        continue-on-error: true
+        run: |
+          cd scripts && python health_check.py
 
       - name: 📰 Step 1 — Collect news sources
         id: collect
@@ -52,6 +68,14 @@ jobs:
           cd scripts
           python collector.py
           echo "✅ Collection complete"
+
+      # v2.10: Save raw data to cache after successful collection
+      - name: 💾 Save raw data cache
+        if: steps.collect.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/digest_raw.json
+          key: digest-raw-latest-${{ github.run_number }}
 
       # v2.4: Feedback loop — engagement metrics inform curation (non-critical)
       - name: 📊 Step 2 — Collect feedback metrics
@@ -109,6 +133,8 @@ jobs:
             /tmp/digest_preview.html
             /tmp/digest_feedback.json
             /tmp/digest_sent_cache.json
+            /tmp/digest_sent_titles.json
+            /tmp/digest_feed_health.json
           retention-days: 7
 
   # ── v2.5: Alerta via GitHub Issue se o pipeline falhar ──

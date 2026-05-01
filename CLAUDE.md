@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.8 (Redesign Visual + Dark Mode)
+**Versao atual:** v2.10 (Health Check + Radar Brasil + Deep Dive + Trending Velocity + Fallback Cache + TF-IDF Dedup)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -42,6 +42,7 @@ sender.py             -> Buttondown API -> email HTML
 | `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas, recent_hooks) para informar curadoria |
 | `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
 | `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send). Flags: `--preview`, `--skip-collect`, `--skip-process` |
+| `scripts/health_check.py` | Monitora saude de ~200 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
 | `scripts/alert_failure.py` | Cria GitHub Issue quando pipeline falha (via gh CLI no Actions). Notifica owner por email |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
@@ -56,8 +57,10 @@ sender.py             -> Buttondown API -> email HTML
 1. MUNDO REAL (3 itens) — mundo + Brasil
 2. HOJE NO BYTE (4-5 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
 3. SaaS & ENTERPRISE (2 itens)
+3b. RADAR BRASIL (1-2 itens) — ecossistema tech/AI/negocios BR (opcional, array vazio se nada relevante)
 4. TOOL DO DIA (1 item) + COMO USAR HOJE + PROMPT DO DIA (copy-paste ready)
 5. ANALISE DO DIA (3 bullets)
+5b. DEEP DIVE (sextas) — analise profunda do tema mais quente da semana (3-5 paragrafos)
 6. QUICK LINKS (5-6 itens) — headline + link, sem analise
 + WATCH LATER (1 video no final)
 ```
@@ -69,20 +72,35 @@ sender.py             -> Buttondown API -> email HTML
 - `number_of_day{}` — {value, context} — data point numerico impressionante
 - `world[]` — array de 3 itens (headline, context, source_url, source_name)
 - `items[]` — array com category `hoje_no_byte|saas_enterprise|watch_later` e campo `tag`
+- `radar_brasil[]` — array de 1-2 itens BR (headline, why_it_matters, source_url, source_name). Pode ser vazio.
 - `tool_of_day{}` — OBJETO SEPARADO (nao vai no items), com `how_to_use` e `prompt_of_day` obrigatorios
 - `quick_links[]` — apenas headline + source_url + source_name
 - `daily_analysis[]` — 3 strings com formato "**Tema** — Insight"
+- `deep_dive{}` — (sextas) {title, body} analise profunda 3-5 paragrafos
+- `weekly_workflow{}` — (sextas) {title, steps[]} workflow pratico 3-4 steps
 
 ---
 
-## Fontes
+## Fontes (~200 feeds ativos)
 
-### Tier 1 — Primeira Mao (52 X/Twitter handles)
-@sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @aravind_srinivas, @demishassabis, @ethanmollick, @alliekmiller, @ClementDelworker, @hardmaru, @vkhosla, @benedictevans, @ziaborak, etc. Ver `config.yaml` para lista completa.
+### Filosofia de Fontes (v2.9)
+**O Daily Byte existe para trazer o que C-levels NAO encontram sozinhos.**
+Prioridade: fonte primaria > indie/builder > community > newsletter curada > midia especializada > mainstream.
+Mainstream (Reuters, BBC, CNBC) serve para "Mundo Real" mas NUNCA deve dominar as secoes de tech/AI.
 
-### Tier 2 — RSS Feeds
-**Tech:** HN (100+ pts), Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review, The Decoder
-**World:** Reuters (world + business), Forbes (business + innovation), BBC (world + business)
+### Tier 1 — Primeira Mao (65+ X/Twitter handles)
+**Fundadores/Labs:** @sama, @AnthropicAI, @satyanadella, @sundarpichai, @ylecun, @karpathy, @demishassabis, @aravind_srinivas, @ClementDelworker, etc.
+**Indie/Builders:** @simonw, @chipro, @swaborak, @GergelyOrosz, @levelsio, @danshipper, @filipedeschamps
+**Estrategia/VC:** @vkhosla, @benedictevans, @alliekmiller, @hardmaru, @ziaborak
+Ver `collector.py` para lista completa.
+
+### Tier 2 — RSS Feeds (45+ tech/AI + 37 world)
+**Labs (primeira mao):** DeepMind, Meta AI, NVIDIA, Microsoft Research, OpenAI, Anthropic, HuggingFace, Stability, Mistral, Cohere
+**Community-driven:** Reddit r/MachineLearning, r/LocalLLaMA, HN Show (50+ pts), Lobsters AI, Product Hunt
+**Developer:** Changelog, InfoQ AI/ML
+**Tech media:** HN (100+ pts), TechCrunch AI, MIT Tech Review, The Decoder
+**World:** Reuters, BBC, Forbes, CNBC, WSJ
+**Brasil:** Poder360, InfoMoney, Startups.com.br, Valor Economico, NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech
 **Research:** arXiv cs.AI
 
 ### Tier 3 — Newsletters (10 fontes, via scraping + RSS)
@@ -99,8 +117,12 @@ sender.py             -> Buttondown API -> email HTML
 | Distrito News Inside VC | VC/startups Brasil | PT-BR |
 | The BRIEF | Tech+business diario, tom direto | PT-BR |
 
-### Substacks Curados (31 feeds via RSS)
-AI engineering (Latent Space), macro strategy (State of AI), business strategy, fintech, biotech, AI pratico, e-commerce, edtech, sustainability. Ver `config.yaml` para lista completa.
+### Substacks Curados (41 feeds via RSS)
+**Indie/Practitioners (v2.9):** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter
+**AI Engineering:** Latent Space, State of AI
+**Business/Strategy:** Capital Wars, Doomberg, CFO Dynamics
+**Verticais:** fintech, biotech, e-commerce, edtech, sustainability
+Ver `collector.py` para lista completa.
 
 ### YouTube (10 canais)
 Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov
@@ -111,9 +133,11 @@ Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI
 
 ```
 Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
-Fonte (30 pts):     Fundador=30, Jornalista=25, Release=20, Newsletter=15, Agregador=0
+Fonte (30 pts):     Fundador/blog oficial=30, Jornalista=25, Release=20, Newsletter=15, Agregador=0
 Impacto (30 pts):   Lancamento=30, M&A=25, Drama=20, Incremental=5
 Newsletter Bonus:   Insight exclusivo=+10, Cross-validacao=+5
+Ineditismo Bonus:   Fonte primaria=+15, Community-driven=+10, Indie builder=+10
+Penalidade:         3+ fontes mainstream cobrindo mesma historia=-10
 
 Threshold minimo: 60 pontos
 ```
@@ -164,11 +188,35 @@ Threshold minimo: 60 pontos
 
 17. **Enquete semanal (sextas)** — sender.py mostra enquete com 4 opcoes (AI Tools, Estrategia, Brasil, Deep Dive) usando ?tag= para tracking. So aparece as sextas.
 
-18. **Subject line limpo** — So a manchete, sem marca e sem data. Formato: `🔥 {hook}`. Marca e data aparecem apenas no corpo do email (header). Fallback sem hook: `🔥 Daily Byte`.
+18. **Dedup em 6 camadas (v2.10)** — (1) cross-edition por URL em `dedup.py` (5 dias), (2) cross-edition por hash de titulo em `dedup.py` (evita mesma noticia de fontes diferentes), (3) pre-clustering em `processor.py` (agrupa itens sobre o mesmo assunto antes de enviar ao Claude, mantendo so o melhor representante), (4) cap por fonte (max 5 itens/fonte para forcar diversidade), (5) intra-edition em `dedup_across_sections()` com entity extraction + keyword overlap (remove duplicatas entre items/world/radar_brasil/tool_of_day/quick_links dentro da mesma edicao), (6) TF-IDF cosine similarity (threshold 0.45) como fallback semantico para duplicatas com wording diferente. Prioridade: items > world > radar_brasil > tool_of_day > quick_links.
 
-19. **Dark mode CSS** — sender.py inclui `@media (prefers-color-scheme: dark)` com paleta adaptada: fundo #1a1a1a, cards #2d2d2d, texto #f5f5f5, links #4da6ff. Meta tags `color-scheme` no head.
+19. **Idioma PT-BR 100%** — regra reforcada em 4 pontos do CURATOR_SYSTEM/USER_TEMPLATE. Palavras proibidas com traducao explicita: Expect→Espere, Open→Abra, Result→Resultado, Click→Clique. So URLs, nomes proprios (empresas/produtos/pessoas) e handles ficam em ingles.
 
-20. **Visual v2.8** — Section headers sao pill badges coloridos (border-radius:20px) em fundo branco. Cards com border-radius:12px e borda sutil. Botoes CTA com box-shadow colorido e touch targets 44px+. Header compacto (20px, sem tagline).
+20. **Ortografia estrita** — curador NAO pode inventar palavras. Regra lista explicitamente palavras comuns que nao podem ser escritas erradas: cetico (nao "cefico"), analise, estrategia, trajetoria, ate, ja, esta, nao. Em caso de duvida, usar palavra mais simples.
+
+21. **Alertas via GitHub Issue** — `alert_failure.py` cria Issue (nao envia email para lista). Label `pipeline-failure` deve existir no repo. Owner recebe notificacao por email do GitHub. O step que falhou e detectado via `steps.*.outcome` no workflow e passado como `--failed-step`.
+
+22. **Assistant prefill nao suportado** — `claude-sonnet-4-6` nao aceita `{"role": "assistant", "content": "{"}`. Em vez disso, usar instrucao explicita no user message: `"Responda APENAS com o JSON valido. Sem texto antes ou depois."`. Nao re-adicionar o prefill.
+
+23. **Hooks recentes no prompt** — dedup.py mantem `digest_sent_hooks.json` com subject_hooks dos ultimos 7 dias. processor.py injeta no prompt com regra: "NAO repetir temas similares". Se o tema top for igual ao de ontem, curador escolhe o segundo tema.
+
+24. **Browser UA obrigatorio para RSS** — collector.py e newsletter_collector.py usam User-Agent Chrome (macOS) para nao ser bloqueado por Substacks. Fetch order: `requests` com headers de browser primeiro, `feedparser` puro como fallback.
+
+25. **Pre-clustering obrigatorio (v2.9)** — processor.py agrupa itens sobre o mesmo assunto ANTES de enviar ao Claude via `_cluster_and_pick_best()`. Usa keyword overlap (60%+ match) + entity extraction. O melhor representante de cada cluster recebe campo `_cluster_size` que indica quantas fontes cobriram a mesma historia. Claude usa esse campo para priorizar noticias exclusivas (cluster_size=1) sobre amplamente cobertas.
+
+26. **Ineditismo minimo 30% (v2.9)** — prompt exige que pelo menos 4 dos 12 itens principais sejam de fontes primarias ou noticias nao amplamente cobertas. Regra 6 do CURATOR_SYSTEM: "INEDITISMO OBRIGATORIO".
+
+27. **Health check de feeds (v2.10)** — `health_check.py` monitora ~200 feeds antes da coleta. ThreadPoolExecutor(15 workers), timeout 10s, requests com browser UA + feedparser fallback. Rastreia falhas consecutivas em `/tmp/digest_feed_health.json`. Alerta se feed tem 3+ falhas consecutivas. Roda como step no workflow com `continue-on-error: true` (nao-bloqueante).
+
+28. **Radar Brasil (v2.10)** — secao 3b do layout. 1-2 itens sobre ecossistema brasileiro de tech/AI/negocios (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, etc). Pode ser array vazio se nao houver noticia BR relevante. Dedup integrado em `dedup_across_sections()` (step 2.5). Renderizado em sender.py (HTML + markdown) com bandeira BR e cor verde.
+
+29. **Deep Dive semanal (v2.10)** — so nas sextas. processor.py pede `deep_dive` com {title, body} — analise profunda 3-5 paragrafos sobre o tema mais quente da semana. Tom analitico, recomendacoes concretas para C-levels. sender.py renderiza apos Analise do Dia com icone microscópio e cor azul escuro.
+
+30. **Trending velocity (v2.10)** — processor.py calcula `trending_score` baseado em engagement (likes/retweets) + recencia: likes>1000=+20, likes>500/RT>200=+15, likes>100 & <6h=+10. Injetado no prompt como campo do item. Heat score tem bonus: "engagement alto + recente = +10 pts".
+
+31. **Fallback cache (v2.10)** — run.py: se coleta falhar, verifica se `/tmp/digest_raw.json` existe e tem <48h. Se sim, continua com dados antigos (log de warning com idade do cache). Se nao, aborta. Workflow: raw data cache via `actions/cache@v4` (save apos coleta, restore antes).
+
+32. **TF-IDF dedup (v2.10)** — `_tfidf_similarity()` em processor.py: similaridade cosine TF-IDF entre titulos curtos. Tokeniza, remove stopwords, calcula IDF suavizado (log(1+N/df)), vetores TF-IDF normalizados, cosine similarity. Threshold 0.45. Usado como terceiro check em `_titles_overlap()` (apos keyword overlap 60% e entity overlap 40%). Implementacao stdlib-only (math, re, collections).
 
 ---
 
