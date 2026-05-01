@@ -58,6 +58,8 @@ COLORS = {
     "analysis": "#8b5cf6",    # violet for analise
     "quick": "#64748b",       # slate for quick links
     "video": "#ef4444",       # red for watch later
+    "brasil": "#16a34a",      # green for radar brasil
+    "deep_dive": "#1e40af",   # deep blue for deep dive
 }
 
 
@@ -264,6 +266,38 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())
 
+    # ── 3b. RADAR BRASIL ───────────────────────
+    radar_brasil = curated.get('radar_brasil', [])
+    if radar_brasil:
+        body_rows.append(_section_header('&#x1F1E7;&#x1F1F7;', 'RADAR BRASIL', COLORS["brasil"]))
+        body_rows.append(_card_start())
+        for i, rb in enumerate(radar_brasil):
+            headline = _esc(rb.get('headline', ''))
+            why = _esc(rb.get('why_it_matters', ''))
+            url = rb.get('source_url', '#')
+            source = _esc(rb.get('source_name', ''))
+            border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(radar_brasil) - 1 else ''
+            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:4px;">
+          &#x2192; {headline}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#2d2d2d;line-height:1.5;padding-bottom:4px;">
+          {why}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-size:12px;color:#6b7280;">
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>
+        </td>
+      </tr>
+    </table>''')
+        body_rows.append(_card_end())
+        body_rows.append(_card_bottom())
+        body_rows.append(_spacer())
+
     # ── 4. TOOL DO DIA ──────────────────────────
     tool = curated.get('tool_of_day', {})
     if not tool:
@@ -397,6 +431,31 @@ def generate_email_html(curated: Dict) -> str:
         else:
             body_rows.append(f'''    <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;">{_esc(str(analysis))}</p>''')
 
+        body_rows.append(_card_end())
+        body_rows.append(_card_bottom())
+        body_rows.append(_spacer())
+
+    # ── 5b. DEEP DIVE SEMANAL (sextas) ─────────
+    deep_dive = curated.get('deep_dive', {})
+    if deep_dive and deep_dive.get('title') and deep_dive.get('body'):
+        dd_title = _esc(deep_dive.get('title', ''))
+        dd_body = deep_dive.get('body', '')
+        dd_paragraphs = [p.strip() for p in dd_body.split('\n\n') if p.strip()]
+        body_rows.append(_section_header('&#x1F52C;', 'DEEP DIVE', COLORS["deep_dive"]))
+        body_rows.append(_card_start())
+        body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:12px;">
+          {dd_title}
+        </td>
+      </tr>''')
+        for para in dd_paragraphs:
+            body_rows.append(f'''      <tr>
+        <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.6;padding-bottom:12px;">
+          {_esc(para)}
+        </td>
+      </tr>''')
+        body_rows.append('''    </table>''')
         body_rows.append(_card_end())
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())
@@ -677,6 +736,17 @@ def generate_email_content(curated: Dict) -> str:
     if saas:
         sections.append("# 💰 SaaS & ENTERPRISE\n\n" + "\n".join([format_item(i) for i in saas]))
 
+    radar_brasil = curated.get('radar_brasil', [])
+    if radar_brasil:
+        rb_lines = []
+        for rb in radar_brasil:
+            headline = rb.get('headline', '')
+            why = rb.get('why_it_matters', '')
+            url = rb.get('source_url', '#')
+            source = rb.get('source_name', '')
+            rb_lines.append(f"→ **{headline}** — {why} ([{source}]({url}))")
+        sections.append("# 🇧🇷 RADAR BRASIL\n\n" + "\n\n".join(rb_lines))
+
     tool = curated.get('tool_of_day', {})
     if not tool:
         tool_items = [i for i in items if i.get('category') == 'tool_of_day']
@@ -705,6 +775,12 @@ def generate_email_content(curated: Dict) -> str:
         else:
             analysis_text = analysis
         sections.append(f"# 🔮 ANÁLISE DO DIA\n\n{analysis_text}")
+
+    deep_dive = curated.get('deep_dive', {})
+    if deep_dive and deep_dive.get('title') and deep_dive.get('body'):
+        dd_title = deep_dive.get('title', '')
+        dd_body = deep_dive.get('body', '')
+        sections.append(f"# 🔬 DEEP DIVE\n\n**{dd_title}**\n\n{dd_body}")
 
     quick_links = curated.get('quick_links', [])
     if quick_links:

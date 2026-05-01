@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.9 (Dedup 5 Camadas + Pre-Clustering + Ineditismo)
+**Versao atual:** v2.10 (Health Check + Radar Brasil + Deep Dive + Trending Velocity + Fallback Cache + TF-IDF Dedup)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -42,6 +42,7 @@ sender.py             -> Buttondown API -> email HTML
 | `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas, recent_hooks) para informar curadoria |
 | `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
 | `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send). Flags: `--preview`, `--skip-collect`, `--skip-process` |
+| `scripts/health_check.py` | Monitora saude de ~200 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
 | `scripts/alert_failure.py` | Cria GitHub Issue quando pipeline falha (via gh CLI no Actions). Notifica owner por email |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
@@ -56,8 +57,10 @@ sender.py             -> Buttondown API -> email HTML
 1. MUNDO REAL (3 itens) — mundo + Brasil
 2. HOJE NO BYTE (4-5 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
 3. SaaS & ENTERPRISE (2 itens)
+3b. RADAR BRASIL (1-2 itens) — ecossistema tech/AI/negocios BR (opcional, array vazio se nada relevante)
 4. TOOL DO DIA (1 item) + COMO USAR HOJE + PROMPT DO DIA (copy-paste ready)
 5. ANALISE DO DIA (3 bullets)
+5b. DEEP DIVE (sextas) — analise profunda do tema mais quente da semana (3-5 paragrafos)
 6. QUICK LINKS (5-6 itens) — headline + link, sem analise
 + WATCH LATER (1 video no final)
 ```
@@ -69,9 +72,12 @@ sender.py             -> Buttondown API -> email HTML
 - `number_of_day{}` — {value, context} — data point numerico impressionante
 - `world[]` — array de 3 itens (headline, context, source_url, source_name)
 - `items[]` — array com category `hoje_no_byte|saas_enterprise|watch_later` e campo `tag`
+- `radar_brasil[]` — array de 1-2 itens BR (headline, why_it_matters, source_url, source_name). Pode ser vazio.
 - `tool_of_day{}` — OBJETO SEPARADO (nao vai no items), com `how_to_use` e `prompt_of_day` obrigatorios
 - `quick_links[]` — apenas headline + source_url + source_name
 - `daily_analysis[]` — 3 strings com formato "**Tema** — Insight"
+- `deep_dive{}` — (sextas) {title, body} analise profunda 3-5 paragrafos
+- `weekly_workflow{}` — (sextas) {title, steps[]} workflow pratico 3-4 steps
 
 ---
 
@@ -182,7 +188,7 @@ Threshold minimo: 60 pontos
 
 17. **Enquete semanal (sextas)** — sender.py mostra enquete com 4 opcoes (AI Tools, Estrategia, Brasil, Deep Dive) usando ?tag= para tracking. So aparece as sextas.
 
-18. **Dedup em 5 camadas (v2.9)** — (1) cross-edition por URL em `dedup.py` (5 dias), (2) cross-edition por hash de titulo em `dedup.py` (evita mesma noticia de fontes diferentes), (3) pre-clustering em `processor.py` (agrupa itens sobre o mesmo assunto antes de enviar ao Claude, mantendo so o melhor representante), (4) cap por fonte (max 5 itens/fonte para forcar diversidade), (5) intra-edition em `dedup_across_sections()` com entity extraction + keyword overlap (remove duplicatas entre items/world/tool_of_day/quick_links dentro da mesma edicao). Prioridade: items > world > tool_of_day > quick_links.
+18. **Dedup em 6 camadas (v2.10)** — (1) cross-edition por URL em `dedup.py` (5 dias), (2) cross-edition por hash de titulo em `dedup.py` (evita mesma noticia de fontes diferentes), (3) pre-clustering em `processor.py` (agrupa itens sobre o mesmo assunto antes de enviar ao Claude, mantendo so o melhor representante), (4) cap por fonte (max 5 itens/fonte para forcar diversidade), (5) intra-edition em `dedup_across_sections()` com entity extraction + keyword overlap (remove duplicatas entre items/world/radar_brasil/tool_of_day/quick_links dentro da mesma edicao), (6) TF-IDF cosine similarity (threshold 0.45) como fallback semantico para duplicatas com wording diferente. Prioridade: items > world > radar_brasil > tool_of_day > quick_links.
 
 19. **Idioma PT-BR 100%** — regra reforcada em 4 pontos do CURATOR_SYSTEM/USER_TEMPLATE. Palavras proibidas com traducao explicita: Expect→Espere, Open→Abra, Result→Resultado, Click→Clique. So URLs, nomes proprios (empresas/produtos/pessoas) e handles ficam em ingles.
 
@@ -199,6 +205,18 @@ Threshold minimo: 60 pontos
 25. **Pre-clustering obrigatorio (v2.9)** — processor.py agrupa itens sobre o mesmo assunto ANTES de enviar ao Claude via `_cluster_and_pick_best()`. Usa keyword overlap (60%+ match) + entity extraction. O melhor representante de cada cluster recebe campo `_cluster_size` que indica quantas fontes cobriram a mesma historia. Claude usa esse campo para priorizar noticias exclusivas (cluster_size=1) sobre amplamente cobertas.
 
 26. **Ineditismo minimo 30% (v2.9)** — prompt exige que pelo menos 4 dos 12 itens principais sejam de fontes primarias ou noticias nao amplamente cobertas. Regra 6 do CURATOR_SYSTEM: "INEDITISMO OBRIGATORIO".
+
+27. **Health check de feeds (v2.10)** — `health_check.py` monitora ~200 feeds antes da coleta. ThreadPoolExecutor(15 workers), timeout 10s, requests com browser UA + feedparser fallback. Rastreia falhas consecutivas em `/tmp/digest_feed_health.json`. Alerta se feed tem 3+ falhas consecutivas. Roda como step no workflow com `continue-on-error: true` (nao-bloqueante).
+
+28. **Radar Brasil (v2.10)** — secao 3b do layout. 1-2 itens sobre ecossistema brasileiro de tech/AI/negocios (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, etc). Pode ser array vazio se nao houver noticia BR relevante. Dedup integrado em `dedup_across_sections()` (step 2.5). Renderizado em sender.py (HTML + markdown) com bandeira BR e cor verde.
+
+29. **Deep Dive semanal (v2.10)** — so nas sextas. processor.py pede `deep_dive` com {title, body} — analise profunda 3-5 paragrafos sobre o tema mais quente da semana. Tom analitico, recomendacoes concretas para C-levels. sender.py renderiza apos Analise do Dia com icone microscópio e cor azul escuro.
+
+30. **Trending velocity (v2.10)** — processor.py calcula `trending_score` baseado em engagement (likes/retweets) + recencia: likes>1000=+20, likes>500/RT>200=+15, likes>100 & <6h=+10. Injetado no prompt como campo do item. Heat score tem bonus: "engagement alto + recente = +10 pts".
+
+31. **Fallback cache (v2.10)** — run.py: se coleta falhar, verifica se `/tmp/digest_raw.json` existe e tem <48h. Se sim, continua com dados antigos (log de warning com idade do cache). Se nao, aborta. Workflow: raw data cache via `actions/cache@v4` (save apos coleta, restore antes).
+
+32. **TF-IDF dedup (v2.10)** — `_tfidf_similarity()` em processor.py: similaridade cosine TF-IDF entre titulos curtos. Tokeniza, remove stopwords, calcula IDF suavizado (log(1+N/df)), vetores TF-IDF normalizados, cosine similarity. Threshold 0.45. Usado como terceiro check em `_titles_overlap()` (apos keyword overlap 60% e entity overlap 40%). Implementacao stdlib-only (math, re, collections).
 
 ---
 

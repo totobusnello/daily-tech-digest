@@ -4,6 +4,30 @@
 
 ## Changelog
 
+### v2.10 — 01/05/2026 (Health Check + Radar Brasil + Deep Dive + Trending Velocity + Fallback Cache + TF-IDF Dedup)
+
+**Mudanças implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/health_check.py` | **NOVO.** Monitora ~200 feeds com ThreadPoolExecutor(15 workers). Timeout 10s, browser UA + feedparser fallback. Rastreia falhas consecutivas em `/tmp/digest_feed_health.json`. Alerta em 3+ falhas. |
+| `scripts/processor.py` | Radar Brasil no CURATOR_SYSTEM (seção 3b) + CURATOR_USER_TEMPLATE (campo `radar_brasil[]`). Deep Dive semanal (sextas): campo `deep_dive` com {title, body}. Trending velocity: calcula `trending_score` (likes/retweets + recência) e injeta no prompt. TF-IDF dedup: `_tfidf_similarity()` com cosine similarity stdlib-only, threshold 0.45, integrado em `_titles_overlap()` como 3º check. `radar_brasil` no `dedup_across_sections()` (step 2.5). Console summary mostra Radar Brasil. |
+| `scripts/sender.py` | Radar Brasil: HTML (bandeira BR + cor verde #16a34a) + markdown. Deep Dive: HTML (microscópio + azul escuro #1e40af) + markdown. Cores adicionadas ao COLORS dict. |
+| `scripts/run.py` | Fallback cache: se coleta falhar e `/tmp/digest_raw.json` tem <48h, continua com dados antigos. Log de warning com idade do cache. |
+| `.github/workflows/daily-digest.yml` | Health check step (continue-on-error). Raw data cache: restore antes da coleta + save após coleta (actions/cache@v4). `digest_feed_health.json` nos artifacts. |
+| `config.yaml` | v2.10. |
+| `CLAUDE.md` | v2.10. Regras 27-32 (health check, Radar Brasil, Deep Dive, trending velocity, fallback cache, TF-IDF dedup). Dedup 5→6 camadas. Layout atualizado com seções 3b e 5b. |
+
+**Novas funcionalidades:**
+- **Health Check**: monitoramento proativo de ~200 feeds antes da coleta
+- **Radar Brasil**: seção dedicada ao ecossistema brasileiro (1-2 itens diários)
+- **Deep Dive**: análise profunda semanal (sextas) — 3-5 parágrafos conectando pontos da semana
+- **Trending Velocity**: bonus no heat score baseado em engagement (likes/retweets) + recência
+- **Fallback Cache**: resiliência — se coleta falha, reutiliza dados anteriores (<48h)
+- **TF-IDF Dedup**: similaridade semântica leve (stdlib-only) como 6ª camada de dedup
+
+---
+
 ### v2.9 — 01/05/2026 (Dedup 5 Camadas + Pré-Clustering + Ineditismo + Fontes Alternativas)
 
 **Mudanças implementadas:**
@@ -499,3 +523,15 @@
 - [ ] Dashboard com metricas (opens, clicks, growth)
 - [ ] Health check de fontes — detectar feeds que nao retornam itens ha 3+ dias
 - [ ] Fallback para cache do dia anterior se coleta falhar completamente
+- [ ] Custom domain para click tracking — configurar dominio proprio no Buttondown para melhorar deliverability
+
+**Custom Domain Tracking (instruções):**
+Para configurar dominio proprio no Buttondown:
+1. Escolher subdominio: ex. `byte.nuvini.ai` ou `news.nuvini.ai`
+2. No Buttondown Settings > Custom domain > Adicionar dominio
+3. Configurar DNS no registrador:
+   - CNAME `byte.nuvini.ai` → `buttondown-proxy.fly.dev`
+   - TXT record para verificacao SPF/DKIM (Buttondown fornece)
+4. Aguardar propagacao DNS (24-48h)
+5. Testar deliverability com mail-tester.com
+Beneficio: links no email apontam para `byte.nuvini.ai` em vez de `buttondown.com`, melhor reputacao de dominio e open rates.

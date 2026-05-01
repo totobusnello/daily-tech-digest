@@ -6,8 +6,10 @@ Usa Claude para filtrar e curar notícias quentíssimas
 
 import os
 import json
+import math
 import time
 import anthropic
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -68,6 +70,7 @@ LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
    Cada item recebe uma TAG entre: [BREAKING], [AI], [BIG TECH], [ENTERPRISE].
    A tag vai no campo "tag" do JSON.
 3. "saas_enterprise" (2 itens): SaaS, valuations, CapEx, enterprise tech.
+3b. "radar_brasil" (1-2 itens): Ecossistema brasileiro de tech/AI/negócios. Pode vir de fontes BR (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, Valor Econômico) ou de notícias internacionais que impactam o Brasil diretamente. Se não houver notícia BR relevante hoje, retorne array vazio [].
 4. "tool_of_day" (1 item): UMA ferramenta AI/tech prática que o leitor pode usar HOJE.
    DEVE incluir campo "how_to_use": um prompt ou mini-tutorial copy-paste de 2-3 linhas.
    DEVE incluir campo "prompt_of_day": um prompt COPY-PASTE ready para ChatGPT/Claude/Gemini, ligado à notícia principal do dia ou à ferramenta. Máximo 3 linhas.
@@ -91,6 +94,13 @@ SEÇÃO MUNDO REAL (obrigatório):
 - Foque em: movimentações de governos, decisões políticas globais, grandes empresas da economia real, geopolítica, trade wars, regulações
 - Cada item deve ter: headline curto (max 10 palavras), contexto breve (1 frase), e a URL original
 
+RADAR BRASIL (obrigatório):
+- Selecione 1-2 notícias do ecossistema brasileiro de tech/AI/negócios
+- Pode vir de fontes BR (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, Valor Econômico, Distrito, Poder360) ou de notícias internacionais que impactam o Brasil diretamente
+- Cada item deve ter: headline, why_it_matters (prescritivo para C-levels), source_url e source_name
+- Se não houver notícia BR relevante hoje, este campo pode ficar vazio (array vazio [])
+- NÃO duplique itens que já apareceram em "world" ou "hoje_no_byte" — se a notícia BR já foi coberta em outra seção, não repita aqui
+
 SEÇÃO COMO USAR HOJE (dentro de tool_of_day):
 - O campo "how_to_use" deve conter um prompt ou tutorial PRÁTICO e COPY-PASTE ready
 - Formato: "Abra [ferramenta]. Cole: [prompt exato]. Resultado: [o que vai acontecer]."
@@ -112,6 +122,7 @@ Heat Score mínimo para entrar: 60 pontos
 - Newsletter Bonus: Insight exclusivo=+10, Cross-validação=+5
 - Ineditismo Bonus: Fonte primária (blog oficial, tweet de fundador)=+15, Community-driven (Reddit, HN Show, Lobsters)=+10, Indie builder/practitioner=+10
 - Penalidade Mainstream: Se 3+ fontes mainstream (TechCrunch, Wired, Verge, Reuters, BBC) cobriram a mesma história=-10 pontos. Se todo mundo já cobriu, não é notícia — é eco.
+  - Trending Bonus: Se o item tem engagement alto (likes>100, retweets>50) E é recente (<6h), adicione +10 pts. Conteúdo viral recente = sinal forte de relevância.
 
 HIERARQUIA DE FONTES (do mais ao menos valioso):
 1. FONTE PRIMÁRIA — Blog oficial do lab/empresa, tweet do CEO/fundador, press release, paper original. É a notícia ANTES da cobertura.
@@ -180,6 +191,14 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
     "source_url": "URL da ferramenta",
     "source_name": "Fonte"
   }},
+  "radar_brasil": [
+    {{
+      "headline": "Headline sobre ecossistema BR",
+      "why_it_matters": "1-2 frases prescritivas para C-levels brasileiros",
+      "source_url": "URL ORIGINAL",
+      "source_name": "NeoFeed|Startse|Exame|InfoMoney|Pipeline Valor"
+    }}
+  ],
   "quick_links": [
     {{
       "headline": "Headline curto max 8 palavras",
@@ -208,6 +227,7 @@ LEMBRE-SE:
 - "quick_links" são APENAS headline + URL + fonte. SEM why_it_matters.
 - "watch_later" vai no array items com category "watch_later" (1 vídeo)
 - 3 itens em "world" (inclua Brasil quando relevante)
+- "radar_brasil" é array de 1-2 itens sobre ecossistema brasileiro de tech/AI/negócios. Pode ser array vazio se não houver notícia BR relevante. NÃO duplique com itens de "world" ou "items".
 - Seja impiedoso na curadoria - menos é mais
 - Notícias boas que não cabem nas seções → vão para quick_links
 - ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO — ZERO palavras em inglês no texto (exceto nomes de produtos/pessoas/URLs). Palavras como "Expect", "Result", "Click", "Open" devem ser escritas em PT-BR: "Espere", "Resultado", "Clique", "Abra".
@@ -349,13 +369,31 @@ def curate_with_claude(raw_data: dict) -> dict:
         items = dedup_items(items, cache)
 
     # Trim content and strip heavy fields to save tokens
-    CURATOR_FIELDS = ['title', 'content', 'url', 'source_name', 'source_type', 'author', 'published_at', 'hours_ago', 'engagement', '_cluster_size']
+    CURATOR_FIELDS = ['title', 'content', 'url', 'source_name', 'source_type', 'author', 'published_at', 'hours_ago', 'engagement', '_cluster_size', 'trending_score']
     slim_items = []
     for item in items:
         slim = {k: item.get(k) for k in CURATOR_FIELDS if item.get(k) is not None}
         # Trim content to 500 chars
         if len(slim.get('content', '')) > 500:
             slim['content'] = slim['content'][:500] + '...'
+
+        # v2.10: Trending velocity — boost items with high engagement + freshness
+        engagement = item.get('engagement') or {}
+        likes = engagement.get('likes', 0) or 0
+        retweets = engagement.get('retweets', 0) or 0
+        hours_ago = item.get('hours_ago', 999)
+
+        trending_score = 0
+        if likes > 1000:
+            trending_score = 20
+        elif likes > 500 or retweets > 200:
+            trending_score = 15
+        elif likes > 100 and hours_ago < 6:
+            trending_score = 10
+
+        if trending_score > 0:
+            slim['trending_score'] = trending_score
+
         slim_items.append(slim)
 
     # v2.9: Pre-cluster — agrupar itens sobre o mesmo assunto e manter apenas o melhor representante
@@ -410,6 +448,14 @@ def curate_with_claude(raw_data: dict) -> dict:
 - Formato: {"title": "Título do workflow", "steps": ["Step 1: ...", "Step 2: ...", "Step 3: ...", "Step 4: ..."]}
 - Cada step deve ser ACIONÁVEL e copy-paste ready para um C-level implementar na empresa
 - Ex: {"title": "Automatize relatórios com Claude", "steps": ["1. Exporte seu dashboard em CSV", "2. Abra Claude e cole: 'Analise este CSV...'", "3. Peça: 'Gere um resumo executivo...'", "4. Configure agendamento semanal no Zapier"]}
+
+DEEP DIVE SEMANAL:
+- Adicione o campo "deep_dive" no JSON com uma análise profunda do tema mais quente da semana
+- Formato: {"title": "Título do deep dive", "body": "3-5 parágrafos de análise profunda. Separe parágrafos com \\n\\n."}
+- Conecte pontos entre as notícias dos últimos dias. Identifique tendências e padrões.
+- Tom: analítico, direto, com recomendações concretas para C-levels (CEOs, CFOs, CMOs, CPOs)
+- O body deve ter 3-5 parágrafos densos. Cada parágrafo deve trazer um ângulo diferente: contexto, impacto, ação recomendada.
+- TUDO EM PORTUGUÊS BRASILEIRO.
 """
 
     prompt = CURATOR_USER_TEMPLATE.format(
@@ -567,13 +613,59 @@ def _title_signature(headline: str) -> str:
     return " ".join(sorted(kw)) if kw else ""
 
 
+def _tfidf_similarity(text_a: str, text_b: str) -> float:
+    """
+    Calcula similaridade cosine TF-IDF entre dois textos curtos.
+    Usa IDF suavizado (log(3/df)) com corpus virtual para que termos
+    compartilhados entre apenas 2 documentos mantenham peso positivo.
+    Implementação leve: apenas stdlib (math, collections, re).
+    Retorna float 0.0-1.0.
+    """
+    import re
+
+    def _tokenize(text):
+        # Inclui tokens alfanuméricos (ex: h200, gpt5) e siglas curtas (ex: ai)
+        return [w for w in re.findall(r'[a-záàâãéèêíïóôõúüç0-9]+', text.lower())
+                if len(w) >= 2 and w not in _STOPWORDS_PT]
+
+    tokens_a = _tokenize(text_a)
+    tokens_b = _tokenize(text_b)
+    if not tokens_a or not tokens_b:
+        return 0.0
+
+    tf_a = Counter(tokens_a)
+    tf_b = Counter(tokens_b)
+    vocab = set(tf_a) | set(tf_b)
+
+    # IDF suavizado: log(1 + N/df) com N=2 (nossos 2 docs)
+    # Termos em ambos docs: log(1 + 2/2) = log(2) ≈ 0.69
+    # Termos em 1 doc:     log(1 + 2/1) = log(3) ≈ 1.10
+    idf = {}
+    for term in vocab:
+        df = (1 if term in tf_a else 0) + (1 if term in tf_b else 0)
+        idf[term] = math.log(1.0 + 2.0 / df)
+
+    # Vetores TF-IDF (TF normalizado pelo tamanho do documento)
+    vec_a = {t: (tf_a.get(t, 0) / len(tokens_a)) * idf[t] for t in vocab}
+    vec_b = {t: (tf_b.get(t, 0) / len(tokens_b)) * idf[t] for t in vocab}
+
+    # Similaridade coseno
+    dot = sum(vec_a[t] * vec_b[t] for t in vocab)
+    mag_a = math.sqrt(sum(v * v for v in vec_a.values()))
+    mag_b = math.sqrt(sum(v * v for v in vec_b.values()))
+    if mag_a == 0 or mag_b == 0:
+        return 0.0
+    return dot / (mag_a * mag_b)
+
+
 def _titles_overlap(headline_a: str, headline_b: str) -> bool:
-    """Verifica se dois títulos falam do mesmo assunto via overlap de keywords + entidades"""
+    """Verifica se dois títulos falam do mesmo assunto via overlap de keywords + entidades + TF-IDF"""
     kw_a = _title_keywords(headline_a)
     kw_b = _title_keywords(headline_b)
     if not kw_a or not kw_b:
         return False
 
+    # Check 1: keyword overlap (primary)
     overlap = kw_a & kw_b
     min_len = min(len(kw_a), len(kw_b))
     if min_len == 0:
@@ -582,11 +674,17 @@ def _titles_overlap(headline_a: str, headline_b: str) -> bool:
     if ratio >= 0.6:
         return True
 
+    # Check 2: entity overlap + partial keyword match
     ent_a = _extract_entities(headline_a)
     ent_b = _extract_entities(headline_b)
     if ent_a and ent_b and ent_a & ent_b:
         if ratio >= 0.4:
             return True
+
+    # Check 3: TF-IDF cosine similarity (catches semantic duplicates with different wording)
+    # Threshold 0.25 é adequado para comparação pairwise de títulos curtos
+    if _tfidf_similarity(headline_a, headline_b) >= 0.25:
+        return True
 
     return False
 
@@ -636,6 +734,16 @@ def dedup_across_sections(curated: dict) -> dict:
         _mark(item.get('source_url', ''), item.get('headline', ''))
         new_world.append(item)
     curated['world'] = new_world
+
+    # 2.5. radar_brasil
+    new_brasil = []
+    for item in curated.get('radar_brasil', []):
+        if _is_dup(item.get('source_url', ''), item.get('headline', '')):
+            removed_count += 1
+            continue
+        _mark(item.get('source_url', ''), item.get('headline', ''))
+        new_brasil.append(item)
+    curated['radar_brasil'] = new_brasil
 
     # 3. tool_of_day (objeto único)
     tool = curated.get('tool_of_day')
@@ -717,6 +825,12 @@ def process():
             tag = item.get('tag', '')
             print(f"   • [{tag}] {item.get('headline', '?')}")
             print(f"     Heat: {item.get('heat_score', '?')} | {item.get('source_name', '?')}")
+
+        brasil = curated.get('radar_brasil', [])
+        if brasil:
+            print(f"\n🇧🇷 RADAR BRASIL:")
+            for item in brasil:
+                print(f"   → {item.get('headline', '?')}")
 
         tool = curated.get('tool_of_day', {})
         if tool:
