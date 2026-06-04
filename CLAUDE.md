@@ -311,7 +311,7 @@ Ver `EVOLUTION-PLAN.md` para historico e backlog.
 
 ## Deploy
 
-Push para `main` -> GitHub Actions pega automaticamente no proximo run (06:00 BRT).
+Push para `main` -> GitHub Actions pega automaticamente no proximo run (03:00 BRT / 06:00 UTC).
 Nao precisa de deploy manual. O workflow faz `checkout@v4` fresh toda vez.
 
 Para rodar manualmente: GitHub Actions -> "Run workflow" -> preview_only true/false.

@@ -36,7 +36,7 @@ BUTTONDOWN_API_URL = "https://api.buttondown.email/v1/emails"
 #   Brand orange:  #FF6B35
 #   Dark bg:       #1a1a2e
 #   Card bg:       #ffffff
-#   Light bg:      #f4f4f8
+#   Light bg:      #faf8f5
 #   Body text:     #2d2d2d
 #   Muted text:    #6b7280
 #   Link blue:     #2563eb
