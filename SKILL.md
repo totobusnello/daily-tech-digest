@@ -52,17 +52,21 @@ NEWSLETTER BONUS:
 
 **Threshold mínimo: 60 pontos para entrar no digest**
 
-## Fontes (~160 ativas)
+## Fontes (~200 ativas)
 
-### Tier 1 — Primeira Mao (51 X/Twitter handles)
+### Tier 1 — Primeira Mao (52 X/Twitter handles)
 AI Labs, fundadores, researchers, VCs, geopolítica, markets, crypto.
 Ver `config.yaml` e `collector.py` para lista completa.
 
-### Tier 2 — RSS Feeds (60 feeds)
-**Tech/AI (30):** HN, Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review, The Decoder, VentureBeat, blogs oficiais (OpenAI, Anthropic, Google AI, HuggingFace), The Information, etc.
-**World/Business (30):** Reuters, Forbes, BBC, CNBC, WSJ, NYT DealBook, Bloomberg, FT, Economist, AP News, Poder360, InfoMoney, Valor Economico, Startups.com.br, etc.
+### Tier 2 — RSS Feeds (80+ feeds)
+**Labs (primeira mão):** DeepMind, Meta AI, NVIDIA, MS Research, OpenAI, Anthropic, HuggingFace, Stability, Mistral, Cohere
+**Tech/AI:** HN, Ars Technica, Wired, The Verge, TechCrunch AI, MIT Tech Review, The Decoder
+**Community:** Reddit r/MachineLearning, r/LocalLLaMA, HN Show (50+ pts), Lobsters AI, Product Hunt
+**World/Business:** Reuters, Forbes, BBC, CNBC, WSJ
+**Brasil:** Poder360, InfoMoney, Valor Econômico, Startups.com.br, NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech, IA Brasil Notícias
+**Research:** arXiv cs.AI
 
-### Tier 3 — Newsletters (9 scrapers via scraping + RSS)
+### Tier 3 — Newsletters (10 scrapers via scraping + RSS)
 | Newsletter | Foco | Idioma |
 |-----------|------|--------|
 | AiDrop | AI, análise profunda | PT-BR |
@@ -74,12 +78,13 @@ Ver `config.yaml` e `collector.py` para lista completa.
 | Turing Post | AI strategy, geopolítica | EN |
 | Import AI | AI policy, research (Jack Clark) | EN |
 | Distrito News Inside VC | VC/startups Brasil | PT-BR |
+| The BRIEF | Tech+business diário, tom direto | PT-BR |
 
-### Substacks Curados (31 feeds via RSS)
-AI engineering (Latent Space), macro strategy (State of AI), business, fintech, biotech, AI prático. Ver `config.yaml`.
+### Substacks Curados (42 feeds via RSS)
+AI engineering (Latent Space), macro strategy (State of AI), indie/practitioners (Simon Willison, Lilian Weng, Chip Huyen, Neatprompts), business, fintech, biotech, AI prático. Ver `config.yaml`.
 
-### YouTube (9 canais)
-Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid.
+### YouTube (11 canais)
+Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov, Nate Herk.
 
 ### Regras para Newsletters
 - Janela ampliada: 36h (vs 24h de RSS)

@@ -4,6 +4,30 @@
 
 ## Changelog
 
+### v2.11 — 04/06/2026 (Novas Fontes + Priority Themes)
+
+**Mudanças implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/collector.py` | +3 fontes: Neatprompts (Substack RSS, AI tools/prompts EN), IA Brasil Notícias (RSS, ecossistema AI brasileiro PT-BR), Nate Herk (YouTube, AI prático/negócios). |
+| `config.yaml` | v2.11. +4 priority themes: "A2A protocol", "coding agents", "Marco Legal da IA", "AI unicorn". |
+| `CLAUDE.md` | v2.11. Fontes atualizadas. |
+| `EVOLUTION-PLAN.md` | v2.11 changelog. |
+
+**Novas fontes:**
+- **Neatprompts** (Substack): AI tools, prompts e produtividade — ângulo prático que complementa AlphaSignal (research) e There's An AI For That (catálogo)
+- **IA Brasil Notícias** (RSS): Cobertura dedicada ao ecossistema AI brasileiro — reforça Radar Brasil com fonte nativa
+- **Nate Herk** (YouTube): AI para negócios e produtividade — complementa Fireship (dev) e Matt Wolfe (ferramentas)
+
+**Priority themes atualizados:**
+- A2A protocol (Google Agent-to-Agent, 150+ orgs)
+- Coding agents (Codex, Jules, Claude Code — mercado em explosão)
+- Marco Legal da IA (PL 2338/2023, regulação brasileira em votação)
+- AI unicorn (Enter como 1º unicórnio AI da LATAM, $1.2B)
+
+---
+
 ### v2.10 — 01/05/2026 (Health Check + Radar Brasil + Deep Dive + Trending Velocity + Fallback Cache + TF-IDF Dedup)
 
 **Mudanças implementadas:**

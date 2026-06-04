@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.10 (Health Check + Radar Brasil + Deep Dive + Trending Velocity + Fallback Cache + TF-IDF Dedup)
+**Versao atual:** v2.11 (Novas Fontes + Priority Themes)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -100,7 +100,7 @@ Ver `collector.py` para lista completa.
 **Developer:** Changelog, InfoQ AI/ML
 **Tech media:** HN (100+ pts), TechCrunch AI, MIT Tech Review, The Decoder
 **World:** Reuters, BBC, Forbes, CNBC, WSJ
-**Brasil:** Poder360, InfoMoney, Startups.com.br, Valor Economico, NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech
+**Brasil:** Poder360, InfoMoney, Startups.com.br, Valor Economico, NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech, IA Brasil Noticias
 **Research:** arXiv cs.AI
 
 ### Tier 3 — Newsletters (10 fontes, via scraping + RSS)
@@ -117,15 +117,15 @@ Ver `collector.py` para lista completa.
 | Distrito News Inside VC | VC/startups Brasil | PT-BR |
 | The BRIEF | Tech+business diario, tom direto | PT-BR |
 
-### Substacks Curados (41 feeds via RSS)
-**Indie/Practitioners (v2.9):** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter
+### Substacks Curados (42 feeds via RSS)
+**Indie/Practitioners (v2.9):** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter, Neatprompts
 **AI Engineering:** Latent Space, State of AI
 **Business/Strategy:** Capital Wars, Doomberg, CFO Dynamics
 **Verticais:** fintech, biotech, e-commerce, edtech, sustainability
 Ver `collector.py` para lista completa.
 
-### YouTube (10 canais)
-Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov
+### YouTube (11 canais)
+Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov, Nate Herk
 
 ---
 

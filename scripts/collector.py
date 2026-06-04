@@ -150,6 +150,8 @@ RSS_FEEDS = {
     "reddit_machinelearning": "https://www.reddit.com/r/MachineLearning/hot/.rss?limit=15",
     "reddit_localllama": "https://www.reddit.com/r/LocalLLaMA/hot/.rss?limit=10",
     "lobsters_ai": "https://lobste.rs/t/ai.rss",
+    # ── v2.11: Brasil AI ──
+    "ia_brasil_noticias": "https://iabrasilnoticias.com.br/feed/",
 }
 
 # RSS Feeds - Mundo Real (governos, empresas, geopolítica, finanças)
@@ -213,6 +215,8 @@ YOUTUBE_CHANNELS = {
     "the_ai_grid": "UCbY9xX3_jW5c2fjlZVBI4cg",
     # ── v2.7 ──
     "sabrina_ramonov": "UCorkSRA1cR9v5MiTaigpLtw",
+    # ── v2.11 ──
+    "nate_herk": "UCLLnyyBxMBCBaEHMnJZJuIw",
 }
 
 # Substack Feeds — v2.3 (curated newsletters via RSS)
@@ -266,6 +270,8 @@ SUBSTACK_FEEDS = {
     "sub_ben_thompson": "https://stratechery.com/feed/",
     "sub_pragmatic_engineer": "https://newsletter.pragmaticengineer.com/feed",
     "sub_lennys_newsletter": "https://www.lennysnewsletter.com/feed",
+    # ── v2.11 ──
+    "sub_neatprompts": "https://www.neatprompts.com/feed",
 }
 
 # ============================================

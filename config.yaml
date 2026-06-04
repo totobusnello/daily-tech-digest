@@ -1,6 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.10
-# Atualizado: 2026-05-01 (Health Check + Radar Brasil + Deep Dive + Trending + Fallback + TF-IDF Dedup)
+# THE DAILY BYTE - Configuração v2.11
+# Atualizado: 2026-06-04 (Novas Fontes + Priority Themes)
 # ============================================
 
 newsletter:
@@ -55,6 +55,10 @@ themes:
     - "regulação AI"
     - "plugins"
     - "MCP"
+    - "A2A protocol"
+    - "coding agents"
+    - "Marco Legal da IA"
+    - "AI unicorn"
 
   # Keywords que indicam hype vazio (penalidade)
   penalty:
