@@ -46,7 +46,7 @@ COLORS = {
     "brand": "#FF6B35",
     "dark": "#1a1a2e",
     "card": "#ffffff",
-    "bg": "#f4f4f8",
+    "bg": "#faf8f5",
     "text": "#2d2d2d",
     "muted": "#6b7280",
     "link": "#2563eb",
@@ -79,14 +79,21 @@ def _heat_bar(score: int) -> str:
     return '<span style="color:#f59e0b;">&#x1F525;</span>'
 
 
-def _section_header(emoji: str, title: str, color: str) -> str:
-    """Generates a section header row — v2.8 pill badge style"""
+_section_counter = 0
+
+def _section_header(emoji: str, title: str, color: str, numbered: bool = True) -> str:
+    """Generates a section header row — v2.12 pill badge + numbered circle"""
+    global _section_counter
+    num_html = ""
+    if numbered:
+        _section_counter += 1
+        num_html = f'<span style="display:inline-block;width:22px;height:22px;background-color:#ffffff;color:{color};border-radius:50%;font-size:11px;font-weight:800;text-align:center;line-height:22px;margin-right:8px;border:2px solid {color};">{_section_counter}</span>'
     return f'''<tr>
   <td style="padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px 10px 20px;border:1px solid #e5e7eb;border-bottom:none;border-radius:12px 12px 0 0;">
-          <span style="display:inline-block;background-color:{color};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">{emoji}&nbsp; {_esc(title)}</span>
+        <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px 10px 20px;border:1px solid #e5e7eb;border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+          {num_html}<span style="display:inline-block;background-color:{color};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">{emoji}&nbsp; {_esc(title)}</span>
         </td>
       </tr>
     </table>
@@ -96,7 +103,7 @@ def _section_header(emoji: str, title: str, color: str) -> str:
 
 def _card_start() -> str:
     return '''<tr>
-  <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">'''
+  <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.06);">'''
 
 
 def _card_end() -> str:
@@ -106,7 +113,7 @@ def _card_end() -> str:
 
 def _card_bottom() -> str:
     return '''<tr>
-  <td class="card-bg card-border" style="background-color:#ffffff;padding:0 20px 12px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;border-radius:0 0 12px 12px;">
+  <td class="card-bg card-border" style="background-color:#ffffff;padding:0 20px 12px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;border-radius:0 0 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
   </td>
 </tr>'''
 
@@ -141,7 +148,7 @@ def _render_item_html(item: Dict) -> str:
   </tr>
   <tr>
     <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;line-height:1.4;">
-      <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">Ver original &#x2197;</a>
+      <a href="{url}" style="display:inline-block;color:#2563eb;text-decoration:none;font-weight:600;border:1px solid #2563eb;padding:4px 12px;border-radius:16px;font-size:12px;">Ver original &#x2197;</a>
       &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h
     </td>
   </tr>
@@ -149,13 +156,15 @@ def _render_item_html(item: Dict) -> str:
 
 
 def generate_email_html(curated: Dict) -> str:
-    """Gera o conteúdo HTML do email — Template v2.4 mobile-first"""
+    """Gera o conteúdo HTML do email — Template v2.12 mobile-first"""
+    global _section_counter
+    _section_counter = 0
 
     body_rows = []
 
     # ── HEADER ──────────────────────────────────
     body_rows.append(f'''<tr>
-  <td class="dark-header" style="background-color:{COLORS["dark"]};padding:18px 20px;text-align:center;border-radius:12px 12px 0 0;">
+  <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:18px 20px;text-align:center;border-radius:12px 12px 0 0;">
     <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;">THE DAILY BYTE</span>
   </td>
 </tr>''')
@@ -168,7 +177,7 @@ def generate_email_html(curated: Dict) -> str:
     date_str = f"{weekdays[today.weekday()]}, {today.day} de {months[today.month]} de {today.year}"
 
     body_rows.append(f'''<tr>
-  <td class="dark-header" style="background-color:{COLORS["dark"]};padding:0 20px 14px 20px;text-align:center;border-radius:0 0 12px 12px;">
+  <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:0 20px 14px 20px;text-align:center;border-radius:0 0 12px 12px;">
     <span class="text-muted" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#94a3b8;">{date_str}</span>
     <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: 3 min</span>
   </td>
@@ -246,7 +255,7 @@ def generate_email_html(curated: Dict) -> str:
     # ── 3. SaaS & ENTERPRISE ────────────────────
     saas = [i for i in items if i.get('category') == 'saas_enterprise']
     if saas:
-        body_rows.append(_section_header('&#x1F4B0;', 'SaaS &amp; ENTERPRISE', COLORS["saas"]))
+        body_rows.append(_section_header('&#x1F4B0;', 'SaaS & ENTERPRISE', COLORS["saas"]))
         body_rows.append(_card_start())
         for item in saas:
             body_rows.append(_render_item_html(item))
@@ -316,7 +325,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="padding-bottom:12px;">
-          <a href="{tool_url}" style="display:inline-block;background-color:{COLORS["tool"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;box-shadow:0 2px 8px rgba(245,158,11,0.35);">&#x1F680; Experimentar</a>
+          <a href="{tool_url}" style="display:inline-block;background-color:{COLORS["tool"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:24px;text-decoration:none;box-shadow:0 2px 8px rgba(245,158,11,0.35);">&#x1F680; Experimentar</a>
           <span style="font-size:13px;color:#6b7280;padding-left:8px;">{tool_source}</span>
         </td>
       </tr>
@@ -453,17 +462,32 @@ def generate_email_html(curated: Dict) -> str:
     if quick_links:
         body_rows.append(_section_header('&#x26A1;', 'QUICK LINKS', COLORS["quick"]))
         body_rows.append(_card_start())
-        for i, ql in enumerate(quick_links):
-            headline = _esc(ql.get('headline', ''))
-            url = ql.get('source_url', '#')
-            source = _esc(ql.get('source_name', ''))
-            border = 'border-bottom:1px solid #f0f0f0;' if i < len(quick_links) - 1 else ''
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}padding:8px 0;">
+        # 2-column grid layout (single column on mobile via width:100% class)
+        pairs = []
+        for i in range(0, len(quick_links), 2):
+            pairs.append(quick_links[i:i+2])
+        for pair in pairs:
+            cols = []
+            for ql in pair:
+                headline = _esc(ql.get('headline', ''))
+                url = ql.get('source_url', '#')
+                source = _esc(ql.get('source_name', ''))
+                cols.append(f'''<td class="ql-col" style="width:50%;vertical-align:top;padding:6px 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid {COLORS["quick"]};padding-left:10px;">
+              <tr>
+                <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.4;">
+                  <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
+                  <br/><span style="color:#6b7280;font-size:11px;">{source}</span>
+                </td>
+              </tr>
+            </table>
+          </td>''')
+            if len(cols) == 1:
+                cols.append(f'<td class="ql-col" style="width:50%;"></td>')
+            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
       <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.4;">
-          &#x2192; <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
-          <span style="color:#6b7280;font-size:12px;"> ({source})</span>
-        </td>
+          {cols[0]}
+          {cols[1]}
       </tr>
     </table>''')
         body_rows.append(_card_end())
@@ -492,7 +516,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td>
-          <a href="{url}" style="display:inline-block;background-color:{COLORS["video"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;box-shadow:0 2px 8px rgba(239,68,68,0.35);">&#x25B6;&#xFE0F; Assistir</a>
+          <a href="{url}" style="display:inline-block;background-color:{COLORS["video"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:24px;text-decoration:none;box-shadow:0 2px 8px rgba(239,68,68,0.35);">&#x25B6;&#xFE0F; Assistir</a>
         </td>
       </tr>
     </table>''')
@@ -517,10 +541,10 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="text-align:center;">
-          <a href="https://buttondown.com/totobusnello?tag=tema-ai-tools" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["tool"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">AI Tools</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-estrategia" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["analysis"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Estrat&eacute;gia</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-brasil" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["saas"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Brasil</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-deep-dive" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["world"]};color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Deep Dive</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-ai-tools" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["tool"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">AI Tools</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-estrategia" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["analysis"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Estrat&eacute;gia</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-brasil" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["saas"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Brasil</a>
+          <a href="https://buttondown.com/totobusnello?tag=tema-deep-dive" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["world"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Deep Dive</a>
         </td>
       </tr>
     </table>
@@ -565,7 +589,7 @@ def generate_email_html(curated: Dict) -> str:
 
     # ── FOOTER ──────────────────────────────────
     body_rows.append(f'''<tr>
-  <td class="dark-header" style="background-color:{COLORS["dark"]};padding:20px;text-align:center;border-radius:12px;">
+  <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:20px;text-align:center;border-radius:12px;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="text-align:center;padding-bottom:8px;">
@@ -616,6 +640,11 @@ def generate_email_html(curated: Dict) -> str:
   .mobile-padding {{
     padding-left: 12px !important;
     padding-right: 12px !important;
+  }}
+  .ql-col {{
+    display: block !important;
+    width: 100% !important;
+    padding-bottom: 8px !important;
   }}
 }}
 @media (prefers-color-scheme: dark) {{

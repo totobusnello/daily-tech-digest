@@ -26,7 +26,7 @@ sender.py             -> Buttondown API -> email HTML
 ```
 
 **Orquestrador:** `run.py` (ou GitHub Actions via `daily-digest.yml`)
-**Schedule:** Diario as 06:00 BRT (09:00 UTC) via GitHub Actions
+**Schedule:** Diario as 03:00 BRT (06:00 UTC) via GitHub Actions — compensando delays de 2-6h da fila do GH Actions, entrega estimada 05:00-09:00 BRT
 
 ---
 

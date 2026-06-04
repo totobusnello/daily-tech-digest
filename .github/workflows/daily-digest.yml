@@ -1,9 +1,9 @@
 name: 🔥 THE DAILY BYTE - Daily Digest
 
 on:
-  # Executa todo dia às 09:00 UTC (06:00 BRT) - margem para atrasos do GitHub
+  # Executa todo dia às 06:00 UTC (03:00 BRT) - compensando delays de 2-6h do GH Actions
   schedule:
-    - cron: '0 9 * * *'
+    - cron: '0 6 * * *'
 
   # Permite executar manualmente
   workflow_dispatch:

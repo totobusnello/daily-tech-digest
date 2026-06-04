@@ -12,8 +12,9 @@ newsletter:
 
 # Horário de envio (BRT)
 schedule:
-  time: "06:00"
+  time: "03:00"
   timezone: "America/Sao_Paulo"
+  note: "Cron 06:00 UTC = 03:00 BRT, compensando delays de 2-6h do GH Actions"
 
 # Filtros de curadoria
 filters:
