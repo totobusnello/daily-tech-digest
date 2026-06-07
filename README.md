@@ -1,46 +1,153 @@
 # Daily Byte — Newsletter Automatizada de IA e Tecnologia
 
-Newsletter automatizada "Daily Byte" sobre inteligência artificial e tecnologia. O sistema coleta conteúdo de múltiplas fontes, realiza curadoria inteligente com IA e distribui edições diárias de forma completamente autônoma via GitHub Actions. A versão 2.7 introduz workflow de sexta-feira com formato especial, enquetes para engajamento da audiência e suporte a múltiplas fontes de conteúdo simultaneamente.
+> Curadoria diária de notícias de IA e tecnologia gerada por inteligência artificial.
+
+## Sobre
+
+Daily Byte é um sistema completamente automatizado que coleta, cura e distribui uma newsletter diária sobre inteligência artificial e tecnologia para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). O sistema roda via GitHub Actions, integrando fontes de múltiplos canais (RSS, redes sociais, newsletters especializadas, YouTube) e aplicando curadoria inteligente com Claude para selecionar apenas o conteúdo mais relevante e acionável.
+
+A arquitetura usa Python para coleta paralela, prompts especializados para curadoria editorial, e Buttondown como plataforma de distribuição. Versão 2.11 introduz workflow especial para sextas-feiras, enquetes de engajamento e dedup avançado em 6 camadas.
 
 ## Stack
 
-- **Python** — scripts de coleta, processamento e curadoria
+- **Python 3.14** — scripts de coleta, processamento e curadoria
 - **GitHub Actions** — CI/CD para agendamento e execução diária
-- **YAML** — configuração de fontes, filtros e parâmetros de distribuição
-- **Prompts de IA** — curadoria e geração de conteúdo editorial
+- **Claude API** — curadoria inteligente e geração de conteúdo
+- **Buttondown** — plataforma de newsletter e analytics
+- **YAML/JSON** — configuração de fontes, filtros e parâmetros
 
-## Funcionalidades
+## Funcionalidades Principais
 
-- Coleta automatizada de conteúdo de IA e tecnologia de múltiplas fontes
-- Curadoria inteligente via prompts especializados (`prompts/curator.md`)
-- Distribuição diária agendada via `daily-digest.yml`
-- Workflow especial para edições de sexta-feira
-- Suporte a enquetes para engajamento da audiência
-- Configuração flexível de fontes via `config.yaml`
+- Coleta paralela de ~200 feeds de múltiplas fontes (RSS, X/Twitter, YouTube, newsletters)
+- Curadoria inteligente com Claude Sonnet 4.6 usando heat score (relevância + recência + fonte)
+- Dedup em 6 camadas: URL (5 dias), hash de título, clustering semântico, cap por fonte, intra-edition, TF-IDF cosine
+- Layout editorial de 6 seções: Numero do Dia, Mundo Real, Hoje no Byte, SaaS & Enterprise, Radar Brasil, Tool do Dia
+- Deep Dive semanal (sextas) — análise profunda 3-5 parágrafos sobre tema mais quente
+- Enquete de engajamento (sextas) com 4 opções de feedback
+- Health check de feeds (detecção de fontes falhando)
+- Suporte a preview (markdown + HTML em /tmp/) antes de envio real
 
 ## Estrutura
 
 ```
 daily-tech-digest/
-├── collector.py              # Coleta de conteúdo das fontes
-├── processor.py              # Processamento e filtragem
-├── newsletter_collector.py   # Orquestração da newsletter
-├── config.yaml               # Configuração de fontes e parâmetros
+├── scripts/
+│   ├── collector.py              # Coleta paralela (ThreadPoolExecutor, 10 workers)
+│   ├── processor.py              # Curadoria com Claude (pre-clustering, heat score)
+│   ├── sender.py                 # Renderização HTML e envio via Buttondown
+│   ├── feedback.py               # Extração de métricas Buttondown (opens, clicks, hooks)
+│   ├── dedup.py                  # Cache 5-dias + dedup URL/título/semântico
+│   ├── health_check.py           # Monitor de saúde de feeds (~200 fontes)
+│   ├── alert_failure.py          # Cria GitHub Issue em caso de falha
+│   └── run.py                    # Orquestrador (pipeline completo)
+├── config.yaml                   # Configuração central (modelo, distribuição, fontes)
 ├── prompts/
-│   └── curator.md            # Prompt de curadoria editorial
-└── .github/
-    └── workflows/
-        └── daily-digest.yml  # Workflow de automação diária
+│   └── curator.md                # Documentação do prompt de curadoria
+├── .github/
+│   └── workflows/
+│       └── daily-digest.yml      # Workflow de automação diária (03:00 BRT)
+├── SKILL.md                      # Filosofia, critérios de curadoria, layout
+├── EVOLUTION-PLAN.md             # Histórico de versões e backlog
+└── .env                          # Chaves (ANTHROPIC_API_KEY, BUTTONDOWN_API_KEY, X_BEARER_TOKEN)
 ```
 
 ## Como Funciona
 
-1. O GitHub Actions dispara o workflow no horário configurado
-2. `collector.py` busca conteúdo das fontes definidas em `config.yaml`
-3. `processor.py` filtra e prioriza os itens coletados
-4. `newsletter_collector.py` orquestra a curadoria final via IA
-5. A newsletter é gerada e distribuída automaticamente
+1. **Coleta** (01:00 BRT) — `collector.py` busca conteúdo de ~200 fontes em paralelo, normaliza URLs, remove duplicatas crudas
+2. **Feedback** (02:00 BRT) — `feedback.py` extrai métricas da última newsletter (opens, clicks, subject hooks) via Buttondown API
+3. **Curadoria** (02:30 BRT) — `processor.py` aplica heat score (relevância 30pts + recência 40pts + fonte 30pts), pré-agrupa por tema, envia melhor representante de cada cluster ao Claude
+4. **Renderização** (03:00 BRT) — `sender.py` converte JSON curado para HTML (table-based, inline CSS) e envia via Buttondown
+5. **Distribuição** (03:00 BRT) — Buttondown entrega email, adiciona unsubscribe automático, tracked links
+
+**Agendamento:** GitHub Actions dispara às 06:00 UTC / 03:00 BRT, com entrega estimada 05:00–09:00 BRT (compensando delays da fila do Actions).
+
+## Fontes (~200 feeds)
+
+### Tier 1 — Primeira Mão (65+ X/Twitter)
+Fundadores e labs (Sam Altman, Anthropic, Sundar Pichai, LeCun, Demis Hassabis, Karpathy), builders indie (Simonw, Chipro, Gergelý Orosz, Levelsio), investidores e estrategistas.
+
+### Tier 2 — RSS Feeds (45+ tech/AI + 37 world)
+**Labs:** DeepMind, Meta AI, NVIDIA, Microsoft Research, OpenAI, Anthropic, HuggingFace.
+**Community:** Reddit r/MachineLearning, r/LocalLLaMA, HackerNews, Lobsters.
+**Tech media:** HN, TechCrunch AI, MIT Tech Review, The Decoder, Changelog.
+**Mundo:** Reuters, BBC, Forbes, CNBC, WSJ.
+**Brasil:** Poder360, InfoMoney, Startups.com.br, Valor Econômico, Tecmundo, NeoFeed, Startse.
+
+### Tier 3 — Newsletters (10+ fontes)
+AiDrop, Evolving AI, Update Diário, TechDrop, AlphaSignal, There's An AI For That, Turing Post, Import AI, Distrito News, The BRIEF, e 42 Substacks curados (Lilian Weng, Chip Huyen, Ethan Mollick, Latent Space, Pragmatic Engineer, etc.).
+
+## Critérios de Curadoria
+
+**Heat Score (máximo 100 pontos):**
+- Freshness (40): <6h=40, 6-12h=30, 12-24h=20, >24h=0
+- Fonte (30): Fundador/blog oficial=30, Jornalista=25, Release=20, Newsletter=15
+- Impacto (30): Lançamento=30, M&A=25, Drama=20, Incremental=5
+- Bônus: Ineditismo (+15), Engagement alto (+10), Cross-validação (+5)
+
+**Regras críticas:**
+- Mínimo 60 pontos para entrar
+- 30% dos itens de fontes primárias (ineditismo obrigatório)
+- Máximo 18 itens por edição (12 principais + 6 quick links)
+- Sem repetição de temas em hooks semanais
+- 100% português brasileiro (headlines, análises, how-to)
+
+## Como Rodar Localmente
+
+### Setup inicial
+
+```bash
+cd ~/daily-tech-digest
+python3 -m venv venv
+source venv/bin/activate
+pip install anthropic feedparser beautifulsoup4 lxml requests pyyaml python-dotenv
+```
+
+### Criar .env
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+BUTTONDOWN_API_KEY=...
+X_BEARER_TOKEN=...
+```
+
+### Executar
+
+```bash
+source venv/bin/activate
+source .env
+
+cd scripts
+
+# Preview (salva em /tmp/ sem enviar)
+python run.py --preview
+
+# Pipeline completo (envia de verdade)
+python run.py
+
+# Flags úteis
+python run.py --skip-collect   # reutiliza /tmp/digest_raw.json
+python run.py --skip-process   # reutiliza /tmp/digest_curated.json
+```
+
+## Troubleshooting
+
+| Erro | Solução |
+|------|---------|
+| `ModuleNotFoundError` | `source venv/bin/activate && pip install -r requirements.txt` |
+| `ANTHROPIC_API_KEY not set` | `source .env` antes de rodar scripts |
+| `Couldn't find tree builder: lxml` | `pip install lxml` |
+| `GH013: Push cannot contain secrets` | Certifique que `.env` está em `.gitignore` |
+
+## Roadmap
+
+- v2.12 — Integração com X API v2 nativa (RSS deprecado)
+- v3.0 — Dashboard de analytics com Vercel Analytics + PostHog
+- v3.1 — Agendamento flexível (horários diferentes por pessoa)
+
+## Status
+
+🟢 Ativo
 
 ---
 
-Desenvolvido por [totobusnello](https://github.com/totobusnello)
+> Repositório privado — uso interno
