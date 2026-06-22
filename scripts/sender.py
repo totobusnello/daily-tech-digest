@@ -174,15 +174,14 @@ def _render_item_html(item: Dict) -> str:
     url = item.get('source_url', '#')
     source = _esc(item.get('source_name', 'Fonte'))
     hours = item.get('hours_ago', '?')
-    heat = item.get('heat_score', 0)
+    byte_html = _byte_badge_html(item.get('byte_score'))
 
     tag_html = f'<span style="display:inline-block;background-color:#FF6B35;color:#ffffff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:6px;vertical-align:middle;text-transform:uppercase;">{_esc(tag)}</span>' if tag else ''
-    heat_html = _heat_bar(heat)
 
     return f'''<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;border-bottom:1px solid #f0f0f0;padding-bottom:14px;">
   <tr>
     <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:6px;">
-      {tag_html}{headline} {heat_html}
+      {byte_html}{tag_html}{headline}
     </td>
   </tr>
   <tr>
@@ -317,11 +316,12 @@ def generate_email_html(curated: Dict) -> str:
             why = _esc(rb.get('why_it_matters', ''))
             url = rb.get('source_url', '#')
             source = _esc(rb.get('source_name', ''))
+            rb_byte_html = _byte_badge_html(rb.get('byte_score'))
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(radar_brasil) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
         <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:4px;">
-          &#x2192; {headline}
+          {rb_byte_html}&#x2192; {headline}
         </td>
       </tr>
       <tr>
