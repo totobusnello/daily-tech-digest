@@ -4,6 +4,33 @@
 
 ## Changelog
 
+### v2.13 — 2026-06-22 (Byte Score — Classificador de Impacto)
+
+**Mudanças implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | Bloco "BYTE SCORE" no `CURATOR_SYSTEM`: conceito, faixas, regra anti-inflação, exemplos-âncora few-shot (2 por tier). Schema JSON: campo `byte_score` (float 0.0–10.0) em todos os itens em escopo. `heat_score` permanece no schema para seleção interna. |
+| `scripts/sender.py` | Nova função `_byte_tier(score)` → (tier, emoji, bg, fg). Badge renderizado (número + emoji + palavra) em todos os itens noticiosos (HTML + markdown), incluindo quick_links. Legenda no rodapé (uma linha com a escala). `_heat_bar` e `heat_emoji` removidos da renderização. |
+| `config.yaml` | Header v2.13. Comentário detalhado no bloco de filtros de curadoria documentando faixas, cores e escopo do Byte Score. |
+| `SKILL.md` | Nova subseção "Byte Score — Classificador de Impacto Estratégico": tabela de faixas (score/tier/emoji/significado), tabela de cores (fundo/texto), regras de escopo, explicação do fluxo curador→código, nota de calibração anti-inflação. Layout do email atualizado com badges de exemplo. Versão bumpeada para v2.13. |
+| `CLAUDE.md` | "Versao atual" bumpeada para v2.13. Regra 33 adicionada documentando: número 0-10 do curador, derivação tier/emoji/cor em `sender.py` via `_byte_tier`, heat_score 100% interno, escopo de exibição, calibração anti-inflação. |
+
+**Feature: Byte Score**
+
+O Byte Score é o classificador de impacto estratégico proprietário do Daily Byte — responde à pergunta que C-levels realmente fazem: *quão grande é o tremor estratégico desta notícia?*
+
+Distinção fundamental:
+- **Heat Score**: critério de seleção interno (0-100, corte 60). Mede freshness + fonte + impacto para decidir *se a notícia entra*. Continua calculado, nunca exibido ao leitor.
+- **Byte Score**: exibido ao leitor (0.0-10.0). Mede a *magnitude do impacto estratégico* da notícia publicada. Juízo do curador, calibrado por regra anti-inflação + few-shot.
+
+A derivação tier/emoji/cor é sempre feita no código (`sender.py`), nunca enviada pelo Claude — garante consistência entre número e rótulo.
+
+Backlog relacionado marcado como parcialmente coberto:
+- "Classificação automática de ineditismo / score visível" → Byte Score resolve a face de visibilidade do score (o leitor vê o impacto); a face programática de ineditismo (`_cluster_size`) já existia desde v2.9.
+
+---
+
 ### v2.11 — 04/06/2026 (Novas Fontes + Priority Themes)
 
 **Mudanças implementadas:**
@@ -538,7 +565,7 @@
 - [x] Dedup mais inteligente — implementado v2.9 (entity extraction + keyword overlap + clustering)
 - [x] Cache de items ja enviados para evitar repeticao entre dias — implementado v2.3
 - [x] Feedback loop — rastrear opens/clicks para refinar selecao — implementado v2.4
-- [ ] Classificacao automatica de ineditismo — usar _cluster_size para pontuar items programaticamente
+- [~] Classificacao automatica de ineditismo — _cluster_size (v2.9) ja pontua internamente; Byte Score (v2.13) expoe o impacto visualmente ao leitor. Face programatica completa pendente.
 - [ ] Score de "trending velocity" — itens que ganham engajamento rapido nas ultimas 2h valem mais
 
 **Infra:**

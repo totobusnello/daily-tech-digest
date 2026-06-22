@@ -98,30 +98,35 @@ THE DAILY BYTE                    Leitura: 3 min
 News, insights & trends
 [Data]
 
-📊 NUMERO DO DIA
+📊 NUMERO DO DIA (sem badge Byte Score)
 [Data point impactante — value + context]
 
 🌍 MUNDO REAL (3 notícias — mundo + Brasil)
-→ [Geopolítica, economia, regulação]
+[ 8.4 💿 MEGABYTE ]  Headline + análise (1-2 frases)
 
 🔥 HOJE NO BYTE (4-5 itens com tags)
-[BREAKING] Headline + análise (1-2 frases)
-[AI] Headline + análise
-[BIG TECH] Headline + análise
-[ENTERPRISE] Headline + análise
+[ 9.1 📦 GIGABYTE ]  [BREAKING] Headline + análise
+[ 7.2 💿 MEGABYTE ]  [AI] Headline + análise
+[ 6.0 💾 KILOBYTE ]  [BIG TECH] Headline + análise
+[ 3.5 📄 byte     ]  [ENTERPRISE] Headline + análise
 
 💰 SaaS & ENTERPRISE (2 itens)
+[ 5.8 💾 KILOBYTE ]  Headline + análise
 
 🛠️ TOOL DO DIA + 💡 COMO USAR HOJE + 🧠 PROMPT DO DIA
 [1 ferramenta + prompt copy-paste ready]
+(sem badge Byte Score)
 
 🔮 ANÁLISE DO DIA
 [3 bullets conectando os pontos]
 
 ⚡ QUICK LINKS (5-6 links rápidos)
-→ Headline + link (sem análise)
+[ 4.0 📄 byte ]  Headline + link
 
 📺 WATCH LATER (1 vídeo essencial)
+(sem badge Byte Score)
+
+🗓️ Legenda: 📦 GIGABYTE = redefine o mercado · 💿 MEGABYTE = muda o jogo · 💾 KILOBYTE = relevante · 📄 byte = nota de rodapé
 
 👍 Esta edição foi útil? [Sim] [Mais ou menos] [Não]
 📨 Encaminhe para um colega
@@ -130,6 +135,36 @@ Curated by Totó Busnello AI
 ```
 
 **Total máximo:** 18 itens (12 principais + 6 quick links)
+
+### Byte Score — Classificador de Impacto Estratégico (v2.13)
+
+O **Byte Score** é o classificador visual proprietário do Daily Byte: mostra ao leitor *o tamanho do tremor estratégico* de cada notícia. É distinto do Heat Score (que é critério de seleção interno, nunca exibido).
+
+**Escala e faixas:**
+
+| Byte Score | Tier | Emoji | Significa |
+|------------|------|-------|-----------|
+| 9.0 – 10.0 | GIGABYTE | 📦 | Redefine o mercado / novo paradigma |
+| 7.0 – 8.9 | MEGABYTE | 💿 | Grande player muda o jogo |
+| 5.0 – 6.9 | KILOBYTE | 💾 | Relevante, incremental |
+| 0.0 – 4.9 | byte | 📄 | Nota de rodapé |
+
+**Cores do badge:**
+
+| Tier | Fundo | Texto |
+|------|-------|-------|
+| GIGABYTE | `#FF6B35` | branco |
+| MEGABYTE | `#F7A072` | escuro |
+| KILOBYTE | `#6B7280` | branco |
+| byte | `#E5E7EB` | cinza |
+
+**Escopo de exibição:**
+- Com badge: `world[]`, `items[]` (hoje_no_byte e saas_enterprise), `radar_brasil[]`, `quick_links[]`
+- Sem badge: `tool_of_day`, `watch_later`, `number_of_day` (utilidade/indicador, não impacto noticioso)
+
+**Como funciona:** o curador retorna o número `byte_score` (float, 0.0–10.0). O tier, emoji e cor são sempre derivados no código (`sender.py` via `_byte_tier()`), nunca enviados pelo Claude — garante que número e rótulo jamais divirjam.
+
+**Calibração (anti-inflação):** GIGABYTE é raro — a maioria das edições não tem um. Numa edição típica, espere ~0 GIGABYTE, 1-2 MEGABYTE, várias KILOBYTE e bytes nos quick links. Resista a inflar.
 
 ## Como Rodar
 
@@ -168,4 +203,4 @@ python run.py --skip-process   # Pula curadoria, usa /tmp/digest_curated.json ex
 
 ---
 
-*THE DAILY BYTE v2.12 — Tech & AI para C-levels brasileiros*
+*THE DAILY BYTE v2.13 — Tech & AI para C-levels brasileiros*

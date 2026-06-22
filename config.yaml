@@ -1,6 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.11
-# Atualizado: 2026-06-04 (Novas Fontes + Priority Themes)
+# THE DAILY BYTE - Configuração v2.13
+# Atualizado: 2026-06-22 (Byte Score — Classificador de Impacto)
 # ============================================
 
 newsletter:
@@ -25,6 +25,17 @@ filters:
 
   # Score mínimo para entrar (0-100)
   min_heat_score: 60
+
+  # Byte Score — Classificador de Impacto Estratégico (v2.13)
+  # O curador retorna byte_score (float 0.0–10.0) por item noticioso.
+  # Tier, emoji e cor são derivados automaticamente em sender.py via _byte_tier():
+  #   9.0–10.0 → 📦 GIGABYTE  (fundo #FF6B35, texto branco)   — redefine o mercado
+  #   7.0–8.9 → 💿 MEGABYTE  (fundo #F7A072, texto escuro)   — grande player muda o jogo
+  #   5.0–6.9 → 💾 KILOBYTE  (fundo #6B7280, texto branco)   — relevante, incremental
+  #   0.0–4.9 → 📄 byte      (fundo #E5E7EB, texto cinza)    — nota de rodapé
+  # Escopo: world[], items[] (hoje_no_byte/saas_enterprise), radar_brasil[], quick_links[]
+  # Excluídos: tool_of_day, watch_later, number_of_day (utilidade/indicador, não impacto noticioso)
+  # heat_score permanece como critério de seleção interno; nunca é renderizado ao leitor.
 
   # Máximo de itens no digest (main sections + quick links)
   max_items: 18
