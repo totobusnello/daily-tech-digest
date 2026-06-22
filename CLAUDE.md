@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.11 (Novas Fontes + Priority Themes)
+**Versao atual:** v2.13 (Byte Score — Classificador de Impacto)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -217,6 +217,8 @@ Threshold minimo: 60 pontos
 31. **Fallback cache (v2.10)** — run.py: se coleta falhar, verifica se `/tmp/digest_raw.json` existe e tem <48h. Se sim, continua com dados antigos (log de warning com idade do cache). Se nao, aborta. Workflow: raw data cache via `actions/cache@v4` (save apos coleta, restore antes).
 
 32. **TF-IDF dedup (v2.10)** — `_tfidf_similarity()` em processor.py: similaridade cosine TF-IDF entre titulos curtos. Tokeniza, remove stopwords, calcula IDF suavizado (log(1+N/df)), vetores TF-IDF normalizados, cosine similarity. Threshold 0.45. Usado como terceiro check em `_titles_overlap()` (apos keyword overlap 60% e entity overlap 40%). Implementacao stdlib-only (math, re, collections).
+
+33. **Byte Score (v2.13)** — classificador de impacto estrategico exibido em todo item noticioso. O curador retorna `byte_score` (float 0.0–10.0) por item. O tier, emoji e cor sao derivados SEMPRE no codigo (`sender.py` via `_byte_tier()`) — Claude nunca envia o tier, apenas o numero. Faixas: 9.0–10.0 = 📦 GIGABYTE (#FF6B35/branco) · 7.0–8.9 = 💿 MEGABYTE (#F7A072/escuro) · 5.0–6.9 = 💾 KILOBYTE (#6B7280/branco) · 0.0–4.9 = 📄 byte (#E5E7EB/cinza). Escopo: world[], items[] (hoje_no_byte e saas_enterprise), radar_brasil[], quick_links[]. Excluidos: tool_of_day, watch_later, number_of_day. `heat_score` continua 100% interno (criterio de selecao, corte 60) — nunca renderizado ao leitor. Calibracao anti-inflacao: GIGABYTE e raro; numa edicao tipica espere ~0 GIGABYTE, 1-2 MEGABYTE, varias KILOBYTE, bytes nos quick links.
 
 ---
 
