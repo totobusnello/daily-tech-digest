@@ -70,6 +70,50 @@ def _esc(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
+# ── Byte Score (v2.13) — classificador de impacto estratégico ──
+# (limite_inferior, label, emoji, cor_fundo, cor_texto)
+BYTE_TIERS = [
+    (9.0, "GIGABYTE", "📦", "#FF6B35", "#ffffff"),
+    (7.0, "MEGABYTE", "💿", "#F7A072", "#1a1a2e"),
+    (5.0, "KILOBYTE", "💾", "#6B7280", "#ffffff"),
+    (0.0, "byte",     "📄", "#E5E7EB", "#6B7280"),
+]
+
+def _byte_tier(score):
+    """Deriva (label, emoji, bg, fg) de um Byte Score 0-10. None se ausente/inválido."""
+    try:
+        s = float(score)
+    except (TypeError, ValueError):
+        return None
+    for lower, label, emoji, bg, fg in BYTE_TIERS:
+        if s >= lower:
+            return (label, emoji, bg, fg)
+    return BYTE_TIERS[-1][1:]
+
+def _byte_badge_html(score):
+    """Badge HTML completo do Byte Score (número + emoji + palavra). '' se ausente."""
+    tier = _byte_tier(score)
+    if tier is None:
+        return ""
+    label, emoji, bg, fg = tier
+    s = float(score)
+    return (
+        f'<span style="display:inline-block;background-color:{bg};color:{fg};'
+        f'font-size:12px;font-weight:800;padding:3px 9px 3px 7px;border-radius:6px;'
+        f'vertical-align:middle;margin-right:6px;white-space:nowrap;">'
+        f'<span style="font-size:13px;">{s:.1f}</span> {emoji} '
+        f'<span style="font-size:10px;font-weight:700;letter-spacing:0.6px;">{label}</span></span>'
+    )
+
+def _byte_badge_md(score):
+    """Badge markdown do Byte Score: '9.2 📦 GIGABYTE'. '' se ausente."""
+    tier = _byte_tier(score)
+    if tier is None:
+        return ""
+    label, emoji, _, _ = tier
+    return f"{float(score):.1f} {emoji} {label}"
+
+
 def _heat_bar(score: int) -> str:
     """Visual heat score indicator"""
     if score >= 80:
