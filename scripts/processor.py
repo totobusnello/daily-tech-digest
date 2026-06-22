@@ -204,7 +204,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "source_type": "tweet|article|video|paper|newsletter",
       "hours_ago": 4,
       "heat_score": 75,
-      "category": "hoje_no_byte|saas_enterprise|watch_later",
+      "category": "hoje_no_byte|saas_enterprise",
       "byte_score": 7.5
     }}
   ],
@@ -260,7 +260,7 @@ LEMBRE-SE:
 - ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO — ZERO palavras em inglês no texto (exceto nomes de produtos/pessoas/URLs). Palavras como "Expect", "Result", "Click", "Open" devem ser escritas em PT-BR: "Espere", "Resultado", "Clique", "Abra".
 - "subject_hook" é uma frase-gancho de max 6 palavras sobre a notícia mais impactante
 - "number_of_day" é UM data point numérico impressionante extraído das notícias (value + context)
-- Cada item de world/items/radar_brasil/quick_links DEVE ter "byte_score" (0.0-10.0). GIGABYTE (9+) é raro.
+- Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" (0.0-10.0). GIGABYTE (9+) é raro. Itens com category "watch_later" NÃO recebem byte_score.
 
 {feedback_section}
 

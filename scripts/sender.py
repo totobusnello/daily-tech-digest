@@ -81,27 +81,31 @@ BYTE_TIERS = [
 ]
 
 def _byte_tier(score):
-    """Deriva (label, emoji, bg, fg) de um Byte Score 0-10. None se ausente/inválido."""
+    """Deriva (label, emoji, bg, fg, s_norm) de um Byte Score 0-10. None se ausente/inválido.
+
+    Normaliza ANTES de derivar o tier: clamp a 10.0 + arredonda para 1 decimal.
+    O valor normalizado s_norm (índice 4) deve ser usado para exibição, garantindo que
+    o número mostrado e o tier exibido sejam sempre consistentes.
+    """
     try:
         s = float(score)
     except (TypeError, ValueError):
         return None
     if math.isnan(s) or s < 0:
         return None
-    if s > 10.0:
-        s = 10.0
+    # Normaliza uma única vez — clamp + quantize
+    s = round(min(s, 10.0), 1)
     for lower, label, emoji, bg, fg in BYTE_TIERS:
         if s >= lower:
-            return (label, emoji, bg, fg)
-    return BYTE_TIERS[-1][1:]
+            return (label, emoji, bg, fg, s)
+    return (*BYTE_TIERS[-1][1:], s)
 
 def _byte_badge_html(score):
     """Badge HTML completo do Byte Score (número + emoji + palavra). '' se ausente."""
     tier = _byte_tier(score)
     if tier is None:
         return ""
-    label, emoji, bg, fg = tier
-    s = float(score)
+    label, emoji, bg, fg, s = tier
     return (
         f'<span style="display:inline-block;background-color:{bg};color:{fg};'
         f'font-size:12px;font-weight:800;padding:3px 9px 3px 7px;border-radius:6px;'
@@ -115,8 +119,8 @@ def _byte_badge_md(score):
     tier = _byte_tier(score)
     if tier is None:
         return ""
-    label, emoji, _, _ = tier
-    return f"{float(score):.1f} {emoji} {label}"
+    label, emoji, _, _, s = tier
+    return f"{s:.1f} {emoji} {label}"
 
 
 _section_counter = 0
@@ -842,7 +846,9 @@ def generate_email_content(curated: Dict) -> str:
             why = rb.get('why_it_matters', '')
             url = rb.get('source_url', '#')
             source = rb.get('source_name', '')
-            rb_lines.append(f"→ **{headline}** — {why} ([{source}]({url}))")
+            rb_badge = _byte_badge_md(rb.get('byte_score'))
+            rb_prefix = f"{rb_badge} " if rb_badge else ""
+            rb_lines.append(f"→ {rb_prefix}**{headline}** — {why} ([{source}]({url}))")
         sections.append("# 🇧🇷 RADAR BRASIL\n\n" + "\n\n".join(rb_lines))
 
     tool = curated.get('tool_of_day', {})

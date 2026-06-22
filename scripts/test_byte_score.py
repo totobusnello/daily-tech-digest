@@ -47,5 +47,17 @@ check("acima de 10 -> GIGABYTE (clamped)", sender._byte_tier(99.0)[0] == "GIGABY
 check("badge html negativo -> vazio", sender._byte_badge_html(-1.0) == "")
 check("badge md NaN -> vazio", sender._byte_badge_md(float('nan')) == "")
 
+# Normalização: display e tier sempre consistentes (Issue 1)
+check("99.0 normalizado tier GIGABYTE", sender._byte_tier(99.0)[0] == "GIGABYTE")
+check("99.0 normalizado valor display 10.0", sender._byte_tier(99.0)[4] == 10.0)
+check("badge html 99.0 mostra 10.0", "10.0" in sender._byte_badge_html(99.0))
+check("badge html 99.0 nao mostra 99.0", "99.0" not in sender._byte_badge_html(99.0))
+# 8.96 -> round(8.96, 1) = 9.0 -> GIGABYTE (sem ambiguidade de banker's rounding)
+check("8.96 normalizado para 9.0", sender._byte_tier(8.96)[4] == 9.0)
+check("8.96 tier GIGABYTE (consistente com 9.0)", sender._byte_tier(8.96)[0] == "GIGABYTE")
+check("badge html 8.96 mostra 9.0", "9.0" in sender._byte_badge_html(8.96))
+check("badge html 8.96 contem GIGABYTE", "GIGABYTE" in sender._byte_badge_html(8.96))
+check("badge md 8.96 contem 9.0 GIGABYTE", sender._byte_badge_md(8.96) == "9.0 📦 GIGABYTE")
+
 print("\n%d falha(s)" % check.failed)
 sys.exit(1 if check.failed else 0)
