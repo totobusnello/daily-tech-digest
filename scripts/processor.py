@@ -74,7 +74,7 @@ Faixas (o rótulo é derivado pelo sistema, você só envia o número):
 
 REGRA ANTI-INFLAÇÃO: GIGABYTE é raro — a maioria das edições NÃO tem um. Reserve para a
 notícia que você apostaria ser lembrada daqui a 6 meses. Se nada redefiniu o mercado hoje,
-o item mais impactante da edição é MEGABYTE. Numa edição típica espere ~0 GIGABYTE, 1-2 MEGABYTE, várias
+o teto da edição é MEGABYTE. Numa edição típica espere ~0 GIGABYTE, 1-2 MEGABYTE, várias
 KILOBYTE e bytes nos quick links. NÃO infle.
 
 EXEMPLOS-ÂNCORA:
