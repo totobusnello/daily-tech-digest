@@ -516,11 +516,12 @@ def generate_email_html(curated: Dict) -> str:
                 headline = _esc(ql.get('headline', ''))
                 url = ql.get('source_url', '#')
                 source = _esc(ql.get('source_name', ''))
+                ql_badge = _byte_badge_html(ql.get('byte_score'))
                 cols.append(f'''<td class="ql-col" style="width:50%;vertical-align:top;padding:6px 8px;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid {COLORS["quick"]};padding-left:10px;">
               <tr>
                 <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.4;">
-                  <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
+                  {ql_badge}<a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
                   <br/><span style="color:#6b7280;font-size:11px;">{source}</span>
                 </td>
               </tr>
