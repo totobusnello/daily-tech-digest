@@ -632,6 +632,16 @@ def generate_email_html(curated: Dict) -> str:
 
     body_rows.append(_spacer(12))
 
+    # ── BYTE SCORE LEGEND ───────────────────────
+    legend_html = (
+        '<tr><td style="padding:12px 20px;font-size:11px;color:#6b7280;line-height:1.6;">'
+        '<b style="color:#1a1a2e;">Byte Score</b> — impacto estratégico: '
+        '📦 GIGABYTE redefine o mercado · 💿 MEGABYTE muda o jogo · '
+        '💾 KILOBYTE relevante · 📄 byte nota de rodapé.'
+        '</td></tr>'
+    )
+    body_rows.append(legend_html)
+
     # ── FOOTER ──────────────────────────────────
     body_rows.append(f'''<tr>
   <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:20px;text-align:center;border-radius:12px;">
@@ -767,12 +777,12 @@ def format_item(item: Dict) -> str:
     url = item.get('source_url', '#')
     source = item.get('source_name', 'Fonte')
     hours = item.get('hours_ago', '?')
-    heat = item.get('heat_score', 0)
 
-    heat_emoji = "🔥🔥🔥" if heat >= 80 else "🔥🔥" if heat >= 70 else "🔥"
     tag_str = f"[{tag}] " if tag else ""
+    byte_md = _byte_badge_md(item.get('byte_score'))
+    byte_prefix = f"{byte_md} " if byte_md else ""
 
-    return f"""{tag_str}**{headline}** {heat_emoji}
+    return f"""{byte_prefix}{tag_str}**{headline}**
 
 {why}
 
@@ -878,7 +888,9 @@ def generate_email_content(curated: Dict) -> str:
             headline = ql.get('headline', '')
             url = ql.get('source_url', '#')
             source = ql.get('source_name', '')
-            ql_lines.append(f"→ [{headline}]({url}) *({source})*")
+            ql_badge = _byte_badge_md(ql.get('byte_score'))
+            ql_prefix = f"{ql_badge} " if ql_badge else ""
+            ql_lines.append(f"{ql_prefix}→ [{headline}]({url}) *({source})*")
         sections.append(f"# ⚡ QUICK LINKS\n\n" + "\n\n".join(ql_lines))
 
     videos = [i for i in items if i.get('category') == 'watch_later']
