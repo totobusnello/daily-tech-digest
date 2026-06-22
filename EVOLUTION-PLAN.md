@@ -26,7 +26,7 @@ Distinção fundamental:
 
 A derivação tier/emoji/cor é sempre feita no código (`sender.py`), nunca enviada pelo Claude — garante consistência entre número e rótulo.
 
-Backlog relacionado marcado como coberto:
+Backlog relacionado marcado como parcialmente coberto:
 - "Classificação automática de ineditismo / score visível" → Byte Score resolve a face de visibilidade do score (o leitor vê o impacto); a face programática de ineditismo (`_cluster_size`) já existia desde v2.9.
 
 ---

@@ -98,7 +98,7 @@ THE DAILY BYTE                    Leitura: 3 min
 News, insights & trends
 [Data]
 
-📊 NUMERO DO DIA
+📊 NUMERO DO DIA (sem badge Byte Score)
 [Data point impactante — value + context]
 
 🌍 MUNDO REAL (3 notícias — mundo + Brasil)
