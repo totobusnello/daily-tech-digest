@@ -40,5 +40,12 @@ check("html tem emoji", "📦" in html)
 check("html tem cor giga", "#FF6B35" in html)
 check("md formato", sender._byte_badge_md(7.1) == "7.1 💿 MEGABYTE")
 
+# Guards defensivos (negativo, NaN, acima de 10)
+check("negativo -> None", sender._byte_tier(-1.0) is None)
+check("NaN -> None", sender._byte_tier(float('nan')) is None)
+check("acima de 10 -> GIGABYTE (clamped)", sender._byte_tier(99.0)[0] == "GIGABYTE")
+check("badge html negativo -> vazio", sender._byte_badge_html(-1.0) == "")
+check("badge md NaN -> vazio", sender._byte_badge_md(float('nan')) == "")
+
 print("\n%d falha(s)" % check.failed)
 sys.exit(1 if check.failed else 0)

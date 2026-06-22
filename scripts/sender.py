@@ -7,6 +7,7 @@ v2.4: Template HTML dedicado, mobile-first
 
 import os
 import json
+import math
 import re
 import requests
 from datetime import datetime
@@ -85,6 +86,10 @@ def _byte_tier(score):
         s = float(score)
     except (TypeError, ValueError):
         return None
+    if math.isnan(s) or s < 0:
+        return None
+    if s > 10.0:
+        s = 10.0
     for lower, label, emoji, bg, fg in BYTE_TIERS:
         if s >= lower:
             return (label, emoji, bg, fg)
@@ -112,15 +117,6 @@ def _byte_badge_md(score):
         return ""
     label, emoji, _, _ = tier
     return f"{float(score):.1f} {emoji} {label}"
-
-
-def _heat_bar(score: int) -> str:
-    """Visual heat score indicator"""
-    if score >= 80:
-        return '<span style="color:#ef4444;font-weight:bold;">&#x1F525;&#x1F525;&#x1F525;</span>'
-    elif score >= 70:
-        return '<span style="color:#f97316;font-weight:bold;">&#x1F525;&#x1F525;</span>'
-    return '<span style="color:#f59e0b;">&#x1F525;</span>'
 
 
 _section_counter = 0
@@ -259,11 +255,12 @@ def generate_email_html(curated: Dict) -> str:
             context = _esc(wi.get('context', ''))
             url = wi.get('source_url', '#')
             source = _esc(wi.get('source_name', ''))
+            wi_byte_html = _byte_badge_html(wi.get('byte_score'))
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(world_items) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
         <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:4px;">
-          &#x2192; {headline}
+          {wi_byte_html}&#x2192; {headline}
         </td>
       </tr>
       <tr>
@@ -821,7 +818,9 @@ def generate_email_content(curated: Dict) -> str:
             context = wi.get('context', '')
             url = wi.get('source_url', '#')
             source = wi.get('source_name', '')
-            world_lines.append(f"→ **{headline}** — {context} ([{source}]({url}))")
+            wi_badge_md = _byte_badge_md(wi.get('byte_score'))
+            prefix = f"{wi_badge_md} " if wi_badge_md else ""
+            world_lines.append(f"{prefix}→ **{headline}** — {context} ([{source}]({url}))")
         sections.append(f"# 🌍 MUNDO REAL\n\n" + "\n\n".join(world_lines))
 
     items = curated.get('items', [])
