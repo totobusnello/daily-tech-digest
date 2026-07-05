@@ -98,8 +98,8 @@ def _byte_tier(score):
             return (label, emoji, bg, fg, s)
     return (*BYTE_TIERS[-1][1:], s)
 
-# VU meter — alturas e cores por posição (verde → laranja)
-_VU_HEIGHTS = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+# VU meter — alturas e cores por posição (verde → laranja) — v2.14.1 mais discreto
+_VU_HEIGHTS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 _VU_COLORS = [
     '#10b981', '#10b981', '#10b981', '#10b981',  # verde (1-4)
     '#84cc16', '#eab308',                         # verde-limão + amarelo (5-6)
@@ -119,15 +119,15 @@ def _byte_led_html(score):
     for i in range(10):
         color = _VU_COLORS[i] if i < filled else _VU_EMPTY
         cells.append(
-            f'<span style="display:inline-block;width:6px;height:{_VU_HEIGHTS[i]}px;'
-            f'background-color:{color};margin-right:2px;border-radius:1px;'
+            f'<span style="display:inline-block;width:4px;height:{_VU_HEIGHTS[i]}px;'
+            f'background-color:{color};margin-right:1px;border-radius:1px;'
             f'vertical-align:bottom;"></span>'
         )
     peak_color = _VU_COLORS[filled - 1] if filled > 0 else '#9ca3af'
     return (
-        '<span style="display:inline-block;white-space:nowrap;line-height:24px;height:24px;vertical-align:middle;">'
+        '<span style="display:inline-block;white-space:nowrap;line-height:12px;height:12px;vertical-align:middle;">'
         + "".join(cells)
-        + f'<span style="font-size:11px;font-weight:700;color:{peak_color};margin-left:6px;vertical-align:bottom;">{s}</span>'
+        + f'<span style="font-size:10px;font-weight:700;color:{peak_color};margin-left:4px;vertical-align:bottom;">{s}</span>'
         + '</span>'
     )
 
