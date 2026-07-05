@@ -128,6 +128,7 @@ def register_sent(curated: Dict, cache: Dict[str, str]) -> Dict[str, str]:
     all_items = []
     all_items.extend(curated.get('items', []))
     all_items.extend(curated.get('world', []))
+    all_items.extend(curated.get('radar_brasil', []) or [])  # fix v2.15: incluir BR (era omitido)
     all_items.extend(curated.get('quick_links', []))
     tool = curated.get('tool_of_day', {})
     if tool:

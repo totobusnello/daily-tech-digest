@@ -5,6 +5,7 @@ Envia o digest via Buttondown API
 v2.4: Template HTML dedicado, mobile-first
 """
 
+import copy
 import os
 import json
 import math
@@ -12,6 +13,7 @@ import re
 import requests
 from datetime import datetime
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
 # v2.3: Dedup — registra itens enviados no cache
 try:
@@ -69,6 +71,22 @@ def _esc(text: str) -> str:
     if not text:
         return ""
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def _safe_url(url: str) -> str:
+    """Sanitiza URL: aceita apenas http(s), escapa aspas/tags. Retorna '#' se invalida.
+    Bloqueia javascript:, data:, vbscript:, e attribute breakouts."""
+    if not url or not isinstance(url, str):
+        return "#"
+    try:
+        parsed = urlparse(url.strip())
+        if parsed.scheme not in ("http", "https"):
+            return "#"
+        if not parsed.netloc:
+            return "#"
+    except (ValueError, TypeError):
+        return "#"
+    return _esc(url)
 
 
 # ── Byte Score (v2.13) — classificador de impacto estratégico ──
@@ -169,9 +187,9 @@ def _render_big_story_html(item: Dict) -> str:
     """Renderiza item de destaque no topo — card grande com borda laranja."""
     headline = _esc(item.get('headline', ''))
     why = _esc(item.get('why_it_matters', ''))
-    url = item.get('source_url', '#')
+    url = _safe_url(item.get('source_url', ''))
     source = _esc(item.get('source_name', ''))
-    hours = item.get('hours_ago', '?')
+    hours = _esc(str(item.get('hours_ago', '?')))
     led = _byte_led_html(item.get('byte_score'))
     led_inline = f'&nbsp;&middot;&nbsp; {led}' if led else ''
     return f'''<tr>
@@ -277,9 +295,9 @@ def _render_item_html(item: Dict) -> str:
     headline = _esc(item.get('headline', 'Sem título'))
     tag = item.get('tag', '')
     why = _esc(item.get('why_it_matters', ''))
-    url = item.get('source_url', '#')
+    url = _safe_url(item.get('source_url', ''))
     source = _esc(item.get('source_name', 'Fonte'))
-    hours = item.get('hours_ago', '?')
+    hours = _esc(str(item.get('hours_ago', '?')))
     led_html = _byte_led_html(item.get('byte_score'))
     led_inline = f'&nbsp;&middot;&nbsp; {led_html}' if led_html else ''
 
@@ -337,15 +355,28 @@ def generate_email_html(curated: Dict) -> str:
     body_rows.append(_spacer(16))
 
     # ── BIG STORY (v2.14) ───────────────────────
-    # Extrai o item marcado como big_story dos items[] e renderiza destacado no topo.
-    # Remove de items[] para não aparecer duas vezes.
+    # Escolhe UM item para o card de destaque no topo. Regras defensivas (v2.15 fixes):
+    # - Só aceita boolean True (rejeita string "true"/"false" que Claude pode retornar)
+    # - Só categorias hoje_no_byte/saas_enterprise (nunca watch_later — ficaria sem why/led)
+    # - Byte score >= 8 (redundante com prompt mas defensivo)
+    # - Filtra por IDENTIDADE (só o item escolhido), não pela flag (evita perder se Claude marcar 2)
+    # - Filtragem local, sem mutar curated (preserva items[] para dedup cache + markdown preview)
     items_all = curated.get('items', []) or []
-    big_story = next((i for i in items_all if i.get('big_story')), None)
+
+    def _is_valid_big_story(i):
+        return (
+            i.get('big_story') is True
+            and i.get('category') in ('hoje_no_byte', 'saas_enterprise')
+            and (i.get('byte_score') or 0) >= 8
+        )
+
+    big_story = next((i for i in items_all if _is_valid_big_story(i)), None)
     if big_story:
         body_rows.append(_render_big_story_html(big_story))
         body_rows.append(_spacer())
-        # Filtra big_story do array para renderização normal abaixo não duplicar
-        curated['items'] = [i for i in items_all if not i.get('big_story')]
+
+    # Snapshot dos itens para renderização (sem mutar curated original)
+    items_for_render = [i for i in items_all if i is not big_story] if big_story else items_all
 
     # ── 0. NÚMERO DO DIA ────────────────────────
     number = curated.get('number_of_day', {})
@@ -376,7 +407,7 @@ def generate_email_html(curated: Dict) -> str:
         for i, wi in enumerate(world_items):
             headline = _esc(wi.get('headline', ''))
             context = _esc(wi.get('context', ''))
-            url = wi.get('source_url', '#')
+            url = _safe_url(wi.get('source_url', ''))
             source = _esc(wi.get('source_name', ''))
             wi_led_html = _byte_led_html(wi.get('byte_score'))
             wi_led_inline = f' &nbsp;&middot;&nbsp; {wi_led_html}' if wi_led_html else ''
@@ -403,7 +434,7 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_spacer())
 
     # ── 2. HOJE NO BYTE ─────────────────────────
-    items = curated.get('items', [])
+    items = items_for_render
     hoje = [i for i in items if i.get('category') == 'hoje_no_byte']
     if not hoje:
         hoje = [i for i in items if i.get('category') in ('breaking', 'ai_models', 'big_tech')]
@@ -435,7 +466,7 @@ def generate_email_html(curated: Dict) -> str:
         for i, rb in enumerate(radar_brasil):
             headline = _esc(rb.get('headline', ''))
             why = _esc(rb.get('why_it_matters', ''))
-            url = rb.get('source_url', '#')
+            url = _safe_url(rb.get('source_url', ''))
             source = _esc(rb.get('source_name', ''))
             rb_led_html = _byte_led_html(rb.get('byte_score'))
             rb_led_inline = f' &nbsp;&middot;&nbsp; {rb_led_html}' if rb_led_html else ''
@@ -472,7 +503,7 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_section_header('&#x1F6E0;', 'TOOL DO DIA', COLORS["tool"]))
         tool_headline = _esc(tool.get('headline', ''))
         tool_why = _esc(tool.get('why_it_matters', ''))
-        tool_url = tool.get('source_url', '#')
+        tool_url = _safe_url(tool.get('source_url', ''))
         tool_source = _esc(tool.get('source_name', ''))
         how_to = _esc(tool.get('how_to_use', ''))
         prompt = _esc(tool.get('prompt_of_day', ''))
@@ -636,7 +667,7 @@ def generate_email_html(curated: Dict) -> str:
             cols = []
             for ql in pair:
                 headline = _esc(ql.get('headline', ''))
-                url = ql.get('source_url', '#')
+                url = _safe_url(ql.get('source_url', ''))
                 source = _esc(ql.get('source_name', ''))
                 ql_led = _byte_led_html(ql.get('byte_score'))
                 ql_led_inline = f' &nbsp;&middot;&nbsp; {ql_led}' if ql_led else ''
@@ -669,7 +700,7 @@ def generate_email_html(curated: Dict) -> str:
         body_rows.append(_card_start())
         for vid in videos:
             title = _esc(vid.get('headline', 'Vídeo'))
-            url = vid.get('source_url', '#')
+            url = _safe_url(vid.get('source_url', ''))
             source = _esc(vid.get('source_name', 'Canal'))
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
