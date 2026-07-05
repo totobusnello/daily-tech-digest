@@ -173,7 +173,7 @@ def _render_big_story_html(item: Dict) -> str:
     source = _esc(item.get('source_name', ''))
     hours = item.get('hours_ago', '?')
     led = _byte_led_html(item.get('byte_score'))
-    led_footer = f'<div style="padding-top:10px;">{led}</div>' if led else ''
+    led_inline = f'&nbsp;&middot;&nbsp; {led}' if led else ''
     return f'''<tr>
   <td style="background-color:#fff8f2;border:2px solid {COLORS["brand"]};border-radius:12px;padding:20px 22px;box-shadow:0 4px 12px rgba(255,107,53,0.15);">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -195,8 +195,7 @@ def _render_big_story_html(item: Dict) -> str:
       <tr>
         <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;">
           <a href="{url}" style="display:inline-block;color:#ffffff;background-color:{COLORS["brand"]};text-decoration:none;font-weight:700;padding:8px 18px;border-radius:20px;font-size:13px;">Ler agora &#x2197;</a>
-          &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h
-          {led_footer}
+          &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{led_inline}
         </td>
       </tr>
     </table>
@@ -282,7 +281,7 @@ def _render_item_html(item: Dict) -> str:
     source = _esc(item.get('source_name', 'Fonte'))
     hours = item.get('hours_ago', '?')
     led_html = _byte_led_html(item.get('byte_score'))
-    led_footer = f'<div style="padding-top:8px;">{led_html}</div>' if led_html else ''
+    led_inline = f'&nbsp;&middot;&nbsp; {led_html}' if led_html else ''
 
     tag_html = f'<span style="display:inline-block;background-color:#FF6B35;color:#ffffff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:6px;vertical-align:middle;text-transform:uppercase;">{_esc(tag)}</span>' if tag else ''
 
@@ -300,8 +299,7 @@ def _render_item_html(item: Dict) -> str:
   <tr>
     <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;line-height:1.4;">
       <a href="{url}" style="display:inline-block;color:#2563eb;text-decoration:none;font-weight:600;border:1px solid #2563eb;padding:4px 12px;border-radius:16px;font-size:12px;">Ver original &#x2197;</a>
-      &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h
-      {led_footer}
+      &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{led_inline}
     </td>
   </tr>
 </table>'''
@@ -381,7 +379,7 @@ def generate_email_html(curated: Dict) -> str:
             url = wi.get('source_url', '#')
             source = _esc(wi.get('source_name', ''))
             wi_led_html = _byte_led_html(wi.get('byte_score'))
-            wi_led_footer = f'<div style="padding-top:6px;">{wi_led_html}</div>' if wi_led_html else ''
+            wi_led_inline = f' &nbsp;&middot;&nbsp; {wi_led_html}' if wi_led_html else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(world_items) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
@@ -396,8 +394,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>
-          {wi_led_footer}
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{wi_led_inline}
         </td>
       </tr>
     </table>''')
@@ -441,7 +438,7 @@ def generate_email_html(curated: Dict) -> str:
             url = rb.get('source_url', '#')
             source = _esc(rb.get('source_name', ''))
             rb_led_html = _byte_led_html(rb.get('byte_score'))
-            rb_led_footer = f'<div style="padding-top:6px;">{rb_led_html}</div>' if rb_led_html else ''
+            rb_led_inline = f' &nbsp;&middot;&nbsp; {rb_led_html}' if rb_led_html else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(radar_brasil) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
@@ -456,8 +453,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>
-          {rb_led_footer}
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{rb_led_inline}
         </td>
       </tr>
     </table>''')
@@ -643,13 +639,13 @@ def generate_email_html(curated: Dict) -> str:
                 url = ql.get('source_url', '#')
                 source = _esc(ql.get('source_name', ''))
                 ql_led = _byte_led_html(ql.get('byte_score'))
-                ql_led_row = f'<br/><span style="color:#6b7280;font-size:11px;">{source}</span><br/>{ql_led}' if ql_led else f'<br/><span style="color:#6b7280;font-size:11px;">{source}</span>'
+                ql_led_inline = f' &nbsp;&middot;&nbsp; {ql_led}' if ql_led else ''
                 cols.append(f'''<td class="ql-col" style="width:50%;vertical-align:top;padding:6px 8px;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid {COLORS["quick"]};padding-left:10px;">
               <tr>
                 <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.4;">
                   <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
-                  {ql_led_row}
+                  <br/><span style="color:#6b7280;font-size:11px;">{source}{ql_led_inline}</span>
                 </td>
               </tr>
             </table>
