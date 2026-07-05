@@ -50,31 +50,33 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Layout v2.2 — 6 Secoes + 2 Micro-Secoes
+## Layout v2.14 — Big Story + 6 Secoes + 2 Micro-Secoes
 
 ```
+★ BIG STORY (v2.14) — 1 item destacado no topo (card laranja com borda 2px)
+                       Extraido de items[] onde big_story=true (maior byte_score, minimo 8)
 0. NUMERO DO DIA (data point impactante — value + context)
 1. MUNDO REAL (3 itens) — mundo + Brasil
-2. HOJE NO BYTE (4-5 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
-3. SaaS & ENTERPRISE (2 itens)
-3b. RADAR BRASIL (1-2 itens) — ecossistema tech/AI/negocios BR (opcional, array vazio se nada relevante)
+2. HOJE NO BYTE (3-4 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
+3. SaaS & ENTERPRISE (1-2 itens)
+3b. RADAR BRASIL (0-1 item) — ecossistema tech/AI/negocios BR (opcional, array vazio se nada relevante)
 4. TOOL DO DIA (1 item) + COMO USAR HOJE + PROMPT DO DIA (copy-paste ready)
 5. ANALISE DO DIA (3 bullets)
 5b. DEEP DIVE (sextas) — analise profunda do tema mais quente da semana (3-5 paragrafos)
-6. QUICK LINKS (5-6 itens) — headline + link, sem analise
+6. QUICK LINKS (4-5 itens) — headline + link, sem analise
 + WATCH LATER (1 video no final)
 ```
 
-**Total maximo:** 18 itens (12 principais + 6 quick links)
+**Total maximo:** 15 itens (10 principais + 5 quick links). Rigor > quantidade. Heat threshold 70.
 
 **JSON do curador:**
 - `subject_hook` — frase-gancho de max 6 palavras para subject line
 - `number_of_day{}` — {value, context} — data point numerico impressionante
-- `world[]` — array de 3 itens (headline, context, source_url, source_name)
-- `items[]` — array com category `hoje_no_byte|saas_enterprise|watch_later` e campo `tag`
-- `radar_brasil[]` — array de 1-2 itens BR (headline, why_it_matters, source_url, source_name). Pode ser vazio.
+- `world[]` — array de 3 itens (headline, context, source_url, source_name, byte_score int)
+- `items[]` — array com category `hoje_no_byte|saas_enterprise|watch_later`, campo `tag`, `byte_score` int e `big_story` bool (opcional, UM unico item marca true)
+- `radar_brasil[]` — array de 0-1 item BR (headline, why_it_matters, source_url, source_name, byte_score). Pode ser vazio.
 - `tool_of_day{}` — OBJETO SEPARADO (nao vai no items), com `how_to_use` e `prompt_of_day` obrigatorios
-- `quick_links[]` — apenas headline + source_url + source_name
+- `quick_links[]` — headline + source_url + source_name + byte_score
 - `daily_analysis[]` — 3 strings com formato "**Tema** — Insight"
 - `deep_dive{}` — (sextas) {title, body} analise profunda 3-5 paragrafos
 - `weekly_workflow{}` — (sextas) {title, steps[]} workflow pratico 3-4 steps
@@ -218,7 +220,19 @@ Threshold minimo: 60 pontos
 
 32. **TF-IDF dedup (v2.10)** — `_tfidf_similarity()` em processor.py: similaridade cosine TF-IDF entre titulos curtos. Tokeniza, remove stopwords, calcula IDF suavizado (log(1+N/df)), vetores TF-IDF normalizados, cosine similarity. Threshold 0.45. Usado como terceiro check em `_titles_overlap()` (apos keyword overlap 60% e entity overlap 40%). Implementacao stdlib-only (math, re, collections).
 
-33. **Byte Score (v2.13)** — classificador de impacto estrategico exibido em todo item noticioso. O curador retorna `byte_score` (float 0.0–10.0) por item. O tier, emoji e cor sao derivados SEMPRE no codigo (`sender.py` via `_byte_tier()`) — Claude nunca envia o tier, apenas o numero. Faixas: 9.0–10.0 = 📦 GIGABYTE (#FF6B35/branco) · 7.0–8.9 = 💿 MEGABYTE (#F7A072/escuro) · 5.0–6.9 = 💾 KILOBYTE (#6B7280/branco) · 0.0–4.9 = 📄 byte (#E5E7EB/cinza). Escopo: world[], items[] (hoje_no_byte e saas_enterprise), radar_brasil[], quick_links[]. Excluidos: tool_of_day, watch_later, number_of_day. `heat_score` continua 100% interno (criterio de selecao, corte 60) — nunca renderizado ao leitor. Calibracao anti-inflacao: GIGABYTE e raro; numa edicao tipica espere ~0 GIGABYTE, 1-2 MEGABYTE, varias KILOBYTE, bytes nos quick links.
+33. **Byte Score (v2.13, refinado v2.14)** — classificador de impacto estrategico exibido em todo item noticioso. O curador retorna `byte_score` INTEIRO 0-10 (era float em v2.13, virou int em v2.14). O tier, emoji e cor sao derivados SEMPRE no codigo (`sender.py` via `_byte_tier()`) — Claude nunca envia o tier, apenas o numero. Faixas: 9-10 GIGABYTE (#FF6B35) · 7-8 MEGABYTE (#F7A072) · 5-6 KILOBYTE (#6B7280) · 0-4 byte (#E5E7EB). Escopo: world[], items[] (hoje_no_byte e saas_enterprise), radar_brasil[], quick_links[]. Excluidos: tool_of_day, watch_later, number_of_day. `heat_score` continua 100% interno — nunca renderizado ao leitor. Nomes de tier (GIGA/MEGA/KILO/byte) NUNCA aparecem no email — v2.14 tornou 100% minimalista. Legend removida do rodape.
+
+34. **LED VU Meter (v2.14)** — renderizacao do byte_score como barra estilo VU meter. 10 barras verticais crescendo em altura (3,4,5,6,7,8,9,10,11,12px), gradient de cor verde→amarelo→laranja por posicao. Barras "acesas" ate o valor do score (integer); restantes cinza (#e5e7eb). Numero inteiro pequeno (10px) ao lado direito da barra, cor do "pico" (ultima barra acesa). Renderizacao INLINE apos "source · hours" na mesma linha (nao mais new line). Container tem `vertical-align:2px` para nivelar piso das barras com baseline do texto ao lado. Funcoes: `_byte_led_html()` e `_byte_led_md()` (markdown usa unicode blocks ▂▃▄▅▆▇█░). Constantes: `_VU_HEIGHTS`, `_VU_COLORS`, `_VU_EMPTY`.
+
+35. **Big Story destacada (v2.14)** — UM item de destaque no topo do email, antes do "Numero do Dia". O curador marca `big_story: true` em UM UNICO item de items[] (aquele com maior byte_score da edicao, minimo 8). Se nenhum item atinge byte_score 8, nao marca big_story. Renderizado por `_render_big_story_html()`: card com fundo `#fff8f2`, borda 2px `#FF6B35`, box-shadow laranja, badge "★ BIG STORY" no topo, headline 22px bold, why_it_matters em Georgia 16px, botao CTA "Ler agora ↗" laranja. LED VU inline no rodape. Item removido de items[] via filtro para nao duplicar renderizacao.
+
+36. **Corte 15 itens + Heat 70 (v2.14)** — max_items reduzido de 18 → 15 (10 principais + 5 quick links). Heat threshold subiu de 60 → 70. Rigor > quantidade. Distribuicao nova: world=3, hoje_no_byte=3-4, saas_enterprise=1-2, radar_brasil=0-1, tool_of_day=1, watch_later=1, quick_links=4-5. Regra reforcada em CURATOR_SYSTEM e LEMBRE-SE.
+
+37. **Verbo imperativo no why_it_matters (v2.14)** — todo why_it_matters DEVE comecar com verbo no imperativo + dois-pontos. Verbos permitidos: Reavalie, Teste, Ignore, Investigue, Monitore, Antecipe, Pause, Contrate, Aprove, Renegocie, Priorize, Descarte, Compare, Documente. Formato: "VERBO: [acao concreta em 1-2 frases]". Aplica em items[], world[] (context), radar_brasil[], tool_of_day.
+
+38. **Reading time dinamico (v2.14)** — `_estimate_reading_time(curated)` em sender.py conta palavras totais do digest (world, items, radar, tool, analysis, deep_dive, workflow, quick_links) e divide por 220 wpm. Minimo 2 min. Substitui o "Leitura: 3 min" fixo no header do email.
+
+39. **AI News + Karpathy (v2.14)** — 2 fontes de alta qualidade adicionadas a SUBSTACK_FEEDS em collector.py: `sub_ai_news_swyx` (https://buttondown.com/ainews/rss) — daily newsletter recomendada por Karpathy, foco em engineer/developer angle. `sub_karpathy` (https://karpathy.substack.com/feed) — Substack do Andrej Karpathy, baixa frequencia mas cada post e evento.
 
 ---
 
