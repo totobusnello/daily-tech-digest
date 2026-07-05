@@ -64,13 +64,13 @@ REGRAS DE OURO:
 7. DIVERSIDADE TEMÁTICA - NÃO coloque 3+ itens sobre o mesmo tema/empresa. Se há 5 notícias sobre OpenAI, escolha a MELHOR e mova as outras para quick_links (se merecerem menção).
 
 BYTE SCORE — CLASSIFICAÇÃO DE IMPACTO ESTRATÉGICO (v2.13):
-Cada item noticioso recebe um "byte_score" (número de 0.0 a 10.0) = QUANTO a notícia move o jogo.
+Cada item noticioso recebe um "byte_score" INTEIRO de 0 a 10 = QUANTO a notícia move o jogo.
 É diferente do critério de seleção: mede a MAGNITUDE do impacto, não se a notícia entra.
-Faixas (o rótulo é derivado pelo sistema, você só envia o número):
-- 9.0–10.0 GIGABYTE: redefine o mercado / novo paradigma
-- 7.0–8.9  MEGABYTE: grande player muda o jogo
-- 5.0–6.9  KILOBYTE: relevante, incremental
-- 0.0–4.9  byte: nota de rodapé
+Faixas (o rótulo é derivado pelo sistema, você só envia o número inteiro):
+- 9-10 GIGABYTE: redefine o mercado / novo paradigma
+- 7-8  MEGABYTE: grande player muda o jogo
+- 5-6  KILOBYTE: relevante, incremental
+- 0-4  byte: nota de rodapé
 
 REGRA ANTI-INFLAÇÃO: GIGABYTE é raro — a maioria das edições NÃO tem um. Reserve para a
 notícia que você apostaria ser lembrada daqui a 6 meses. Se nada redefiniu o mercado hoje,
@@ -79,9 +79,9 @@ KILOBYTE e bytes nos quick links. NÃO infle.
 
 EXEMPLOS-ÂNCORA:
 - GIGABYTE (9-10): "Lab lança modelo que supera humanos em raciocínio geral" / "Regulação que redefine modelos fechados entra em vigor na UE"
-- MEGABYTE (7-8.9): "Anthropic corta preço enterprise em 50%" / "Google embute Gemini nativo no Android para bilhões de devices"
-- KILOBYTE (5-6.9): "SaaS conhecido adiciona feature de agentes" / "Novo benchmark mostra modelo 5% acima do anterior"
-- byte (0-4.9): "Funding seed de US$2M para startup de nicho" / "Update de UI numa ferramenta popular"
+- MEGABYTE (7-8): "Anthropic corta preço enterprise em 50%" / "Google embute Gemini nativo no Android para bilhões de devices"
+- KILOBYTE (5-6): "SaaS conhecido adiciona feature de agentes" / "Novo benchmark mostra modelo 5% acima do anterior"
+- byte (0-4): "Funding seed de US$2M para startup de nicho" / "Update de UI numa ferramenta popular"
 
 O byte_score vai em CADA item de "world", "items", "radar_brasil" e "quick_links".
 NÃO vai em "tool_of_day", "watch_later" nem "number_of_day".
@@ -191,7 +191,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "context": "1 frase de contexto",
       "source_url": "URL ORIGINAL",
       "source_name": "Reuters|Forbes|BBC",
-      "byte_score": 7.0
+      "byte_score": 7
     }}
   ],
   "items": [
@@ -205,7 +205,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "hours_ago": 4,
       "heat_score": 75,
       "category": "hoje_no_byte|saas_enterprise",
-      "byte_score": 7.5
+      "byte_score": 8
     }}
   ],
   "tool_of_day": {{
@@ -222,7 +222,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "why_it_matters": "1-2 frases prescritivas para C-levels brasileiros",
       "source_url": "URL ORIGINAL",
       "source_name": "NeoFeed|Startse|Exame|InfoMoney|Pipeline Valor",
-      "byte_score": 6.0
+      "byte_score": 6
     }}
   ],
   "quick_links": [
@@ -230,7 +230,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "headline": "Headline curto max 8 palavras",
       "source_url": "URL ORIGINAL",
       "source_name": "Fonte",
-      "byte_score": 4.0
+      "byte_score": 4
     }}
   ],
   "daily_analysis": [
@@ -260,7 +260,7 @@ LEMBRE-SE:
 - ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO — ZERO palavras em inglês no texto (exceto nomes de produtos/pessoas/URLs). Palavras como "Expect", "Result", "Click", "Open" devem ser escritas em PT-BR: "Espere", "Resultado", "Clique", "Abra".
 - "subject_hook" é uma frase-gancho de max 6 palavras sobre a notícia mais impactante
 - "number_of_day" é UM data point numérico impressionante extraído das notícias (value + context)
-- Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" (0.0-10.0). GIGABYTE (9+) é raro. Itens com category "watch_later" NÃO recebem byte_score.
+- Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" INTEIRO 0-10. GIGABYTE (9-10) é raro. Itens com category "watch_later" NÃO recebem byte_score.
 
 {feedback_section}
 

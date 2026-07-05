@@ -74,18 +74,17 @@ def _esc(text: str) -> str:
 # ── Byte Score (v2.13) — classificador de impacto estratégico ──
 # (limite_inferior, label, emoji, cor_fundo, cor_texto)
 BYTE_TIERS = [
-    (9.0, "GIGABYTE", "📦", "#FF6B35", "#ffffff"),
-    (7.0, "MEGABYTE", "💿", "#F7A072", "#1a1a2e"),
-    (5.0, "KILOBYTE", "💾", "#6B7280", "#ffffff"),
-    (0.0, "byte",     "📄", "#E5E7EB", "#6B7280"),
+    (9, "GIGABYTE", "📦", "#FF6B35", "#ffffff"),
+    (7, "MEGABYTE", "💿", "#F7A072", "#1a1a2e"),
+    (5, "KILOBYTE", "💾", "#6B7280", "#ffffff"),
+    (0, "byte",     "📄", "#E5E7EB", "#6B7280"),
 ]
 
 def _byte_tier(score):
-    """Deriva (label, emoji, bg, fg, s_norm) de um Byte Score 0-10. None se ausente/inválido.
+    """Deriva (label, emoji, bg, fg, s_norm) de um Byte Score inteiro 0-10. None se ausente/inválido.
 
-    Normaliza ANTES de derivar o tier: clamp a 10.0 + arredonda para 1 decimal.
-    O valor normalizado s_norm (índice 4) deve ser usado para exibição, garantindo que
-    o número mostrado e o tier exibido sejam sempre consistentes.
+    Normaliza ANTES de derivar o tier: arredonda + clamp a [0, 10].
+    O valor normalizado s_norm (índice 4) é inteiro e usado para exibição.
     """
     try:
         s = float(score)
@@ -93,8 +92,7 @@ def _byte_tier(score):
         return None
     if math.isnan(s) or s < 0:
         return None
-    # Normaliza uma única vez — clamp + quantize
-    s = round(min(s, 10.0), 1)
+    s = max(0, min(10, int(round(s))))
     for lower, label, emoji, bg, fg in BYTE_TIERS:
         if s >= lower:
             return (label, emoji, bg, fg, s)
@@ -129,7 +127,7 @@ def _byte_led_html(score):
     return (
         '<span style="display:inline-block;white-space:nowrap;line-height:24px;height:24px;vertical-align:middle;">'
         + "".join(cells)
-        + f'<span style="font-size:11px;font-weight:700;color:{peak_color};margin-left:6px;vertical-align:bottom;">{s:.1f}</span>'
+        + f'<span style="font-size:11px;font-weight:700;color:{peak_color};margin-left:6px;vertical-align:bottom;">{s}</span>'
         + '</span>'
     )
 
@@ -142,7 +140,7 @@ def _byte_led_md(score):
     filled = int(round(s))
     heights = ['▂', '▂', '▃', '▃', '▄', '▄', '▅', '▆', '▇', '█']
     bar = "".join(heights[i] if i < filled else '░' for i in range(10))
-    return f"{bar} {s:.1f}"
+    return f"{bar} {s}"
 
 
 _section_counter = 0
