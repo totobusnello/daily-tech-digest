@@ -74,18 +74,17 @@ def _esc(text: str) -> str:
 # ── Byte Score (v2.13) — classificador de impacto estratégico ──
 # (limite_inferior, label, emoji, cor_fundo, cor_texto)
 BYTE_TIERS = [
-    (9.0, "GIGABYTE", "📦", "#FF6B35", "#ffffff"),
-    (7.0, "MEGABYTE", "💿", "#F7A072", "#1a1a2e"),
-    (5.0, "KILOBYTE", "💾", "#6B7280", "#ffffff"),
-    (0.0, "byte",     "📄", "#E5E7EB", "#6B7280"),
+    (9, "GIGABYTE", "📦", "#FF6B35", "#ffffff"),
+    (7, "MEGABYTE", "💿", "#F7A072", "#1a1a2e"),
+    (5, "KILOBYTE", "💾", "#6B7280", "#ffffff"),
+    (0, "byte",     "📄", "#E5E7EB", "#6B7280"),
 ]
 
 def _byte_tier(score):
-    """Deriva (label, emoji, bg, fg, s_norm) de um Byte Score 0-10. None se ausente/inválido.
+    """Deriva (label, emoji, bg, fg, s_norm) de um Byte Score inteiro 0-10. None se ausente/inválido.
 
-    Normaliza ANTES de derivar o tier: clamp a 10.0 + arredonda para 1 decimal.
-    O valor normalizado s_norm (índice 4) deve ser usado para exibição, garantindo que
-    o número mostrado e o tier exibido sejam sempre consistentes.
+    Normaliza ANTES de derivar o tier: arredonda + clamp a [0, 10].
+    O valor normalizado s_norm (índice 4) é inteiro e usado para exibição.
     """
     try:
         s = float(score)
@@ -93,34 +92,55 @@ def _byte_tier(score):
         return None
     if math.isnan(s) or s < 0:
         return None
-    # Normaliza uma única vez — clamp + quantize
-    s = round(min(s, 10.0), 1)
+    s = max(0, min(10, int(round(s))))
     for lower, label, emoji, bg, fg in BYTE_TIERS:
         if s >= lower:
             return (label, emoji, bg, fg, s)
     return (*BYTE_TIERS[-1][1:], s)
 
-def _byte_badge_html(score):
-    """Badge HTML completo do Byte Score (número + emoji + palavra). '' se ausente."""
+# VU meter — alturas e cores por posição (verde → laranja) — v2.14.1 mais discreto
+_VU_HEIGHTS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+_VU_COLORS = [
+    '#10b981', '#10b981', '#10b981', '#10b981',  # verde (1-4)
+    '#84cc16', '#eab308',                         # verde-limão + amarelo (5-6)
+    '#f59e0b', '#f97316',                         # âmbar + laranja (7-8)
+    '#FF6B35', '#FF6B35',                         # laranja brand (9-10)
+]
+_VU_EMPTY = '#e5e7eb'
+
+def _byte_led_html(score):
+    """LED bar HTML: 10 barras verticais crescendo em altura (VU meter). '' se ausente."""
     tier = _byte_tier(score)
     if tier is None:
         return ""
-    label, emoji, bg, fg, s = tier
+    _, _, _, _, s = tier
+    filled = int(round(s))
+    cells = []
+    for i in range(10):
+        color = _VU_COLORS[i] if i < filled else _VU_EMPTY
+        cells.append(
+            f'<span style="display:inline-block;width:4px;height:{_VU_HEIGHTS[i]}px;'
+            f'background-color:{color};margin-right:1px;border-radius:1px;'
+            f'vertical-align:bottom;"></span>'
+        )
+    peak_color = _VU_COLORS[filled - 1] if filled > 0 else '#9ca3af'
     return (
-        f'<span style="display:inline-block;background-color:{bg};color:{fg};'
-        f'font-size:12px;font-weight:800;padding:3px 9px 3px 7px;border-radius:6px;'
-        f'vertical-align:middle;margin-right:6px;white-space:nowrap;">'
-        f'<span style="font-size:13px;">{s:.1f}</span> {emoji} '
-        f'<span style="font-size:10px;font-weight:700;letter-spacing:0.6px;">{label}</span></span>'
+        '<span style="display:inline-block;white-space:nowrap;line-height:12px;height:12px;vertical-align:2px;">'
+        + "".join(cells)
+        + f'<span style="font-size:10px;font-weight:700;color:{peak_color};margin-left:4px;vertical-align:bottom;">{s}</span>'
+        + '</span>'
     )
 
-def _byte_badge_md(score):
-    """Badge markdown do Byte Score: '9.2 📦 GIGABYTE'. '' se ausente."""
+def _byte_led_md(score):
+    """LED bar markdown: barra VU meter '▂▂▃▃▄▄▅▆▇█ 9.2'. '' se ausente."""
     tier = _byte_tier(score)
     if tier is None:
         return ""
-    label, emoji, _, _, s = tier
-    return f"{s:.1f} {emoji} {label}"
+    _, _, _, _, s = tier
+    filled = int(round(s))
+    heights = ['▂', '▂', '▃', '▃', '▄', '▄', '▅', '▆', '▇', '█']
+    bar = "".join(heights[i] if i < filled else '░' for i in range(10))
+    return f"{bar} {s}"
 
 
 _section_counter = 0
@@ -143,6 +163,92 @@ def _section_header(emoji: str, title: str, color: str, numbered: bool = True) -
     </table>
   </td>
 </tr>'''
+
+
+def _render_big_story_html(item: Dict) -> str:
+    """Renderiza item de destaque no topo — card grande com borda laranja."""
+    headline = _esc(item.get('headline', ''))
+    why = _esc(item.get('why_it_matters', ''))
+    url = item.get('source_url', '#')
+    source = _esc(item.get('source_name', ''))
+    hours = item.get('hours_ago', '?')
+    led = _byte_led_html(item.get('byte_score'))
+    led_inline = f'&nbsp;&middot;&nbsp; {led}' if led else ''
+    return f'''<tr>
+  <td style="background-color:#fff8f2;border:2px solid {COLORS["brand"]};border-radius:12px;padding:20px 22px;box-shadow:0 4px 12px rgba(255,107,53,0.15);">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="padding-bottom:8px;">
+          <span style="display:inline-block;background-color:{COLORS["brand"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">&#x2605; BIG STORY</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:22px;font-weight:800;color:#1a1a2e;line-height:1.25;padding-bottom:10px;">
+          {headline}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#2d2d2d;line-height:1.55;padding-bottom:12px;">
+          {why}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;">
+          <a href="{url}" style="display:inline-block;color:#ffffff;background-color:{COLORS["brand"]};text-decoration:none;font-weight:700;padding:8px 18px;border-radius:20px;font-size:13px;">Ler agora &#x2197;</a>
+          &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{led_inline}
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>'''
+
+
+def _estimate_reading_time(curated: Dict) -> int:
+    """Estima tempo de leitura em minutos baseado no total de palavras do digest.
+    Usa 220 wpm (leitura casual em mobile). Mínimo 2 minutos."""
+    text_parts = []
+
+    n = curated.get('number_of_day', {}) or {}
+    text_parts.append(str(n.get('context', '')))
+
+    for wi in curated.get('world', []) or []:
+        text_parts.append(str(wi.get('headline', '')))
+        text_parts.append(str(wi.get('context', '')))
+
+    for item in curated.get('items', []) or []:
+        text_parts.append(str(item.get('headline', '')))
+        text_parts.append(str(item.get('why_it_matters', '')))
+
+    for rb in curated.get('radar_brasil', []) or []:
+        text_parts.append(str(rb.get('headline', '')))
+        text_parts.append(str(rb.get('why_it_matters', '')))
+
+    tool = curated.get('tool_of_day', {}) or {}
+    text_parts.append(str(tool.get('headline', '')))
+    text_parts.append(str(tool.get('why_it_matters', '')))
+    text_parts.append(str(tool.get('how_to_use', '')))
+    text_parts.append(str(tool.get('prompt_of_day', '')))
+
+    analysis = curated.get('daily_analysis', '')
+    if isinstance(analysis, list):
+        text_parts.extend(str(a) for a in analysis)
+    else:
+        text_parts.append(str(analysis))
+
+    dd = curated.get('deep_dive', {}) or {}
+    text_parts.append(str(dd.get('title', '')))
+    text_parts.append(str(dd.get('body', '')))
+
+    workflow = curated.get('weekly_workflow', {}) or {}
+    text_parts.append(str(workflow.get('title', '')))
+    text_parts.extend(str(s) for s in workflow.get('steps', []) or [])
+
+    for ql in curated.get('quick_links', []) or []:
+        text_parts.append(str(ql.get('headline', '')))
+
+    total_words = sum(len(t.split()) for t in text_parts if t)
+    minutes = max(2, round(total_words / 220))
+    return minutes
 
 
 def _card_start() -> str:
@@ -174,14 +280,15 @@ def _render_item_html(item: Dict) -> str:
     url = item.get('source_url', '#')
     source = _esc(item.get('source_name', 'Fonte'))
     hours = item.get('hours_ago', '?')
-    byte_html = _byte_badge_html(item.get('byte_score'))
+    led_html = _byte_led_html(item.get('byte_score'))
+    led_inline = f'&nbsp;&middot;&nbsp; {led_html}' if led_html else ''
 
     tag_html = f'<span style="display:inline-block;background-color:#FF6B35;color:#ffffff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:6px;vertical-align:middle;text-transform:uppercase;">{_esc(tag)}</span>' if tag else ''
 
     return f'''<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;border-bottom:1px solid #f0f0f0;padding-bottom:14px;">
   <tr>
     <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:6px;">
-      {byte_html}{tag_html}{headline}
+      {tag_html}{headline}
     </td>
   </tr>
   <tr>
@@ -192,7 +299,7 @@ def _render_item_html(item: Dict) -> str:
   <tr>
     <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;line-height:1.4;">
       <a href="{url}" style="display:inline-block;color:#2563eb;text-decoration:none;font-weight:600;border:1px solid #2563eb;padding:4px 12px;border-radius:16px;font-size:12px;">Ver original &#x2197;</a>
-      &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h
+      &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{led_inline}
     </td>
   </tr>
 </table>'''
@@ -218,15 +325,27 @@ def generate_email_html(curated: Dict) -> str:
     months = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
               'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     date_str = f"{weekdays[today.weekday()]}, {today.day} de {months[today.month]} de {today.year}"
+    read_min = _estimate_reading_time(curated)
 
     body_rows.append(f'''<tr>
   <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:0 20px 14px 20px;text-align:center;border-radius:0 0 12px 12px;">
     <span class="text-muted" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#94a3b8;">{date_str}</span>
-    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: 3 min</span>
+    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: {read_min} min</span>
   </td>
 </tr>''')
 
     body_rows.append(_spacer(16))
+
+    # ── BIG STORY (v2.14) ───────────────────────
+    # Extrai o item marcado como big_story dos items[] e renderiza destacado no topo.
+    # Remove de items[] para não aparecer duas vezes.
+    items_all = curated.get('items', []) or []
+    big_story = next((i for i in items_all if i.get('big_story')), None)
+    if big_story:
+        body_rows.append(_render_big_story_html(big_story))
+        body_rows.append(_spacer())
+        # Filtra big_story do array para renderização normal abaixo não duplicar
+        curated['items'] = [i for i in items_all if not i.get('big_story')]
 
     # ── 0. NÚMERO DO DIA ────────────────────────
     number = curated.get('number_of_day', {})
@@ -259,12 +378,13 @@ def generate_email_html(curated: Dict) -> str:
             context = _esc(wi.get('context', ''))
             url = wi.get('source_url', '#')
             source = _esc(wi.get('source_name', ''))
-            wi_byte_html = _byte_badge_html(wi.get('byte_score'))
+            wi_led_html = _byte_led_html(wi.get('byte_score'))
+            wi_led_inline = f' &nbsp;&middot;&nbsp; {wi_led_html}' if wi_led_html else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(world_items) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
         <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:4px;">
-          {wi_byte_html}&#x2192; {headline}
+          &#x2192; {headline}
         </td>
       </tr>
       <tr>
@@ -274,7 +394,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{wi_led_inline}
         </td>
       </tr>
     </table>''')
@@ -317,12 +437,13 @@ def generate_email_html(curated: Dict) -> str:
             why = _esc(rb.get('why_it_matters', ''))
             url = rb.get('source_url', '#')
             source = _esc(rb.get('source_name', ''))
-            rb_byte_html = _byte_badge_html(rb.get('byte_score'))
+            rb_led_html = _byte_led_html(rb.get('byte_score'))
+            rb_led_inline = f' &nbsp;&middot;&nbsp; {rb_led_html}' if rb_led_html else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(radar_brasil) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
         <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:4px;">
-          {rb_byte_html}&#x2192; {headline}
+          &#x2192; {headline}
         </td>
       </tr>
       <tr>
@@ -332,7 +453,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{rb_led_inline}
         </td>
       </tr>
     </table>''')
@@ -517,13 +638,14 @@ def generate_email_html(curated: Dict) -> str:
                 headline = _esc(ql.get('headline', ''))
                 url = ql.get('source_url', '#')
                 source = _esc(ql.get('source_name', ''))
-                ql_badge = _byte_badge_html(ql.get('byte_score'))
+                ql_led = _byte_led_html(ql.get('byte_score'))
+                ql_led_inline = f' &nbsp;&middot;&nbsp; {ql_led}' if ql_led else ''
                 cols.append(f'''<td class="ql-col" style="width:50%;vertical-align:top;padding:6px 8px;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid {COLORS["quick"]};padding-left:10px;">
               <tr>
                 <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.4;">
-                  {ql_badge}<a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
-                  <br/><span style="color:#6b7280;font-size:11px;">{source}</span>
+                  <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
+                  <br/><span style="color:#6b7280;font-size:11px;">{source}{ql_led_inline}</span>
                 </td>
               </tr>
             </table>
@@ -632,16 +754,6 @@ def generate_email_html(curated: Dict) -> str:
 </tr>''')
 
     body_rows.append(_spacer(12))
-
-    # ── BYTE SCORE LEGEND ───────────────────────
-    legend_html = (
-        '<tr><td style="padding:12px 20px;font-size:11px;color:#6b7280;line-height:1.6;">'
-        '<b style="color:#1a1a2e;">Byte Score</b> — impacto estratégico: '
-        '📦 GIGABYTE redefine o mercado · 💿 MEGABYTE muda o jogo · '
-        '💾 KILOBYTE relevante · 📄 byte nota de rodapé.'
-        '</td></tr>'
-    )
-    body_rows.append(legend_html)
 
     # ── FOOTER ──────────────────────────────────
     body_rows.append(f'''<tr>
@@ -780,14 +892,14 @@ def format_item(item: Dict) -> str:
     hours = item.get('hours_ago', '?')
 
     tag_str = f"[{tag}] " if tag else ""
-    byte_md = _byte_badge_md(item.get('byte_score'))
-    byte_prefix = f"{byte_md} " if byte_md else ""
+    led_md = _byte_led_md(item.get('byte_score'))
+    led_suffix = f"\n{led_md}" if led_md else ""
 
-    return f"""{byte_prefix}{tag_str}**{headline}**
+    return f"""{tag_str}**{headline}**
 
 {why}
 
-🔗 [Ver original]({url}) | 📍 {source} | ⏰ Há {hours}h
+🔗 [Ver original]({url}) | 📍 {source} | ⏰ Há {hours}h{led_suffix}
 
 """
 
@@ -822,9 +934,9 @@ def generate_email_content(curated: Dict) -> str:
             context = wi.get('context', '')
             url = wi.get('source_url', '#')
             source = wi.get('source_name', '')
-            wi_badge_md = _byte_badge_md(wi.get('byte_score'))
-            prefix = f"{wi_badge_md} " if wi_badge_md else ""
-            world_lines.append(f"{prefix}→ **{headline}** — {context} ([{source}]({url}))")
+            wi_led_md = _byte_led_md(wi.get('byte_score'))
+            suffix = f"\n  {wi_led_md}" if wi_led_md else ""
+            world_lines.append(f"→ **{headline}** — {context} ([{source}]({url})){suffix}")
         sections.append(f"# 🌍 MUNDO REAL\n\n" + "\n\n".join(world_lines))
 
     items = curated.get('items', [])
@@ -846,9 +958,9 @@ def generate_email_content(curated: Dict) -> str:
             why = rb.get('why_it_matters', '')
             url = rb.get('source_url', '#')
             source = rb.get('source_name', '')
-            rb_badge = _byte_badge_md(rb.get('byte_score'))
-            rb_prefix = f"{rb_badge} " if rb_badge else ""
-            rb_lines.append(f"→ {rb_prefix}**{headline}** — {why} ([{source}]({url}))")
+            rb_led = _byte_led_md(rb.get('byte_score'))
+            rb_suffix = f"\n  {rb_led}" if rb_led else ""
+            rb_lines.append(f"→ **{headline}** — {why} ([{source}]({url})){rb_suffix}")
         sections.append("# 🇧🇷 RADAR BRASIL\n\n" + "\n\n".join(rb_lines))
 
     tool = curated.get('tool_of_day', {})
@@ -893,9 +1005,9 @@ def generate_email_content(curated: Dict) -> str:
             headline = ql.get('headline', '')
             url = ql.get('source_url', '#')
             source = ql.get('source_name', '')
-            ql_badge = _byte_badge_md(ql.get('byte_score'))
-            ql_prefix = f"{ql_badge} " if ql_badge else ""
-            ql_lines.append(f"{ql_prefix}→ [{headline}]({url}) *({source})*")
+            ql_led = _byte_led_md(ql.get('byte_score'))
+            ql_suffix = f"\n  {ql_led}" if ql_led else ""
+            ql_lines.append(f"→ [{headline}]({url}) *({source})*{ql_suffix}")
         sections.append(f"# ⚡ QUICK LINKS\n\n" + "\n\n".join(ql_lines))
 
     videos = [i for i in items if i.get('category') == 'watch_later']

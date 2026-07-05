@@ -64,13 +64,13 @@ REGRAS DE OURO:
 7. DIVERSIDADE TEMÁTICA - NÃO coloque 3+ itens sobre o mesmo tema/empresa. Se há 5 notícias sobre OpenAI, escolha a MELHOR e mova as outras para quick_links (se merecerem menção).
 
 BYTE SCORE — CLASSIFICAÇÃO DE IMPACTO ESTRATÉGICO (v2.13):
-Cada item noticioso recebe um "byte_score" (número de 0.0 a 10.0) = QUANTO a notícia move o jogo.
+Cada item noticioso recebe um "byte_score" INTEIRO de 0 a 10 = QUANTO a notícia move o jogo.
 É diferente do critério de seleção: mede a MAGNITUDE do impacto, não se a notícia entra.
-Faixas (o rótulo é derivado pelo sistema, você só envia o número):
-- 9.0–10.0 GIGABYTE: redefine o mercado / novo paradigma
-- 7.0–8.9  MEGABYTE: grande player muda o jogo
-- 5.0–6.9  KILOBYTE: relevante, incremental
-- 0.0–4.9  byte: nota de rodapé
+Faixas (o rótulo é derivado pelo sistema, você só envia o número inteiro):
+- 9-10 GIGABYTE: redefine o mercado / novo paradigma
+- 7-8  MEGABYTE: grande player muda o jogo
+- 5-6  KILOBYTE: relevante, incremental
+- 0-4  byte: nota de rodapé
 
 REGRA ANTI-INFLAÇÃO: GIGABYTE é raro — a maioria das edições NÃO tem um. Reserve para a
 notícia que você apostaria ser lembrada daqui a 6 meses. Se nada redefiniu o mercado hoje,
@@ -79,26 +79,29 @@ KILOBYTE e bytes nos quick links. NÃO infle.
 
 EXEMPLOS-ÂNCORA:
 - GIGABYTE (9-10): "Lab lança modelo que supera humanos em raciocínio geral" / "Regulação que redefine modelos fechados entra em vigor na UE"
-- MEGABYTE (7-8.9): "Anthropic corta preço enterprise em 50%" / "Google embute Gemini nativo no Android para bilhões de devices"
-- KILOBYTE (5-6.9): "SaaS conhecido adiciona feature de agentes" / "Novo benchmark mostra modelo 5% acima do anterior"
-- byte (0-4.9): "Funding seed de US$2M para startup de nicho" / "Update de UI numa ferramenta popular"
+- MEGABYTE (7-8): "Anthropic corta preço enterprise em 50%" / "Google embute Gemini nativo no Android para bilhões de devices"
+- KILOBYTE (5-6): "SaaS conhecido adiciona feature de agentes" / "Novo benchmark mostra modelo 5% acima do anterior"
+- byte (0-4): "Funding seed de US$2M para startup de nicho" / "Update de UI numa ferramenta popular"
 
 O byte_score vai em CADA item de "world", "items", "radar_brasil" e "quick_links".
 NÃO vai em "tool_of_day", "watch_later" nem "number_of_day".
 
-LAYOUT CONSOLIDADO v2.2 — 6 SEÇÕES + 2 MICRO-SEÇÕES:
+LAYOUT CONSOLIDADO v2.14 — BIG STORY + 6 SEÇÕES + 2 MICRO-SEÇÕES:
 
+0. "big_story" (1 item): A NOTÍCIA MAIS IMPACTANTE do dia. Card destacado no topo.
+   Marque como big_story=true UM ÚNICO item em items[] — aquele com maior byte_score da edição.
+   Requisito mínimo: byte_score >= 8 (MEGABYTE ou GIGABYTE). Se nenhum item atinge 8, NÃO marque big_story.
 1. "world" (3 itens): Mundo Real — mundo + Brasil. Governos, geopolítica, economia real.
-2. "hoje_no_byte" (4-5 itens): A seção principal. CONSOLIDA breaking + ai_models + big_tech.
+2. "hoje_no_byte" (3-4 itens): A seção principal. CONSOLIDA breaking + ai_models + big_tech.
    Cada item recebe uma TAG entre: [BREAKING], [AI], [BIG TECH], [ENTERPRISE].
    A tag vai no campo "tag" do JSON.
-3. "saas_enterprise" (2 itens): SaaS, valuations, CapEx, enterprise tech.
-3b. "radar_brasil" (1-2 itens): Ecossistema brasileiro de tech/AI/negócios. Pode vir de fontes BR (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, Valor Econômico) ou de notícias internacionais que impactam o Brasil diretamente. Se não houver notícia BR relevante hoje, retorne array vazio [].
+3. "saas_enterprise" (1-2 itens): SaaS, valuations, CapEx, enterprise tech.
+3b. "radar_brasil" (1 item, opcional): Ecossistema brasileiro de tech/AI/negócios. Pode vir de fontes BR (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, Valor Econômico) ou de notícias internacionais que impactam o Brasil diretamente. Se não houver notícia BR relevante hoje, retorne array vazio [].
 4. "tool_of_day" (1 item): UMA ferramenta AI/tech prática que o leitor pode usar HOJE.
    DEVE incluir campo "how_to_use": um prompt ou mini-tutorial copy-paste de 2-3 linhas.
    DEVE incluir campo "prompt_of_day": um prompt COPY-PASTE ready para ChatGPT/Claude/Gemini, ligado à notícia principal do dia ou à ferramenta. Máximo 3 linhas.
    ⚠️ É um OBJETO SEPARADO no JSON (não vai no array "items").
-5. "quick_links" (5-6 itens): Links rápidos — APENAS headline + URL, zero análise.
+5. "quick_links" (4-5 itens): Links rápidos — APENAS headline + URL, zero análise.
    São notícias que não cabem nas seções principais mas merecem menção.
 6. "watch_later" (1 item): UM vídeo essencial. Vai no array "items" com category "watch_later".
 
@@ -109,7 +112,7 @@ MICRO-SEÇÃO — "number_of_day":
 - OUSADIA: prefira valores absolutos grandes ($600B, 10M usuários, 3x mais rápido) sobre percentuais genéricos (15% de crescimento). O número deve fazer o leitor parar e pensar.
 - É um OBJETO SEPARADO no JSON.
 
-TOTAL MÁXIMO: 18 itens (12 principais + 6 quick links)
+TOTAL MÁXIMO: 15 itens (10 principais + 5 quick links). Menos é mais — rigor > quantidade.
 
 SEÇÃO MUNDO REAL (obrigatório):
 - Selecione 3 notícias do mundo real a partir dos itens com source_type "world" ou "newsletter" com category_hint "world"
@@ -138,7 +141,7 @@ REGRAS PARA ITENS DE NEWSLETTER (source_type "newsletter"):
 - Newsletters em português podem fornecer o ângulo brasileiro que falta nas fontes internacionais
 - Fontes: AiDrop (AI), Evolving AI (AI/modelos), Update Diário (Brasil/geral), TechDrop (SaaS/enterprise), AlphaSignal (research→produto), There's An AI For That (AI tools), Turing Post (AI strategy), Import AI (policy/research, Jack Clark), Distrito News Inside VC (startups/VC Brasil)
 
-Heat Score mínimo para entrar: 60 pontos
+Heat Score mínimo para entrar: 70 pontos (era 60 — subimos a barra em v2.14 para rigor > quantidade)
 - Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
 - Fonte (30 pts): Fundador/blog oficial=30, Jornalista=25, Release=20, Newsletter curada=15, Agregador=0
 - Impacto (30 pts): Lançamento=30, M&A=25, Drama=20, Incremental=5
@@ -191,7 +194,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "context": "1 frase de contexto",
       "source_url": "URL ORIGINAL",
       "source_name": "Reuters|Forbes|BBC",
-      "byte_score": 7.0
+      "byte_score": 7
     }}
   ],
   "items": [
@@ -205,7 +208,8 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "hours_ago": 4,
       "heat_score": 75,
       "category": "hoje_no_byte|saas_enterprise",
-      "byte_score": 7.5
+      "byte_score": 8,
+      "big_story": false
     }}
   ],
   "tool_of_day": {{
@@ -222,7 +226,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "why_it_matters": "1-2 frases prescritivas para C-levels brasileiros",
       "source_url": "URL ORIGINAL",
       "source_name": "NeoFeed|Startse|Exame|InfoMoney|Pipeline Valor",
-      "byte_score": 6.0
+      "byte_score": 6
     }}
   ],
   "quick_links": [
@@ -230,7 +234,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "headline": "Headline curto max 8 palavras",
       "source_url": "URL ORIGINAL",
       "source_name": "Fonte",
-      "byte_score": 4.0
+      "byte_score": 4
     }}
   ],
   "daily_analysis": [
@@ -247,20 +251,22 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
 }}
 
 LEMBRE-SE:
-- NO máximo 18 itens selecionados (12 principais + 6 quick links)
+- NO máximo 15 itens selecionados (10 principais + 5 quick links). Rigor > quantidade.
 - A seção "items" usa category "hoje_no_byte" para a maioria. Cada item DEVE ter "tag" (BREAKING, AI, BIG TECH, ou ENTERPRISE)
-- "saas_enterprise" é categoria separada (2 itens)
+- "saas_enterprise" é categoria separada (1-2 itens)
 - "tool_of_day" é um OBJETO separado (não vai no array items) — DEVE ter "how_to_use" E "prompt_of_day"
 - "quick_links" são APENAS headline + URL + fonte. SEM why_it_matters.
 - "watch_later" vai no array items com category "watch_later" (1 vídeo)
 - 3 itens em "world" (inclua Brasil quando relevante)
-- "radar_brasil" é array de 1-2 itens sobre ecossistema brasileiro de tech/AI/negócios. Pode ser array vazio se não houver notícia BR relevante. NÃO duplique com itens de "world" ou "items".
+- "radar_brasil" é array de 0-1 item sobre ecossistema brasileiro de tech/AI/negócios. Pode ser array vazio se não houver notícia BR relevante. NÃO duplique com itens de "world" ou "items".
 - Seja impiedoso na curadoria - menos é mais
 - Notícias boas que não cabem nas seções → vão para quick_links
 - ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO — ZERO palavras em inglês no texto (exceto nomes de produtos/pessoas/URLs). Palavras como "Expect", "Result", "Click", "Open" devem ser escritas em PT-BR: "Espere", "Resultado", "Clique", "Abra".
 - "subject_hook" é uma frase-gancho de max 6 palavras sobre a notícia mais impactante
 - "number_of_day" é UM data point numérico impressionante extraído das notícias (value + context)
-- Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" (0.0-10.0). GIGABYTE (9+) é raro. Itens com category "watch_later" NÃO recebem byte_score.
+- Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" INTEIRO 0-10. GIGABYTE (9-10) é raro. Itens com category "watch_later" NÃO recebem byte_score.
+- BIG STORY: marque UM ÚNICO item de items[] com "big_story": true — o de maior byte_score da edição (deve ser >= 8). Se nenhum item chega em byte_score 8, deixe TODOS com big_story=false ou omita o campo. Apenas UM item pode ter big_story=true.
+- HEAT SCORE mínimo agora é 70 (era 60). Fique impiedoso: notícias com heat_score 60-69 NÃO entram mais.
 
 {feedback_section}
 
@@ -270,6 +276,17 @@ LEMBRE-SE:
 - Ex: "CTOs: avaliem migração para esta API antes do Q3" > "Nova API foi lançada"
 - Seja DIRETO: menos texto, mais impacto. Máximo 2 frases curtas e densas.
 - NUNCA deixe why_it_matters vazio
+
+⚠️ NOVA REGRA (v2.14) — VERBO NO IMPERATIVO:
+- Todo why_it_matters DEVE começar com um VERBO no imperativo, seguido de dois-pontos.
+- Verbos permitidos (escolha o mais adequado): Reavalie, Teste, Ignore, Investigue, Monitore,
+  Antecipe, Pause, Contrate, Aprove, Renegocie, Priorize, Descarte, Compare, Documente.
+- Formato: "VERBO: [ação concreta para C-level em 1-2 frases]"
+- Exemplos corretos:
+  - "Renegocie: contratos de LLM enterprise em 90 dias. Anthropic virou tabela de preço."
+  - "Ignore: hype de agentes autônomos. Adoção real ainda está em <3% das empresas Fortune 500."
+  - "Priorize: revisão de compliance de dados. Nova regulação europeia atinge SaaS BR com clientes EU."
+- Isso vale para items[], world[] (context), radar_brasil[], e tool_of_day (why_it_matters).
 
 ⚠️ REGRA CRÍTICA sobre how_to_use (tool_of_day):
 - DEVE ser PRÁTICO e COPY-PASTE ready
