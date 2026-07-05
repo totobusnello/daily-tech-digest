@@ -100,34 +100,48 @@ def _byte_tier(score):
             return (label, emoji, bg, fg, s)
     return (*BYTE_TIERS[-1][1:], s)
 
-def _byte_led_html(score):
-    """LED bar HTML: 10 células preenchidas conforme score 0-10. '' se ausente."""
-    tier = _byte_tier(score)
-    if tier is None:
-        return ""
-    label, emoji, bg, fg, s = tier
-    filled = int(round(s))
-    cells = []
-    for i in range(10):
-        color = bg if i < filled else "#e5e7eb"
-        cells.append(
-            f'<span style="display:inline-block;width:5px;height:8px;background-color:{color};margin-right:1px;border-radius:1px;vertical-align:middle;"></span>'
-        )
-    return (
-        '<span style="display:inline-block;white-space:nowrap;vertical-align:middle;">'
-        + "".join(cells)
-        + f'<span style="font-size:11px;font-weight:700;color:{bg};margin-left:5px;vertical-align:middle;">{s:.1f}</span>'
-        + '</span>'
-    )
+# VU meter — alturas e cores por posição (verde → laranja)
+_VU_HEIGHTS = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+_VU_COLORS = [
+    '#10b981', '#10b981', '#10b981', '#10b981',  # verde (1-4)
+    '#84cc16', '#eab308',                         # verde-limão + amarelo (5-6)
+    '#f59e0b', '#f97316',                         # âmbar + laranja (7-8)
+    '#FF6B35', '#FF6B35',                         # laranja brand (9-10)
+]
+_VU_EMPTY = '#e5e7eb'
 
-def _byte_led_md(score):
-    """LED bar markdown: '█████████░ 9.2'. '' se ausente."""
+def _byte_led_html(score):
+    """LED bar HTML: 10 barras verticais crescendo em altura (VU meter). '' se ausente."""
     tier = _byte_tier(score)
     if tier is None:
         return ""
     _, _, _, _, s = tier
     filled = int(round(s))
-    bar = "█" * filled + "░" * (10 - filled)
+    cells = []
+    for i in range(10):
+        color = _VU_COLORS[i] if i < filled else _VU_EMPTY
+        cells.append(
+            f'<span style="display:inline-block;width:6px;height:{_VU_HEIGHTS[i]}px;'
+            f'background-color:{color};margin-right:2px;border-radius:1px;'
+            f'vertical-align:bottom;"></span>'
+        )
+    peak_color = _VU_COLORS[filled - 1] if filled > 0 else '#9ca3af'
+    return (
+        '<span style="display:inline-block;white-space:nowrap;line-height:24px;height:24px;vertical-align:middle;">'
+        + "".join(cells)
+        + f'<span style="font-size:11px;font-weight:700;color:{peak_color};margin-left:6px;vertical-align:bottom;">{s:.1f}</span>'
+        + '</span>'
+    )
+
+def _byte_led_md(score):
+    """LED bar markdown: barra VU meter '▂▂▃▃▄▄▅▆▇█ 9.2'. '' se ausente."""
+    tier = _byte_tier(score)
+    if tier is None:
+        return ""
+    _, _, _, _, s = tier
+    filled = int(round(s))
+    heights = ['▂', '▂', '▃', '▃', '▄', '▄', '▅', '▆', '▇', '█']
+    bar = "".join(heights[i] if i < filled else '░' for i in range(10))
     return f"{bar} {s:.1f}"
 
 
