@@ -23,31 +23,41 @@ filters:
   # Idade máxima para newsletters/substacks (janela maior)
   max_age_hours_newsletters: 36
 
-  # Score mínimo para entrar (0-100)
-  min_heat_score: 60
+  # Score mínimo para entrar (0-100) — v2.14 subiu para 70 (rigor > quantidade)
+  min_heat_score: 70
 
-  # Byte Score — Classificador de Impacto Estratégico (v2.13)
-  # O curador retorna byte_score (float 0.0–10.0) por item noticioso.
-  # Tier, emoji e cor são derivados automaticamente em sender.py via _byte_tier():
-  #   9.0–10.0 → 📦 GIGABYTE  (fundo #FF6B35, texto branco)   — redefine o mercado
-  #   7.0–8.9 → 💿 MEGABYTE  (fundo #F7A072, texto escuro)   — grande player muda o jogo
-  #   5.0–6.9 → 💾 KILOBYTE  (fundo #6B7280, texto branco)   — relevante, incremental
-  #   0.0–4.9 → 📄 byte      (fundo #E5E7EB, texto cinza)    — nota de rodapé
+  # Byte Score — Classificador de Impacto Estratégico (v2.13, refinado v2.14/v2.15)
+  # O curador retorna byte_score INTEIRO 0-10 por item noticioso.
+  # Renderização: barra LED VU meter inline (sender.py _byte_led_html), sem legenda no email.
+  # Tier interno (para derivação de cor apenas, nunca renderizado):
+  #   9-10 → GIGABYTE (#FF6B35) — redefine o mercado
+  #   7-8  → MEGABYTE (#F7A072) — grande player muda o jogo
+  #   5-6  → KILOBYTE (#6B7280) — relevante, incremental
+  #   0-4  → byte     (#E5E7EB) — nota de rodapé
   # Escopo: world[], items[] (hoje_no_byte/saas_enterprise), radar_brasil[], quick_links[]
-  # Excluídos: tool_of_day, watch_later, number_of_day (utilidade/indicador, não impacto noticioso)
-  # heat_score permanece como critério de seleção interno; nunca é renderizado ao leitor.
+  # Excluídos: tool_of_day, watch_later, number_of_day
+  # heat_score permanece como critério de seleção interno; nunca é renderizado.
 
-  # Máximo de itens no digest (main sections + quick links)
-  max_items: 18
+  # Máximo de itens no digest (v2.14 cortou de 18 para 15 — rigor > quantidade)
+  max_items: 15
 
-  # Distribuição por categoria (novo layout consolidado v2.1)
+  # Big Story (v2.14) — item de destaque no topo do email
+  # Curador marca big_story=true em UM único item de items[] (maior byte_score, mínimo 8)
+  big_story:
+    enabled: true
+    min_byte_score: 8
+    allowed_categories: [hoje_no_byte, saas_enterprise]
+
+  # Distribuição por categoria (v2.14 layout consolidado)
   distribution:
+    big_story: 1          # Item destacado (opcional, se byte_score >= 8)
     world: 3              # Mundo Real (mundo + Brasil)
-    hoje_no_byte: 5       # Consolidação: breaking + ai_models + big_tech
-    saas_enterprise: 2    # SaaS, valuations, CapEx
+    hoje_no_byte: 3-4     # Consolidação: breaking + ai_models + big_tech
+    saas_enterprise: 1-2  # SaaS, valuations, CapEx
+    radar_brasil: 0-1     # Ecossistema BR (opcional)
     tool_of_day: 1        # 1 ferramenta prática + prompt "Como Usar"
     watch_later: 1        # 1 vídeo essencial
-    quick_links: 6        # Links rápidos no final (headline + link only)
+    quick_links: 4-5      # Links rápidos no final (headline + link only)
 
 # Temas prioritários (boost no score)
 themes:
