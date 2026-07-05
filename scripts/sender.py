@@ -660,15 +660,6 @@ def generate_email_html(curated: Dict) -> str:
 
     body_rows.append(_spacer(12))
 
-    # ── BYTE SCORE LEGEND ───────────────────────
-    legend_html = (
-        '<tr><td style="padding:12px 20px;font-size:11px;color:#6b7280;line-height:1.6;">'
-        '<b style="color:#1a1a2e;">Byte Score</b> — barra de impacto estratégico de cada notícia (0-10). '
-        'Quanto mais preenchida, maior o impacto para C-levels.'
-        '</td></tr>'
-    )
-    body_rows.append(legend_html)
-
     # ── FOOTER ──────────────────────────────────
     body_rows.append(f'''<tr>
   <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:20px;text-align:center;border-radius:12px;">
