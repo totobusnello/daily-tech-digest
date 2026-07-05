@@ -4,6 +4,23 @@
 
 ## Changelog
 
+### v2.14 — 2026-07-05 (Big Story + Corte 15 + Heat 70 + Verbo Imperativo + LED VU + AI News/Karpathy)
+
+**Mudanças implementadas:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/collector.py` | +2 fontes de alta qualidade: AI News (swyx, daily buttondown, recomendado por Karpathy) + Andrej Karpathy Substack (baixa freq, alto impacto). |
+| `scripts/processor.py` | **BIG STORY** — CURATOR_SYSTEM/USER_TEMPLATE ganham campo `big_story: true` em UM único item de items[] (maior byte_score da edição, mínimo 8). **CORTE** — total máximo 18→15 (10 principais + 5 quick links). **HEAT THRESHOLD** — mínimo sobe 60→70. **VERBO IMPERATIVO** — nova regra: cada why_it_matters começa com verbo (Renegocie/Ignore/Priorize/Teste/Antecipe/Investigue/etc.). **BYTE SCORE INTEIRO** — schema mudou de float (7.5) para int (7-8). Exemplos-âncora ajustados. |
+| `scripts/sender.py` | **BIG STORY renderer** — `_render_big_story_html()` renderiza card destacado no topo (borda laranja brand, badge "★ BIG STORY", botão CTA). Extração via `next(i for i in items if i.get('big_story'))`, item removido de items[] para não duplicar. **READING TIME dinâmico** — `_estimate_reading_time()` calcula min baseado em palavras totais (220 wpm, min 2). Substitui "3 min" fixo. **LED VU meter** — `_byte_led_html/_md` renderiza 10 barras verticais crescendo em altura (3-12px), gradient verde→amarelo→laranja, número inteiro ao lado. LED inline após source/hours (mesma linha, `vertical-align:2px` para nivelar piso). **LEGEND removida** (100% minimalista, sem GIGA/MEGA/KILO/byte no email). |
+| `CLAUDE.md`, `config.yaml`, `EVOLUTION-PLAN.md` | Bump v2.14 + changelog. |
+
+**Fluxo do usuário aprovando:**
+- PR#1 (fontes + reading time + verbo) → PR#2 (Big Story + corte + threshold + LED refinements)
+- Iterações no LED: badge grande → barra células uniformes → VU meter alto → reduzido → inline → nivelado piso
+
+---
+
 ### v2.13 — 2026-06-22 (Byte Score — Classificador de Impacto)
 
 **Mudanças implementadas:**

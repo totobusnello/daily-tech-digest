@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.13 (Byte Score — Classificador de Impacto)
+**Versao atual:** v2.14 (Big Story + Corte 15 + Heat 70 + Verbo Imperativo + LED VU + AI News/Karpathy)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
