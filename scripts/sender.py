@@ -125,7 +125,7 @@ def _byte_led_html(score):
         )
     peak_color = _VU_COLORS[filled - 1] if filled > 0 else '#9ca3af'
     return (
-        '<span style="display:inline-block;white-space:nowrap;line-height:12px;height:12px;vertical-align:middle;">'
+        '<span style="display:inline-block;white-space:nowrap;line-height:12px;height:12px;vertical-align:baseline;">'
         + "".join(cells)
         + f'<span style="font-size:10px;font-weight:700;color:{peak_color};margin-left:4px;vertical-align:bottom;">{s}</span>'
         + '</span>'
