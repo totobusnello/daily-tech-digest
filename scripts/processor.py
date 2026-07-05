@@ -201,6 +201,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "context": "1 frase de contexto",
       "source_url": "URL ORIGINAL",
       "source_name": "Reuters|Forbes|BBC",
+      "hours_ago": 6,
       "byte_score": 7
     }}
   ],
@@ -233,6 +234,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "why_it_matters": "1-2 frases prescritivas para C-levels brasileiros",
       "source_url": "URL ORIGINAL",
       "source_name": "NeoFeed|Startse|Exame|InfoMoney|Pipeline Valor",
+      "hours_ago": 8,
       "byte_score": 6
     }}
   ],
@@ -241,6 +243,7 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
       "headline": "Headline curto max 8 palavras",
       "source_url": "URL ORIGINAL",
       "source_name": "Fonte",
+      "hours_ago": 12,
       "byte_score": 4
     }}
   ],
@@ -272,6 +275,7 @@ LEMBRE-SE:
 - "subject_hook" é uma frase-gancho de max 6 palavras sobre a notícia mais impactante
 - "number_of_day" é UM data point numérico impressionante extraído das notícias (value + context)
 - Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" INTEIRO 0-10. GIGABYTE (9-10) é raro. Itens com category "watch_later" NÃO recebem byte_score.
+- Cada item de world/items/radar_brasil/quick_links DEVE ter "hours_ago" INTEIRO (horas desde publicação). Copie do campo hours_ago do item original coletado. Se não tiver, estime baseado em published_at. Nunca deixe vazio ou null.
 - BIG STORY: marque UM ÚNICO item de items[] com "big_story": true — o de maior byte_score da edição (deve ser >= 8). Se nenhum item chega em byte_score 8, deixe TODOS com big_story=false ou omita o campo. Apenas UM item pode ter big_story=true.
 - HEAT SCORE mínimo agora é 70 (era 60). Fique impiedoso: notícias com heat_score 60-69 NÃO entram mais.
 
