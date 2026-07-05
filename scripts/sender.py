@@ -165,6 +165,45 @@ def _section_header(emoji: str, title: str, color: str, numbered: bool = True) -
 </tr>'''
 
 
+def _render_big_story_html(item: Dict) -> str:
+    """Renderiza item de destaque no topo — card grande com borda laranja."""
+    headline = _esc(item.get('headline', ''))
+    why = _esc(item.get('why_it_matters', ''))
+    url = item.get('source_url', '#')
+    source = _esc(item.get('source_name', ''))
+    hours = item.get('hours_ago', '?')
+    led = _byte_led_html(item.get('byte_score'))
+    led_footer = f'<div style="padding-top:10px;">{led}</div>' if led else ''
+    return f'''<tr>
+  <td style="background-color:#fff8f2;border:2px solid {COLORS["brand"]};border-radius:12px;padding:20px 22px;box-shadow:0 4px 12px rgba(255,107,53,0.15);">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="padding-bottom:8px;">
+          <span style="display:inline-block;background-color:{COLORS["brand"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">&#x2605; BIG STORY</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:22px;font-weight:800;color:#1a1a2e;line-height:1.25;padding-bottom:10px;">
+          {headline}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#2d2d2d;line-height:1.55;padding-bottom:12px;">
+          {why}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;">
+          <a href="{url}" style="display:inline-block;color:#ffffff;background-color:{COLORS["brand"]};text-decoration:none;font-weight:700;padding:8px 18px;border-radius:20px;font-size:13px;">Ler agora &#x2197;</a>
+          &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h
+          {led_footer}
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>'''
+
+
 def _estimate_reading_time(curated: Dict) -> int:
     """Estima tempo de leitura em minutos baseado no total de palavras do digest.
     Usa 220 wpm (leitura casual em mobile). Mínimo 2 minutos."""
@@ -298,6 +337,17 @@ def generate_email_html(curated: Dict) -> str:
 </tr>''')
 
     body_rows.append(_spacer(16))
+
+    # ── BIG STORY (v2.14) ───────────────────────
+    # Extrai o item marcado como big_story dos items[] e renderiza destacado no topo.
+    # Remove de items[] para não aparecer duas vezes.
+    items_all = curated.get('items', []) or []
+    big_story = next((i for i in items_all if i.get('big_story')), None)
+    if big_story:
+        body_rows.append(_render_big_story_html(big_story))
+        body_rows.append(_spacer())
+        # Filtra big_story do array para renderização normal abaixo não duplicar
+        curated['items'] = [i for i in items_all if not i.get('big_story')]
 
     # ── 0. NÚMERO DO DIA ────────────────────────
     number = curated.get('number_of_day', {})
