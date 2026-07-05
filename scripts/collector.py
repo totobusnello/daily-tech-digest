@@ -152,6 +152,8 @@ RSS_FEEDS = {
     "lobsters_ai": "https://lobste.rs/t/ai.rss",
     # ── v2.11: Brasil AI ──
     "ia_brasil_noticias": "https://iabrasilnoticias.com.br/feed/",
+    # ── v2.15: Brasil tech/inovação (Cristina De Luca + Silvia Bassi) ──
+    "the_shift_br": "https://theshift.info/feed/",
 }
 
 # RSS Feeds - Mundo Real (governos, empresas, geopolítica, finanças)
@@ -275,6 +277,9 @@ SUBSTACK_FEEDS = {
     # ── v2.14: alta qualidade (swyx daily + Karpathy raro-mas-evento) ──
     "sub_ai_news_swyx": "https://buttondown.com/ainews/rss",
     "sub_karpathy": "https://karpathy.substack.com/feed",
+    # ── v2.15: strategy essays (Packy McCormick) + rationalist AI (Scott Alexander) ──
+    "sub_not_boring": "https://www.notboring.co/feed",
+    "sub_astral_codex_ten": "https://www.astralcodexten.com/feed",
 }
 
 # ============================================
