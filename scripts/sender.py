@@ -409,6 +409,8 @@ def generate_email_html(curated: Dict) -> str:
             context = _esc(wi.get('context', ''))
             url = _safe_url(wi.get('source_url', ''))
             source = _esc(wi.get('source_name', ''))
+            wi_hours = wi.get('hours_ago')
+            wi_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(wi_hours))}h' if wi_hours is not None else ''
             wi_led_html = _byte_led_html(wi.get('byte_score'))
             wi_led_inline = f' &nbsp;&middot;&nbsp; {wi_led_html}' if wi_led_html else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(world_items) - 1 else ''
@@ -425,7 +427,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{wi_led_inline}
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{wi_hours_inline}{wi_led_inline}
         </td>
       </tr>
     </table>''')
@@ -468,6 +470,8 @@ def generate_email_html(curated: Dict) -> str:
             why = _esc(rb.get('why_it_matters', ''))
             url = _safe_url(rb.get('source_url', ''))
             source = _esc(rb.get('source_name', ''))
+            rb_hours = rb.get('hours_ago')
+            rb_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(rb_hours))}h' if rb_hours is not None else ''
             rb_led_html = _byte_led_html(rb.get('byte_score'))
             rb_led_inline = f' &nbsp;&middot;&nbsp; {rb_led_html}' if rb_led_html else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(radar_brasil) - 1 else ''
@@ -484,7 +488,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{rb_led_inline}
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{rb_hours_inline}{rb_led_inline}
         </td>
       </tr>
     </table>''')
@@ -669,6 +673,8 @@ def generate_email_html(curated: Dict) -> str:
                 headline = _esc(ql.get('headline', ''))
                 url = _safe_url(ql.get('source_url', ''))
                 source = _esc(ql.get('source_name', ''))
+                ql_hours = ql.get('hours_ago')
+                ql_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(ql_hours))}h' if ql_hours is not None else ''
                 ql_led = _byte_led_html(ql.get('byte_score'))
                 ql_led_inline = f' &nbsp;&middot;&nbsp; {ql_led}' if ql_led else ''
                 cols.append(f'''<td class="ql-col" style="width:50%;vertical-align:top;padding:6px 8px;">
@@ -676,7 +682,7 @@ def generate_email_html(curated: Dict) -> str:
               <tr>
                 <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.4;">
                   <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
-                  <br/><span style="color:#6b7280;font-size:11px;">{source}{ql_led_inline}</span>
+                  <br/><span style="color:#6b7280;font-size:11px;">{source}{ql_hours_inline}{ql_led_inline}</span>
                 </td>
               </tr>
             </table>
@@ -965,9 +971,11 @@ def generate_email_content(curated: Dict) -> str:
             context = wi.get('context', '')
             url = wi.get('source_url', '#')
             source = wi.get('source_name', '')
+            wi_hours = wi.get('hours_ago')
+            wi_hours_str = f" | ⏰ {wi_hours}h" if wi_hours is not None else ""
             wi_led_md = _byte_led_md(wi.get('byte_score'))
             suffix = f"\n  {wi_led_md}" if wi_led_md else ""
-            world_lines.append(f"→ **{headline}** — {context} ([{source}]({url})){suffix}")
+            world_lines.append(f"→ **{headline}** — {context} ([{source}]({url})){wi_hours_str}{suffix}")
         sections.append(f"# 🌍 MUNDO REAL\n\n" + "\n\n".join(world_lines))
 
     items = curated.get('items', [])
@@ -989,9 +997,11 @@ def generate_email_content(curated: Dict) -> str:
             why = rb.get('why_it_matters', '')
             url = rb.get('source_url', '#')
             source = rb.get('source_name', '')
+            rb_hours = rb.get('hours_ago')
+            rb_hours_str = f" | ⏰ {rb_hours}h" if rb_hours is not None else ""
             rb_led = _byte_led_md(rb.get('byte_score'))
             rb_suffix = f"\n  {rb_led}" if rb_led else ""
-            rb_lines.append(f"→ **{headline}** — {why} ([{source}]({url})){rb_suffix}")
+            rb_lines.append(f"→ **{headline}** — {why} ([{source}]({url})){rb_hours_str}{rb_suffix}")
         sections.append("# 🇧🇷 RADAR BRASIL\n\n" + "\n\n".join(rb_lines))
 
     tool = curated.get('tool_of_day', {})
@@ -1036,9 +1046,11 @@ def generate_email_content(curated: Dict) -> str:
             headline = ql.get('headline', '')
             url = ql.get('source_url', '#')
             source = ql.get('source_name', '')
+            ql_hours = ql.get('hours_ago')
+            ql_hours_str = f" | ⏰ {ql_hours}h" if ql_hours is not None else ""
             ql_led = _byte_led_md(ql.get('byte_score'))
             ql_suffix = f"\n  {ql_led}" if ql_led else ""
-            ql_lines.append(f"→ [{headline}]({url}) *({source})*{ql_suffix}")
+            ql_lines.append(f"→ [{headline}]({url}) *({source})*{ql_hours_str}{ql_suffix}")
         sections.append(f"# ⚡ QUICK LINKS\n\n" + "\n\n".join(ql_lines))
 
     videos = [i for i in items if i.get('category') == 'watch_later']
