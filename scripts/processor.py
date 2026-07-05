@@ -271,6 +271,17 @@ LEMBRE-SE:
 - Seja DIRETO: menos texto, mais impacto. Máximo 2 frases curtas e densas.
 - NUNCA deixe why_it_matters vazio
 
+⚠️ NOVA REGRA (v2.14) — VERBO NO IMPERATIVO:
+- Todo why_it_matters DEVE começar com um VERBO no imperativo, seguido de dois-pontos.
+- Verbos permitidos (escolha o mais adequado): Reavalie, Teste, Ignore, Investigue, Monitore,
+  Antecipe, Pause, Contrate, Aprove, Renegocie, Priorize, Descarte, Compare, Documente.
+- Formato: "VERBO: [ação concreta para C-level em 1-2 frases]"
+- Exemplos corretos:
+  - "Renegocie: contratos de LLM enterprise em 90 dias. Anthropic virou tabela de preço."
+  - "Ignore: hype de agentes autônomos. Adoção real ainda está em <3% das empresas Fortune 500."
+  - "Priorize: revisão de compliance de dados. Nova regulação europeia atinge SaaS BR com clientes EU."
+- Isso vale para items[], world[] (context), radar_brasil[], e tool_of_day (why_it_matters).
+
 ⚠️ REGRA CRÍTICA sobre how_to_use (tool_of_day):
 - DEVE ser PRÁTICO e COPY-PASTE ready
 - Máximo 3 linhas. Acionável em 30 segundos.

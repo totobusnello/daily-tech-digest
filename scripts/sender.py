@@ -165,6 +165,54 @@ def _section_header(emoji: str, title: str, color: str, numbered: bool = True) -
 </tr>'''
 
 
+def _estimate_reading_time(curated: Dict) -> int:
+    """Estima tempo de leitura em minutos baseado no total de palavras do digest.
+    Usa 220 wpm (leitura casual em mobile). Mínimo 2 minutos."""
+    text_parts = []
+
+    n = curated.get('number_of_day', {}) or {}
+    text_parts.append(str(n.get('context', '')))
+
+    for wi in curated.get('world', []) or []:
+        text_parts.append(str(wi.get('headline', '')))
+        text_parts.append(str(wi.get('context', '')))
+
+    for item in curated.get('items', []) or []:
+        text_parts.append(str(item.get('headline', '')))
+        text_parts.append(str(item.get('why_it_matters', '')))
+
+    for rb in curated.get('radar_brasil', []) or []:
+        text_parts.append(str(rb.get('headline', '')))
+        text_parts.append(str(rb.get('why_it_matters', '')))
+
+    tool = curated.get('tool_of_day', {}) or {}
+    text_parts.append(str(tool.get('headline', '')))
+    text_parts.append(str(tool.get('why_it_matters', '')))
+    text_parts.append(str(tool.get('how_to_use', '')))
+    text_parts.append(str(tool.get('prompt_of_day', '')))
+
+    analysis = curated.get('daily_analysis', '')
+    if isinstance(analysis, list):
+        text_parts.extend(str(a) for a in analysis)
+    else:
+        text_parts.append(str(analysis))
+
+    dd = curated.get('deep_dive', {}) or {}
+    text_parts.append(str(dd.get('title', '')))
+    text_parts.append(str(dd.get('body', '')))
+
+    workflow = curated.get('weekly_workflow', {}) or {}
+    text_parts.append(str(workflow.get('title', '')))
+    text_parts.extend(str(s) for s in workflow.get('steps', []) or [])
+
+    for ql in curated.get('quick_links', []) or []:
+        text_parts.append(str(ql.get('headline', '')))
+
+    total_words = sum(len(t.split()) for t in text_parts if t)
+    minutes = max(2, round(total_words / 220))
+    return minutes
+
+
 def _card_start() -> str:
     return '''<tr>
   <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.06);">'''
@@ -240,11 +288,12 @@ def generate_email_html(curated: Dict) -> str:
     months = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
               'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     date_str = f"{weekdays[today.weekday()]}, {today.day} de {months[today.month]} de {today.year}"
+    read_min = _estimate_reading_time(curated)
 
     body_rows.append(f'''<tr>
   <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:0 20px 14px 20px;text-align:center;border-radius:0 0 12px 12px;">
     <span class="text-muted" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#94a3b8;">{date_str}</span>
-    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: 3 min</span>
+    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: {read_min} min</span>
   </td>
 </tr>''')
 

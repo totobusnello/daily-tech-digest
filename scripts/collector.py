@@ -272,6 +272,9 @@ SUBSTACK_FEEDS = {
     "sub_lennys_newsletter": "https://www.lennysnewsletter.com/feed",
     # ── v2.11 ──
     "sub_neatprompts": "https://www.neatprompts.com/feed",
+    # ── v2.14: alta qualidade (swyx daily + Karpathy raro-mas-evento) ──
+    "sub_ai_news_swyx": "https://buttondown.com/ainews/rss",
+    "sub_karpathy": "https://karpathy.substack.com/feed",
 }
 
 # ============================================
