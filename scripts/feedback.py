@@ -137,6 +137,12 @@ def analyze_feedback(days: int = 7) -> Dict:
     total_unsubs = 0
     email_metrics = []
 
+    # v2.16: subscriber_count é buscado ANTES do loop para servir de denominador
+    # fallback. A API do Buttondown vinha devolvendo recipients=0, o que zerava
+    # open_rate/click_rate e fazia o curator_hint injetar "Open rate baixo (0%)"
+    # no prompt do curador todos os dias — conselho baseado em métrica falsa.
+    subscriber_count = fetch_subscriber_count()
+
     for email in emails:
         email_id = email.get('id', '')
         subject = email.get('subject', 'Sem assunto')
@@ -154,29 +160,34 @@ def analyze_feedback(days: int = 7) -> Dict:
             total_recipients += recipients
             total_unsubs += unsubs
 
+            # Denominador: recipients reais quando a API informa; senão, base atual.
+            denom = recipients if recipients > 0 else subscriber_count
+
             email_metrics.append({
                 "subject": subject,
                 "date": email.get('publish_date', ''),
                 "opens": opens,
                 "clicks": clicks,
                 "recipients": recipients,
-                "open_rate": round(opens / recipients * 100, 1) if recipients > 0 else 0,
-                "click_rate": round(clicks / recipients * 100, 1) if recipients > 0 else 0,
+                "open_rate": round(opens / denom * 100, 1) if denom > 0 else None,
+                "click_rate": round(clicks / denom * 100, 1) if denom > 0 else None,
+                "rate_estimated": recipients == 0 and subscriber_count > 0,
             })
 
             print(f"  📧 {subject[:50]}... → {opens} opens, {clicks} clicks")
         else:
             print(f"  📧 {subject[:50]}... → sem analytics")
 
-    # Métricas agregadas
-    avg_open_rate = round(total_opens / total_recipients * 100, 1) if total_recipients > 0 else 0
-    avg_click_rate = round(total_clicks / total_recipients * 100, 1) if total_recipients > 0 else 0
+    # Métricas agregadas — usa recipients somados quando disponíveis, senão
+    # estima com base_atual × nº de emails enviados no período.
+    agg_denom = total_recipients if total_recipients > 0 else subscriber_count * len(email_metrics)
+    rates_estimated = total_recipients == 0 and agg_denom > 0
+
+    avg_open_rate = round(total_opens / agg_denom * 100, 1) if agg_denom > 0 else None
+    avg_click_rate = round(total_clicks / agg_denom * 100, 1) if agg_denom > 0 else None
 
     # Top 3 assuntos mais engajados (por clicks)
     top_by_clicks = sorted(email_metrics, key=lambda x: x.get('clicks', 0), reverse=True)[:3]
-
-    # Subscriber count
-    subscriber_count = fetch_subscriber_count()
 
     # Extrair temas dos subjects mais clicados
     top_themes = []
@@ -209,6 +220,7 @@ def analyze_feedback(days: int = 7) -> Dict:
         "aggregate": {
             "avg_open_rate": avg_open_rate,
             "avg_click_rate": avg_click_rate,
+            "rates_estimated": rates_estimated,
             "total_opens": total_opens,
             "total_clicks": total_clicks,
             "total_unsubs": total_unsubs,
@@ -216,15 +228,22 @@ def analyze_feedback(days: int = 7) -> Dict:
         },
         "top_themes": top_themes,
         "recent_hooks": recent_hooks,
-        "curator_hint": _generate_curator_hint(top_themes, avg_open_rate, avg_click_rate),
+        "curator_hint": _generate_curator_hint(top_themes, avg_open_rate, avg_click_rate, rates_estimated),
         "email_details": email_metrics,
     }
 
     return feedback
 
 
-def _generate_curator_hint(top_themes: List[Dict], open_rate: float, click_rate: float) -> str:
-    """Gera dica textual para o curador baseada nos dados de engajamento"""
+def _generate_curator_hint(top_themes: List[Dict], open_rate, click_rate, estimated: bool = False) -> str:
+    """Gera dica textual para o curador baseada nos dados de engajamento.
+
+    v2.16: open_rate/click_rate podem vir None quando não há denominador confiável.
+    Nesse caso o hint OMITE o conselho em vez de reportar 0% — antes o curador
+    recebia "Open rate baixo (0%). Revisar horário de envio" todos os dias porque
+    a API devolvia recipients=0, e passava a se auto-corrigir por métrica falsa.
+    Silêncio é melhor que conselho errado.
+    """
     if not top_themes:
         return "Sem dados de engajamento suficientes para gerar recomendações."
 
@@ -235,23 +254,27 @@ def _generate_curator_hint(top_themes: List[Dict], open_rate: float, click_rate:
     if theme_names:
         hints.append(f"Temas com mais engajamento esta semana: {', '.join(theme_names)}.")
 
-    # Open rate benchmark
-    if open_rate > 50:
-        hints.append(f"Open rate excelente ({open_rate}%). Subject lines estão funcionando bem.")
-    elif open_rate > 35:
-        hints.append(f"Open rate bom ({open_rate}%). Continuar com hooks curtos e específicos.")
-    elif open_rate > 20:
-        hints.append(f"Open rate médio ({open_rate}%). Testar subject lines mais provocativas.")
-    else:
-        hints.append(f"Open rate baixo ({open_rate}%). Revisar horário de envio e subject lines.")
+    sufixo = " (estimado sobre a base atual)" if estimated else ""
+
+    # Open rate benchmark — só opina se houver número confiável
+    if open_rate is not None:
+        if open_rate > 50:
+            hints.append(f"Open rate excelente ({open_rate}%{sufixo}). Subject lines estão funcionando bem.")
+        elif open_rate > 35:
+            hints.append(f"Open rate bom ({open_rate}%{sufixo}). Continuar com hooks curtos e específicos.")
+        elif open_rate > 20:
+            hints.append(f"Open rate médio ({open_rate}%{sufixo}). Testar subject lines mais provocativas.")
+        else:
+            hints.append(f"Open rate baixo ({open_rate}%{sufixo}). Revisar horário de envio e subject lines.")
 
     # Click rate
-    if click_rate > 5:
-        hints.append(f"Click rate alto ({click_rate}%). Curadoria está acertando.")
-    elif click_rate > 2:
-        hints.append(f"Click rate ok ({click_rate}%). Priorizar temas que geraram mais cliques.")
-    else:
-        hints.append(f"Click rate baixo ({click_rate}%). Considerar CTAs mais diretos e headlines mais fortes.")
+    if click_rate is not None:
+        if click_rate > 5:
+            hints.append(f"Click rate alto ({click_rate}%{sufixo}). Curadoria está acertando.")
+        elif click_rate > 2:
+            hints.append(f"Click rate ok ({click_rate}%{sufixo}). Priorizar temas que geraram mais cliques.")
+        else:
+            hints.append(f"Click rate baixo ({click_rate}%{sufixo}). Considerar CTAs mais diretos e headlines mais fortes.")
 
     return " ".join(hints)
 
@@ -295,8 +318,11 @@ if __name__ == "__main__":
     print(f"   Emails analisados: {feedback.get('emails_analyzed', 0)}")
 
     agg = feedback.get('aggregate', {})
-    print(f"   Open rate médio: {agg.get('avg_open_rate', 0)}%")
-    print(f"   Click rate médio: {agg.get('avg_click_rate', 0)}%")
+    _est = " (estimado)" if agg.get('rates_estimated') else ""
+    _open = agg.get('avg_open_rate')
+    _click = agg.get('avg_click_rate')
+    print(f"   Open rate médio: {f'{_open}%{_est}' if _open is not None else 'indisponível'}")
+    print(f"   Click rate médio: {f'{_click}%{_est}' if _click is not None else 'indisponível'}")
     print(f"   Subscribers: {agg.get('subscriber_count', 0)}")
 
     print(f"\n💡 Dica pro curador:")

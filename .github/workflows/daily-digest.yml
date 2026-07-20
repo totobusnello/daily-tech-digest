@@ -57,10 +57,36 @@ jobs:
           restore-keys: |
             digest-raw-latest-
 
+      # v2.16: Restore feed health state. Sem isso o contador de falhas
+      # consecutivas reiniciava a cada run e o alerta (threshold=3) nunca disparava.
+      - name: 🔄 Restore feed health cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/digest_feed_health.json
+          key: digest-health-${{ github.run_number }}
+          restore-keys: |
+            digest-health-
+
+      # v2.16: o suite estava quebrado desde a v2.14 (referenciava funções
+      # removidas) e ninguém percebeu, porque nada o executava. Agora roda a
+      # cada edição — e falha o build se quebrar.
+      - name: 🧪 Testes unitários
+        run: |
+          cd scripts && python test_byte_score.py
+
       - name: 🏥 Health check feeds
+        id: health
         continue-on-error: true
         run: |
           cd scripts && python health_check.py
+
+      # v2.16: Persist feed health state para a próxima run
+      - name: 💾 Save feed health cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/digest_feed_health.json
+          key: digest-health-${{ github.run_number }}
 
       - name: 📰 Step 1 — Collect news sources
         id: collect

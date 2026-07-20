@@ -89,6 +89,23 @@ def _safe_url(url: str) -> str:
     return _esc(url)
 
 
+# Emojis de fogo que o curador às vezes prefixa por conta própria no subject_hook.
+# U+1F525 = 🔥 | U+2757/U+2755 = ❗❕ | U+26A0 = ⚠ (com ou sem variation selector)
+_LEADING_FIRE_RE = re.compile(r'^(?:[\U0001F525❗❕⚠]️?[\s ]*)+')
+
+
+def _strip_leading_fire(hook: str) -> str:
+    """Remove emojis de destaque repetidos no início do subject_hook (v2.16).
+
+    O sender prefixa 🔥 uma vez; quando o curador já devolvia o hook com fogo,
+    os dois empilhavam ("🔥 🔥 🔥 TSMC investe US$265B"). Normaliza para que o
+    prefixo do sender seja sempre o único.
+    """
+    if not hook or not isinstance(hook, str):
+        return ""
+    return _LEADING_FIRE_RE.sub('', hook).strip()
+
+
 # ── Byte Score (v2.13) — classificador de impacto estratégico ──
 # (limite_inferior, label, emoji, cor_fundo, cor_texto)
 BYTE_TIERS = [
@@ -1121,7 +1138,10 @@ def send(preview: bool = False):
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
     # Dynamic subject with hook from curated data
-    hook = curated.get('subject_hook', '')
+    # v2.16: o curador às vezes já devolve o hook prefixado com 🔥, e o prefixo
+    # fixo daqui empilhava em cima — saíram subjects como "🔥 🔥 🔥 TSMC investe".
+    # Removemos qualquer fogo/espaço no início antes de prefixar uma única vez.
+    hook = _strip_leading_fire(curated.get('subject_hook', ''))
     if hook:
         subject = f"\U0001F525 {hook}"
     else:

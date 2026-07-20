@@ -4,6 +4,49 @@
 
 ## Changelog
 
+### v2.16 — 2026-07-20 (Auditoria do catálogo — 41% dos feeds estavam mortos)
+
+**Contexto:** a revisão semanal começou como "vamos evoluir" e virou "tem coisa quebrada". Testando os 140 feeds ao vivo, um a um, a auditoria encontrou **57 mortos (41%)** e três bugs que rodavam em silêncio havia meses. Nenhum deles aparecia no monitoramento — porque o monitoramento também estava quebrado.
+
+**O diagnóstico (medido, não estimado):**
+
+| Lista | Total | Quebrados | Abandonados | % morto |
+|---|---|---|---|---|
+| RSS tech/AI | 46 | 14 | 1 | 33% |
+| World/business | 37 | 12 | 1 | 35% |
+| Substacks | 46 | 11 | 12 | **50%** |
+| YouTube | 11 | 5 | 1 | **55%** |
+| X/Twitter | 66 handles | — | — | **coletava 0** |
+
+Casos que doem: `sub_karpathy` parado há **1199 dias** e `sub_ai_news_swyx` há **451** — ambos adicionados na v2.14 como "alta qualidade", nunca testados. SemiAnalysis (306d), Chip Huyen (550d), Anthropic, Mistral, Stability, Meta AI, Reuters (×3), Valor, Exame, Pipeline Valor, Startse, TecMundo: todos 404/401/403.
+
+**Causa-raiz do mainstream dominar.** Não era preferência do curador — era aritmética. O pool chegava com 51% de mainstream porque 27 das 35 fontes indie declaradas retornavam zero, e o corte final (`slim_items[:80]`) era por **puro frescor**, o que premia quem publica de hora em hora. Nas 7 edições auditadas: Bloomberg 17×, FT 13×, contra Simon Willison 3×.
+
+**Mudanças por arquivo:**
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/collector.py` | **CATÁLOGO** 140 → 105 feeds, todos testados (0 quebrados, 99% com post ≤60d). URLs corrigidas: Mistral, SemiAnalysis, AI News (→`news.smol.ai`), Meta (→`engineering.fb.com`), Anthropic (mirror comunitário), Valor (`/rss/valor/`), Exame, TecMundo, FT, + 5 channel IDs do YouTube. **+4 fontes novas** verificadas: Geopolitechs (geopolítica de AI), AI to ROI (ROI enterprise), AI Factory News/Distrito (PT-BR), The AI Engineer (agentic coding). **X**: 66 → 16 handles + cache de `user_id` + log explícito por status code. |
+| `scripts/processor.py` | **CORTE ESTRATIFICADO** — `_stratified_cut()` reserva quota por tier (primária 32 / BR 12 / mainstream ≤24) antes de completar por frescor; teto suave que cede se não houver alternativa. **FILTRO BR** — `_br_item_relevante()` descarta esporte/política/variedades dos feeds BR generalistas (as editorias de tech deles retornam 400/404). **BYTE SCORE** — 4 testes objetivos para liberar 9-10. **RADAR BRASIL** — prompt passa a alocar notícia BR no Radar, não em `world`. **ORTOGRAFIA** — acento em nomes próprios + lista de PT-europeu proibido. |
+| `scripts/feedback.py` | **MÉTRICA FALSA** — `recipients: 0` da API zerava as taxas e o hint mandava "Open rate baixo (0%), revise o horário" todo dia, quando o real era ~70%. Agora usa `subscriber_count` como fallback, marca `rates_estimated`, e omite o conselho quando não há denominador confiável. |
+| `scripts/sender.py` | `_strip_leading_fire()` — fim do `🔥 🔥 🔥 TSMC investe`. |
+| `scripts/test_byte_score.py` | **REESCRITO** — o suite estava quebrado desde a v2.14 (referenciava funções removidas) e nada o executava. 64 casos cobrindo Byte Score, `_safe_url`, strip de emoji, classificação de fonte, filtro BR e corte estratificado. |
+| `.github/workflows/daily-digest.yml` | **HEALTH CHECK CEGO** — `digest_feed_health.json` não estava no `actions/cache`, então o contador de falhas reiniciava a cada run e o alerta (threshold 3) nunca disparava. Adicionado restore+save. **+ step de testes** obrigatório. |
+| `config.yaml`, `CLAUDE.md` | v2.16, regras 47-54, bloco `stratified_cut`. |
+
+**Resultado medido:**
+- Catálogo: 57 feeds mortos → **0** (105 feeds, 99% saudáveis)
+- Pool que chega ao curador: mainstream 51% → **30%** (teto), primária 36, BR 20
+- Volume coletado: 306 → **484 itens** (+58%); Substacks 4 → 12, YouTube 2 → 10
+- Filtro BR: **16 itens/dia** de esporte e variedades deixam de ocupar a quota
+- Testes: **64/64** passando, rodando no CI
+
+**O que NÃO melhorou — e é honesto registrar:** a composição da *edição final* segue em ~60% mainstream (baseline 58%), mesmo com o pool a 30%. Em 5 rodadas do mesmo dia o número oscilou entre 59% e 72%, e o Byte Score chegou a 9 em apenas uma delas. Ou seja: o curador continua escolhendo grande imprensa mesmo com alternativa farta na mesa — seja porque as notícias do dia eram genuinamente essas (Trump/tarifas, Paramount-Warner, Oracle), seja porque o prompt ainda não pesa ineditismo o bastante na hora de montar as seções. **Próximo ciclo deve medir isso com mais dias antes de mexer no prompt de novo.**
+
+**Pendente de ação do Totó:** renovar `X_BEARER_TOKEN` em developer.x.com e atualizar o secret. O código já está pronto (16 handles, cache, log); hoje a coleta do X segue em 0 sem quebrar o pipeline.
+
+---
+
 ### v2.15.1 — 2026-07-05 (Hardening — 13 fixes CRITICAL + MEDIUM de code/security/runtime review)
 
 **Contexto:** após v2.14 + v2.15, 3 review agents (code, security, runtime) rodaram em paralelo. Encontraram 17 findings. 13 (7 CRITICAL + 6 MEDIUM) foram aplicados em um único PR (#15). Os 4 MINOR ficaram no backlog.
@@ -648,8 +691,20 @@ Backlog relacionado marcado como parcialmente coberto:
 
 **Formato:**
 - [x] Secao de engagement — 1-click feedback + referral CTA (v2.6)
-- [ ] Secao "Deep Dive" semanal — 1 analise longa por semana sobre tema trending
-- [ ] "Radar Brasil" — mini-secao dedicada a tech/AI BR (1-2 itens, destacando o ecossistema local)
+- [x] Secao "Deep Dive" semanal — implementado v2.10 (sextas)
+- [x] "Radar Brasil" — implementado v2.10; passou a ser preenchido de fato na v2.16 (filtro de relevancia BR)
+- [ ] **Versao audio (TTS)** — aprovado no ciclo de 2026-07-20, nao implementado.
+      Escopo: resumo de ~2 min do Big Story + Analise do Dia, anexado ou linkado no email.
+      Evidencia: The Neuron lancou podcast em 2026; beehiiv reporta ~22% de ganho de
+      retencao em newsletters com formato cruzado. Decisoes em aberto: engine de TTS
+      (custo por edicao), hospedagem do audio, e se entra como link ou player embutido.
+
+**Do benchmark de 2026-07-20 (levantados, NAO priorizados):**
+- [ ] Personalizacao por persona (CFO ve corte X, CTO ve corte Y no mesmo envio) —
+      nenhum dos 6 concorrentes analisados faz isso; seria first-mover, nao catch-up.
+- [ ] "Totó's Take" — coluna editorial assinada com lente board/capital.
+- [ ] Case de ROI enterprise semanal — a fonte AI to ROI (adicionada na v2.16) ja alimenta isso.
+- [ ] Quiz de onboarding → trilha personalizada (modelo Rundown University).
 
 **Curadoria:**
 - [x] Dedup mais inteligente — implementado v2.9 (entity extraction + keyword overlap + clustering)

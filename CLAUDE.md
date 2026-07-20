@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.15.1 (v2.15: +3 fontes / v2.15.1: 13 fixes CRITICAL+MEDIUM de security review)
+**Versao atual:** v2.16 (limpeza do catalogo: 57 feeds mortos + corte estratificado + 3 bugs silenciosos)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -252,6 +252,28 @@ Threshold minimo: 60 pontos
 45. **Dedup cross-edicao completo (v2.15.1)** — `register_sent()` em dedup.py estava omitindo `radar_brasil` do agregado de items — historias BR podiam repetir entre dias. Fix: `all_items.extend(curated.get('radar_brasil', []) or [])`. Tambem fix em `dedup_across_sections()` de processor.py: quando `tool_of_day` batia como duplicata, counter incrementava mas objeto ficava no curated, renderizando 2x. Agora `curated['tool_of_day'] = None` no branch de dup.
 
 46. **Prompt count alinhado (v2.15.1)** — CURATOR_USER_TEMPLATE tinha "MÁXIMO 18" na primeira linha (linha 176) contradizendo "15 itens" na secao LEMBRE-SE (linha 254). Claude segue a primeira instrucao e overshoot. Fix: primeira linha agora diz "MÁXIMO 15 (10 principais + 5 quick links)". Alinha com v2.14 corte.
+
+47. **TESTE O FEED ANTES DE ADICIONAR (v2.16)** — regra que nasce de um erro caro. A auditoria de 2026-07-20 testou os 140 feeds um a um e achou **57 mortos (41%)**: 37 quebrados (404/401/403/0-entries) e 20 abandonados (>30 dias sem post). Pior: fontes adicionadas em v2.14/v2.15 **ja nasceram mortas** — `sub_karpathy` estava parado ha 1199 dias e `sub_ai_news_swyx` ha 451 quando foram incluidas como "alta qualidade". Ninguem testou.
+    **Antes de adicionar qualquer fonte:** `requests.get(url, headers=UA_BROWSER)` deve dar 200 **e** o feed precisa ter `entries` com `published_parsed` recente. Feed que responde 200 com zero itens (caso do The Shift e do Startse) é tao inutil quanto um 404.
+    Recuperadas por mudanca de URL: Mistral (`/rss.xml`), SemiAnalysis (voltou pro Substack), AI News (migrou pra `news.smol.ai`), Meta (`engineering.fb.com`), Valor (`/rss/valor/`), Exame (feed geral), TecMundo (`rss.tecmundo.com.br`), FT (`/rss/home`), + 5 channel IDs do YouTube que estavam errados.
+    Removidas sem substituto: Reuters (×3), AP (×2), Cohere, Stability, Chip Huyen, Reddit LocalLLaMA (429 sem rota anonima), The Information (403+paywall), Pipeline Valor, Startse, WSJ Markets, e 23 Substacks 404/abandonados.
+
+48. **Corte estratificado do pool (v2.16)** — `_stratified_cut()` em processor.py substituiu `slim_items[:80]`. O corte por puro frescor premiava quem publica de hora em hora: pool com 51% de mainstream virava edicao com 58-65%, e o Radar Brasil saia vazio 3 dias em 7 mesmo havendo dezenas de itens BR coletados. Agora reserva quota por tier — `min_primaria=32`, `min_br=12`, `max_mainstream=24` — antes de completar por frescor.
+    O teto de mainstream é **suave**: se as fontes primarias/BR nao publicaram naquele dia, uma segunda passada completa os 80 com mainstream. Sem isso, dia fraco de indie entregava 24 itens ao curador em vez de 80 (bug pego pelos testes, nao pela revisao manual).
+    `_source_tier()` classifica em `primaria` / `br` / `mainstream` por substring do `source_name`.
+
+49. **Filtro de relevancia BR (v2.16)** — `_br_item_relevante()`. As fontes BR generalistas (InfoMoney, Poder360, Valor, Exame) publicam de esporte a variedades no mesmo feed; as editorias especificas (`/tecnologia/feed/`, `/rss/empresas/`) foram testadas e **todas retornam 400/404**. Sem filtro, a quota BR era gasta com "micoses pos-praia", "Messi" e "caipirinha em Copacabana" — o curador descartava tudo e o Radar Brasil saia vazio. O filtro casa o titulo contra `_BR_RELEVANTE` (tech/AI/negocios/M&A/regulacao) e descarta placeholders de scraping (`Home | ...`, titulo <15 chars). Fontes BR ja especializadas (TecMundo, CanalTech, NeoFeed, Brazil Journal) passam direto.
+
+50. **Health check estava cego (v2.16)** — `FAILURE_THRESHOLD = 3` falhas consecutivas, mas `/tmp/digest_feed_health.json` **nao estava no `actions/cache`** do workflow — so no `upload-artifact`. Cada run comecava com o arquivo vazio, o contador nunca passava de 1, o alerta nunca disparava. Por isso 57 feeds quebrados conviviam com "0 mortos" no relatorio. Fix: blocos `Restore feed health cache` + `Save feed health cache` no `daily-digest.yml`.
+
+51. **Feedback loop envenenava o prompt (v2.16)** — a API do Buttondown devolve `recipients: 0`, entao `open_rate`/`click_rate` viravam 0 por divisao guardada, e o `curator_hint` injetava *"Open rate baixo (0%). Revisar horario de envio e subject lines"* no prompt **toda edicao**. O numero real era ~70% (99 opens / 20 subscribers em 7 emails) — o curador vinha se auto-corrigindo com base em metrica falsa. Fix em feedback.py: `subscriber_count` como denominador fallback, flag `rates_estimated`, e `None` (reportado como "indisponivel") quando nao ha denominador confiavel. **Silencio é melhor que conselho errado** — o hint agora OMITE a linha em vez de reportar 0%.
+
+52. **Emoji duplicado no subject (v2.16)** — `sender.py` sempre prefixava 🔥 e o curador as vezes ja devolvia o hook com fogo: saiu `🔥 🔥 🔥 TSMC investe US$265B`. Fix: `_strip_leading_fire()` remove fogo/alerta no inicio do hook antes de prefixar uma unica vez. Emoji no meio do texto é preservado.
+
+53. **Suite de testes estava quebrado desde a v2.14 (v2.16)** — `test_byte_score.py` referenciava `_byte_badge_html`/`_byte_badge_md`, funcoes que a v2.14 substituiu pelo LED VU meter. O arquivo falhava na primeira linha e ninguem percebeu, porque **nada no workflow o executava**. Reescrito com 64 casos (Byte Score, `_safe_url`, `_strip_leading_fire`, `_source_tier`, `_br_item_relevante`, `_stratified_cut`) e adicionado como step obrigatorio do `daily-digest.yml` — agora falha o build.
+
+54. **X/Twitter: 401 silencioso (v2.16)** — `collect_x_posts` fazia `if status_code != 200: continue` **sem log nenhum**. O token estava revogado (HTTP 401) havia meses e o pipeline so reportava "→ 0 tweets", sem sinal de problema. A lista tinha 66 handles, dezenas deles **inexistentes** (`swaborak`, `ziaborak`, `emaborak`, `jackclarkaborak`, `polyaborak`, `maborak`, `daborak`...) — provavelmente alucinados numa expansao anterior e nunca validados, justamente porque a falha era engolida. Fixes: log explicito por status (404 = handle inexistente, 401/403 = token, 429 = interrompe), resumo de erros ao final, lista reduzida a 16 handles notorios, e cache de `user_id` em `/tmp/digest_x_user_ids.json` (corta metade das chamadas).
+    ⚠️ **Pendente:** renovar `X_BEARER_TOKEN` em developer.x.com e atualizar o secret. Os 16 handles ainda nao foram validados contra a API — rodar `collector.py` com token novo e conferir o log `handle inexistente`.
 
 ---
 

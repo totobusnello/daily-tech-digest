@@ -1,6 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.15.1
-# Atualizado: 2026-07-05 (v2.15: +3 fontes | v2.15.1: 13 fixes CRITICAL+MEDIUM de code/security review)
+# THE DAILY BYTE - Configuração v2.16
+# Atualizado: 2026-07-20 (v2.16: limpeza do catálogo + corte estratificado + 3 bugs silenciosos)
 # ============================================
 
 newsletter:
@@ -37,6 +37,29 @@ filters:
   # Escopo: world[], items[] (hoje_no_byte/saas_enterprise), radar_brasil[], quick_links[]
   # Excluídos: tool_of_day, watch_later, number_of_day
   # heat_score permanece como critério de seleção interno; nunca é renderizado.
+  #
+  # v2.16 — CALIBRAÇÃO: em 118 itens medidos (7 edições), a escala 0-10 usou só
+  # a faixa 4-8: zero GIGABYTE, zero byte. A regra anti-inflação estava rígida
+  # demais e o LED VU nunca acendia cheio nem ficava vazio. O prompt agora define
+  # 4 testes objetivos para liberar 9-10 (muda posição competitiva de um mercado /
+  # move preço de ativo / altera o que uma empresa pode fazer / redefine custo de
+  # operar com AI). O piso segue conservador — com heat_score mínimo 70, é
+  # coerente que pouca coisa pontue abaixo de 4.
+
+  # Corte estratificado do pool enviado ao curador (v2.16)
+  # Antes: os 80 itens mais recentes, puro frescor — o que premiava quem publica
+  # de hora em hora. Medido: pool com 51% de mainstream virava edição com 58-65%,
+  # e o Radar Brasil saía vazio 3 dias em 7 mesmo havendo itens BR coletados.
+  # Agora reservamos quota por tier antes de completar por frescor.
+  stratified_cut:
+    total: 80
+    min_primaria: 32      # labs, Substacks indie, community, papers
+    min_br: 12            # imprensa e ecossistema brasileiros
+    max_mainstream: 24    # teto SUAVE: cede se não houver alternativa no dia
+    # Fontes BR generalistas (InfoMoney, Poder360, Valor, Exame) publicam de
+    # esporte a política no mesmo feed — as editorias de tecnologia foram testadas
+    # e todas retornam 400/404. Por isso filtramos por assunto no nosso lado.
+    filtra_br_por_assunto: true
 
   # Máximo de itens no digest (v2.14 cortou de 18 para 15 — rigor > quantidade)
   max_items: 15
@@ -105,17 +128,30 @@ apis:
     rate_limit_per_15min: 15
 
 # ============================================
-# FONTES — v2.9 (Ineditismo)
+# FONTES — v2.16 (catálogo auditado feed a feed)
 # ============================================
-# Total: ~200 fontes ativas
-#   - 65+ X handles (inclui indie builders: @simonw, @chipro, @levelsio, @GergelyOrosz)
-#   - 45+ RSS tech/AI (inclui labs primários: DeepMind, Meta AI, NVIDIA, MS Research)
-#                     (inclui community: Reddit ML, LocalLLaMA, HN Show, Lobsters, Product Hunt)
-#   - 37 RSS world/business (inclui Brasil expandido: NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal)
-#   - 41 Substacks curados (inclui indie voices: Simon Willison, Lilian Weng, Chip Huyen, SemiAnalysis, Stratechery)
-#   - 10 YouTube channels
-#   - 10 Newsletter scrapers
+# Total: 131 fontes — TODAS testadas ao vivo em 2026-07-20 (HTTP 200 + item recente)
+#   -  37 RSS tech/AI (labs: DeepMind, Meta Eng, NVIDIA, MS Research, Mistral, Anthropic*)
+#                     (community: Reddit ML, HN, HN Show, Lobsters, Product Hunt)
+#   -  28 RSS world/business (Brasil: NeoFeed, Exame, Valor, InfoMoney, Brazil Journal,
+#                             TecMundo, CanalTech, Poder360, Startups.com.br)
+#   -  29 Substacks curados (Simon Willison, Lilian Weng, SemiAnalysis, Stratechery,
+#                            Interconnects, Latent Space, Not Boring, Astral Codex Ten,
+#                            AI News/smol, + 4 novas da v2.16)
+#   -  11 YouTube channels
+#   -  16 X handles (era 66 — ver nota abaixo)
+#   -  10 Newsletter scrapers
+#
+# ⚠️ v2.16 — a auditoria encontrou 57 de 140 feeds (41%) mortos ou abandonados,
+#    incluindo fontes adicionadas em v2.14/v2.15 que já nasceram quebradas
+#    (Karpathy Substack parado há 1199 dias, AI News/Buttondown há 451).
+#    Removidos os sem substituto; corrigidas as URLs de quem apenas migrou.
+#    A lista de X caiu de 66 para 16 porque continha dezenas de handles
+#    inexistentes e o custo de 2 chamadas/handle não cabe no free tier da API.
+#    * Anthropic usa mirror comunitário — não há RSS oficial.
+#
 # NOTA: collector.py é a fonte de verdade para URLs. Este arquivo é documentação.
+# Antes de adicionar fonte nova: teste o RSS (HTTP 200 + entries com data recente).
 # ============================================
 
 sources:
