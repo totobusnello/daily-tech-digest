@@ -91,7 +91,9 @@ Casos que doem: `sub_karpathy` parado há **1199 dias** e `sub_ai_news_swyx` há
 
 **O que NÃO melhorou — e é honesto registrar:** a composição da *edição final* segue em ~60% mainstream (baseline 58%), mesmo com o pool a 30%. Em 5 rodadas do mesmo dia o número oscilou entre 59% e 72%, e o Byte Score chegou a 9 em apenas uma delas. Ou seja: o curador continua escolhendo grande imprensa mesmo com alternativa farta na mesa — seja porque as notícias do dia eram genuinamente essas (Trump/tarifas, Paramount-Warner, Oracle), seja porque o prompt ainda não pesa ineditismo o bastante na hora de montar as seções. **Próximo ciclo deve medir isso com mais dias antes de mexer no prompt de novo.**
 
-**Pendente de ação do Totó:** renovar `X_BEARER_TOKEN` em developer.x.com e atualizar o secret. O código já está pronto (16 handles, cache, log); hoje a coleta do X segue em 0 sem quebrar o pipeline.
+**~~Pendente de ação do Totó~~ — RESOLVIDO em 20/07 à noite:** token renovado e gravado via `printf '%s' '<token>' | gh secret set X_BEARER_TOKEN`. A primeira tentativa (`gh secret set` sem `--body`) não abriu prompt interativo, leu stdin vazio e gravou um secret em branco — o sintoma foi `X_BEARER_TOKEN not set` no log apesar do timestamp atualizado. Validação `29790766326`: **30 tweets** de 5 handles (@levelsio 10, @GergelyOrosz 10, @ylecun 8, @sama 1, @AnthropicAI 1). Os outros 11 simplesmente não postaram na janela de 24h.
+
+O mesmo run confirmou o feedback loop: **open rate 72,1%** onde antes o prompt recebia 0%.
 
 ---
 
@@ -624,7 +626,22 @@ Backlog relacionado marcado como parcialmente coberto:
 
 ## Proximas Evolucoes (Backlog)
 
-### 🗓️ Proximo Domingo — Prioridades
+### 🗓️ Próximo ciclo — aberto na v2.16b (20/07/2026)
+
+**A. Medir mainstream ao longo de vários dias** — *antes de mexer no prompt de novo.*
+- [ ] A única rodada pós-expansão deu **41%** contra baseline de 58%. É `n=1`, e a variância observada entre rodadas do mesmo dia chegou a **13 pontos** — não dá para chamar de resolvido.
+- [ ] Se confirmar >50% em vários dias, aí sim o prompt precisa pesar ineditismo na montagem das seções (hoje o `_cluster_size` chega ao curador mas não amarra nada).
+
+**B. Validar os 16 handles do X contra a API** — o token voltou, a lista nunca foi conferida.
+- [ ] Um handle devolveu HTTP 400 na validação. O log da v2.16 só nomeava 404/401/403/429, então o agregado não disse qual — corrigido em PR #19, que faz qualquer status nomear o handle.
+- [ ] Rodar `collector.py` e conferir o log por `handle inexistente`. Remover os que não resolverem.
+
+**C. Versão em áudio (TTS)** — aprovada pelo Totó na revisão de 20/07, **ainda não implementada**.
+- [ ] Escopo acordado: **Big Story + Análise do Dia** (não o digest inteiro — ~1 min de áudio, não 8).
+- [ ] Decisões em aberto: engine de TTS (ElevenLabs? OpenAI? Google?), onde hospedar o arquivo, e se entra como **link no email** ou player embarcado (a maioria dos clientes de email bloqueia `<audio>` — link é o caminho realista).
+- [ ] Diferencial competitivo: nenhum dos 8 concorrentes benchmarkados oferece áudio.
+
+### 🗓️ Backlog anterior
 
 **7. Dashboard de metricas:**
 - [ ] HTML dashboard com historico de open/click rates
