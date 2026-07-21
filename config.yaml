@@ -1,6 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.16
-# Atualizado: 2026-07-20 (v2.16: limpeza do catálogo + corte estratificado + 3 bugs silenciosos)
+# THE DAILY BYTE - Configuração v2.16b
+# Atualizado: 2026-07-20 (v2.16: limpeza do catálogo + 3 bugs | v2.16b: expansão 105 → 149 feeds)
 # ============================================
 
 newsletter:
@@ -128,19 +128,30 @@ apis:
     rate_limit_per_15min: 15
 
 # ============================================
-# FONTES — v2.16 (catálogo auditado feed a feed)
+# FONTES — v2.16b (catálogo auditado E expandido, feed a feed)
 # ============================================
-# Total: 131 fontes — TODAS testadas ao vivo em 2026-07-20 (HTTP 200 + item recente)
-#   -  37 RSS tech/AI (labs: DeepMind, Meta Eng, NVIDIA, MS Research, Mistral, Anthropic*)
-#                     (community: Reddit ML, HN, HN Show, Lobsters, Product Hunt)
-#   -  28 RSS world/business (Brasil: NeoFeed, Exame, Valor, InfoMoney, Brazil Journal,
-#                             TecMundo, CanalTech, Poder360, Startups.com.br)
-#   -  29 Substacks curados (Simon Willison, Lilian Weng, SemiAnalysis, Stratechery,
-#                            Interconnects, Latent Space, Not Boring, Astral Codex Ten,
-#                            AI News/smol, + 4 novas da v2.16)
+# Total: 175 fontes — TODAS testadas ao vivo em 2026-07-20, com DUAS exigências:
+#   (1) HTTP 200 com entries parseáveis
+#   (2) cadência real medida (posts nos últimos 30 dias)
+# O critério (2) nasceu da descoberta de que mainstream não dominava por
+# privilégio, e sim por CADÊNCIA: 21 dos seus 24 feeds publicam diariamente,
+# contra apenas 15 dos 72 da camada primária. Substack semanal não cai na
+# janela de 36h na maioria dos dias — adicionar mais um quase não move nada.
+#
+#   -  56 RSS tech/AI      (labs, blogs de engenharia AI-first, changelogs,
+#                           mídia técnica, community, verticais de negócio)
+#   -  40 RSS world/business + BRASIL (21 fontes BR — ver nota)
+#   -  35 Substacks curados
 #   -  11 YouTube channels
-#   -  16 X handles (era 66 — ver nota abaixo)
+#   -  16 X handles
 #   -  10 Newsletter scrapers
+#
+# Distribuição por tier (como o corte estratificado enxerga), com destaque
+# para o que realmente importa — quantas publicam com frequência:
+#            | total | alta cadência (>=15 posts/30d)
+#   primária |  104  |  40   (era 72 total / 15 de alta cadência)
+#   BR       |   21  |  10   (era  9 total)
+#   mainstream|  24  |  21   (inalterado — tem teto no corte)
 #
 # ⚠️ v2.16 — a auditoria encontrou 57 de 140 feeds (41%) mortos ou abandonados,
 #    incluindo fontes adicionadas em v2.14/v2.15 que já nasceram quebradas
@@ -149,6 +160,20 @@ apis:
 #    A lista de X caiu de 66 para 16 porque continha dezenas de handles
 #    inexistentes e o custo de 2 chamadas/handle não cabe no free tier da API.
 #    * Anthropic usa mirror comunitário — não há RSS oficial.
+#
+# ⚠️ v2.16b — expansão de 105 → 149 feeds. Notas de quem for mexer aqui:
+#    · BRASIL era o gargalo: 9 fontes para uma quota de 12 no corte. Agora 21.
+#      Toda fonte BR nova PRECISA entrar em `_BR_HINTS` no processor.py, senão
+#      é classificada como 'primaria' e não conta na quota de Brasil.
+#    · A planilha Master Sources (2.165 linhas) rendeu pouco: ZERO domínios .br,
+#      e dos 201 canais de YouTube só 2 eram relevantes (o resto é viagem, saúde,
+#      finanças pessoais). Dos 741 feeds vivos que a varredura achou, aproveitamos
+#      ~14 — o resto é nicho fora do público C-level BR.
+#    · TLDR AI e The Rundown AI ficaram DE FORA por decisão editorial (são
+#      concorrentes; republicar a curadoria deles contradiz a premissa do produto).
+#      Só Ben's Bites entrou, por ser comentário autoral e não digest.
+#    · CORRIGIDO: o channel_id cadastrado como "andrej_karpathy" era do Siraj
+#      Raval — e ele chegou a sair como fonte na edição 182.
 #
 # NOTA: collector.py é a fonte de verdade para URLs. Este arquivo é documentação.
 # Antes de adicionar fonte nova: teste o RSS (HTTP 200 + entries com data recente).

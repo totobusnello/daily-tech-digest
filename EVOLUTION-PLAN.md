@@ -4,6 +4,54 @@
 
 ## Changelog
 
+### v2.16b — 2026-07-20 (Expansão do catálogo — 105 → 149 feeds)
+
+**Contexto:** logo após a limpeza, ficou claro que 35 feeds líquidos a menos deixavam o corte estratificado sem alternativa — a quota BR era 12 e só havia 9 fontes brasileiras. A pergunta virou "como aumentar a base *utilizável*".
+
+**A medição que mudou o critério.** Antes de adicionar qualquer coisa, medi a cadência real de cada feed (posts nos últimos 30 dias):
+
+| Tier | Feeds | Publicam diariamente | Publicaram na janela de 36h |
+|---|---|---|---|
+| Mainstream | 24 | **21** | 22/24 (92%) |
+| Primária | 72 | 15 | 40/72 (56%) |
+| Brasil | **9** | 4 | 8/9 (89%) |
+
+Conclusão: **mainstream não domina por privilégio, domina por cadência.** Um Substack semanal não cai na janela de 36h na maioria dos dias — adicionar mais um quase não move o ponteiro. O critério de seleção passou a ser cadência medida, não reputação da fonte.
+
+**Onde as fontes foram buscadas — e o que rendeu:**
+
+| Frente | Resultado |
+|---|---|
+| Planilha `Master Sources` (2.165 linhas) | **Rendeu pouco.** 1.994 são bench nunca implementado; **zero domínios `.br`**. Dos 1.262 domínios testáveis, 741 tinham feed vivo, mas só ~14 no nosso escopo — o resto é health tech UK, construction, solar, cripto de varejo. |
+| 201 canais de YouTube da planilha | **Rendeu nada.** 121 resolvidos, 71 ativos, **2 relevantes** — e nenhum serve. Os "ativos" são Cruise Hive, Don's Family Vacations, Cleveland Clinic, BiggerPockets. |
+| Pesquisa dirigida BR | **12 fontes**, todas com cadência medida. |
+| Pesquisa dirigida primária | **18 fontes** (blogs de eng AI-first, changelogs, análise). |
+
+**Resultado:**
+
+| Tier | Feeds (antes → depois) | Alta cadência (≥15/30d) |
+|---|---|---|
+| Primária | 72 → **104** | 15 → **40** |
+| Brasil | 9 → **21** | — → **10** |
+| Mainstream | 24 → 24 | 21 |
+| **Total** | 105 → **149** | 0 quebrados |
+
+O desequilíbrio estrutural inverteu: antes o mainstream tinha mais fontes diárias (21) que toda a camada primária (15); agora são 40 contra 21.
+
+**Efeito na edição (1 rodada):** mainstream caiu para **41%** — abaixo do baseline de 58% e fora da faixa 59-72% observada nas rodadas pós-limpeza. Radar Brasil preenchido. Pool coletado: 306 (v2.15.1) → 484 (v2.16) → **669** itens.
+⚠️ *É uma rodada só.* A variância entre rodadas do mesmo dia chegou a 13 pontos antes — o próximo ciclo deve confirmar com vários dias.
+
+**Decisões editoriais registradas:**
+- **TLDR AI e The Rundown AI ficaram de fora** apesar de RSS ativo e cadência diária: republicar a curadoria de concorrente contradiz a premissa do produto, e quem assina os dois percebe. **Ben's Bites entrou** por ser comentário autoral, não digest.
+- Descartadas por fugirem do escopo: Consumidor Moderno (CX/marketing), Projeto Draft (impacto social), Money Times (mistura política), 6 feeds redundantes de segurança, 4 de health tech UK.
+
+**Bugs encontrados no caminho:**
+- **O canal cadastrado como Karpathy era do Siraj Raval** — e ele saiu como fonte na edição 182. ID correto confirmado via oEmbed oficial; scraping da página do canal devolve `channelId` de recomendados (retornou 3Blue1Brown para `@AndrejKarpathy`).
+- **Adicionei 12 fontes BR e o contador continuou em 9** — `_BR_HINTS` não foi atualizado, então `_source_tier` as classificava como primária e elas não contavam na quota de Brasil.
+- Blogs de engenharia dos unicórnios BR (iFood, QuintoAndar, Loft, Stone, PicPay, Mercado Livre) estão **todos parados no Medium desde 2021-2023**; só o Nubank sobreviveu. Nenhum VC brasileiro mantém RSS ativo.
+
+---
+
 ### v2.16 — 2026-07-20 (Auditoria do catálogo — 41% dos feeds estavam mortos)
 
 **Contexto:** a revisão semanal começou como "vamos evoluir" e virou "tem coisa quebrada". Testando os 140 feeds ao vivo, um a um, a auditoria encontrou **57 mortos (41%)** e três bugs que rodavam em silêncio havia meses. Nenhum deles aparecia no monitoramento — porque o monitoramento também estava quebrado.

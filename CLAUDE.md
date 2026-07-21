@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.16 (limpeza do catalogo: 57 feeds mortos + corte estratificado + 3 bugs silenciosos)
+**Versao atual:** v2.16b (auditoria do catalogo: 57 feeds mortos removidos + expansao para 149 feeds)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -274,6 +274,17 @@ Threshold minimo: 60 pontos
 
 54. **X/Twitter: 401 silencioso (v2.16)** — `collect_x_posts` fazia `if status_code != 200: continue` **sem log nenhum**. O token estava revogado (HTTP 401) havia meses e o pipeline so reportava "→ 0 tweets", sem sinal de problema. A lista tinha 66 handles, dezenas deles **inexistentes** (`swaborak`, `ziaborak`, `emaborak`, `jackclarkaborak`, `polyaborak`, `maborak`, `daborak`...) — provavelmente alucinados numa expansao anterior e nunca validados, justamente porque a falha era engolida. Fixes: log explicito por status (404 = handle inexistente, 401/403 = token, 429 = interrompe), resumo de erros ao final, lista reduzida a 16 handles notorios, e cache de `user_id` em `/tmp/digest_x_user_ids.json` (corta metade das chamadas).
     ⚠️ **Pendente:** renovar `X_BEARER_TOKEN` em developer.x.com e atualizar o secret. Os 16 handles ainda nao foram validados contra a API — rodar `collector.py` com token novo e conferir o log `handle inexistente`.
+
+55. **Expansão do catálogo — cadência > quantidade (v2.16b)** — 105 → 149 feeds. A medição que orientou a escolha: mainstream nao domina por privilegio, domina por CADENCIA. Antes: 21 dos 24 feeds mainstream publicavam diariamente, contra 15 dos 72 da camada primaria. Substack semanal simplesmente nao cai na janela de 36h na maioria dos dias. Depois: primaria 104 feeds / 40 de alta cadencia; BR 21 / 10; mainstream 24 / 21.
+    **Regra:** toda fonte nova precisa passar em DOIS filtros — RSS vivo (HTTP 200 + entries) **e** cadencia real (posts/30d medidos no feed). Preferir 3x+/semana.
+    **⚠️ Fonte BR nova PRECISA entrar em `_BR_HINTS` no processor.py** — senao `_source_tier` a classifica como 'primaria' e ela nao conta na quota de Brasil do corte estratificado (erro cometido e corrigido na propria v2.16b: adicionei 12 fontes BR e o contador continuou em 9).
+    Adicionadas: 12 BR (Olhar Digital, Tecnoblog, IT Forum, TI Inside, TeleTime, ConvergenciaDigital, Mobile Time, Startupi, Finsiders, Building Nubank, Hipsters, StartSe), 18 primarias (Cloudflare, Supabase, Sourcegraph, Together AI, Ramp Eng, Weaviate, changelogs GitHub/Vercel, Zvi, Understanding AI, Big Technology, AI Supremacy, Ed Zitron, Strange Loop, Alignment Forum, LessWrong, Console.dev, Ben's Bites), 7 de midia tecnica (IEEE Spectrum, Next Platform, Datacenter Dynamics, Tech.eu, Robot Report, Fintech Futures, MIT Sloan) e 6 verticais de negocio (Schneier, Help Net Security, MarTech, Practical Ecommerce, Supply Chain Review, Finance Magnates).
+
+56. **A planilha Master Sources rende pouco (v2.16b)** — o arquivo `Daily_Byte_Master_Sources_v2.7.xlsx` tem 2.165 linhas, mas 1.994 sao "Bench (Pulse.bot)" nunca implementadas e o conteudo e majoritariamente midia US/global. Numeros da garimpagem: **ZERO dominios .br** em 2.165 linhas; dos 1.262 dominios testaveis, 741 tinham feed vivo, mas so ~14 eram do nosso escopo (o resto e health tech UK, construction, solar, cripto de varejo); dos 201 canais de YouTube, 121 resolveram e apenas 2 eram relevantes — os "ativos" sao Cruise Hive, Don's Family Vacations, Cleveland Clinic, BiggerPockets. **Conclusao: para BR e para a camada primaria de AI, pesquisa dirigida rende muito mais que a planilha.** Nao gastar ciclo garimpando o resto dela.
+
+57. **Concorrentes como fonte — decisao editorial (v2.16b)** — TLDR AI (1,1M subs) e The Rundown AI (2M) tem RSS ativo e cadencia diaria, mas ficaram DE FORA: republicar a curadoria deles contradiz a premissa do produto ("trazer o que C-levels nao encontram sozinhos") e quem assina os dois percebe a repeticao. **Ben's Bites entrou** por ser comentario autoral de practitioner (Ben Tossell), nao digest puro. Se um dia entrarem, que seja como sinal de validacao (confirmar que uma historia e grande), nunca como fonte citada — o `source_url` deve sempre apontar para a origem primaria.
+
+58. **Canal errado do Karpathy (v2.16b)** — o `channel_id` cadastrado como `andrej_karpathy` (`UCWN3xxRkmTPmbKwht9FuE5A`) era do **Siraj Raval**, e ele saiu como fonte na edicao 182 ("YouTube / Siraj Raval"). ID correto: `UCXUPKJO5MZQN11PqgIvyuvQ`, confirmado via **oEmbed oficial do YouTube** (`youtube.com/oembed?url=<video>`) — scraping da pagina do canal NAO e confiavel, devolve `channelId` de canais recomendados (na tentativa, retornou 3Blue1Brown para `@AndrejKarpathy`). Ao adicionar canal novo, confira o `<title>` do feed antes de commitar.
 
 ---
 

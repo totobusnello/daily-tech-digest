@@ -124,6 +124,48 @@ RSS_FEEDS = {
     #   (reddit.com/prefs/feeds/), sem rota anônima viável. r/MachineLearning
     #   segue funcionando e cobre parte do sinal.
     "lobsters_ai": "https://lobste.rs/t/ai.rss",
+    # ── v2.16b: expansão da camada PRIMÁRIA (blogs de eng, changelogs, mídia técnica) ──
+    # A auditoria mostrou que mainstream domina por CADÊNCIA, não por privilégio:
+    # 21 dos 24 feeds mainstream publicam diariamente, contra 15 de 72 na camada
+    # primária. Estas foram escolhidas por publicarem com frequência real
+    # (posts/30d medidos em 2026-07-20), não só por serem "boas fontes".
+    "cloudflare_blog": "https://blog.cloudflare.com/rss/",          # 18/30d — infra, bot/agentic
+    "supabase_blog": "https://supabase.com/rss.xml",                # agentic coding na prática
+    "sourcegraph_blog": "https://sourcegraph.com/blog/rss.xml",     # AI agents em codebase enterprise
+    "together_ai": "https://together.ai/blog/rss.xml",              # infra open-source, GPU
+    "ramp_eng": "https://engineering.ramp.com/rss.xml",             # AI agents em produção fintech
+    "weaviate_blog": "https://weaviate.io/blog/rss.xml",            # vector DB / memória agentic
+    # Changelogs — sinal de adoção real, primeira mão
+    "github_changelog": "https://github.blog/changelog/feed/",      # 10/30d
+    "github_ai": "https://github.blog/ai-and-ml/feed/",             # 5/30d, Copilot em primeira mão
+    # ⚠️ vercel_changelog publica ~104 itens/30d (release notes granulares). O cap
+    #    de 5/fonte no processor segura o volume, mas se virar ruído na edição,
+    #    esta é a primeira candidata a sair.
+    "vercel_changelog": "https://vercel.com/changelog/rss.xml",
+    # Mídia técnica especializada (da planilha Master Sources, testadas ao vivo)
+    "ieee_spectrum": "https://spectrum.ieee.org/rss/",              # 27/30d
+    "next_platform": "https://www.nextplatform.com/feed/",          # 19/30d — infra/HPC/AI datacenter
+    "datacenter_dynamics": "https://www.datacenterdynamics.com/rss/",  # 20/30d — CapEx de datacenter
+    "tech_eu": "https://tech.eu/feed/",                             # 20/30d — ângulo europeu
+    "robot_report": "https://www.therobotreport.com/feed/",         # 15/30d — robótica
+    "fintech_futures": "https://www.fintechfutures.com/rss.xml",    # 50/30d — fintech global
+    "mit_sloan_ai": "https://sloanreview.mit.edu/feed/",            # 12/30d — gestão + AI para executivos
+    # Community técnica
+    "alignment_forum": "https://www.alignmentforum.org/feed.xml",   # AI safety/governance
+    "lesswrong": "https://www.lesswrong.com/feed.xml",              # 10/30d
+    "console_dev": "https://console.dev/rss.xml",                   # devtools obscuros → Tool do Dia
+
+    # ── v2.16b: verticais de negócio (alimentam SaaS & Enterprise) ──
+    # Garimpadas na planilha Master Sources. Seleção deliberadamente enxuta: a
+    # varredura achou 6 feeds de segurança e 4 de health tech UK, mas empilhar
+    # verticais redundantes só dilui o pool. Uma fonte forte por vertical.
+    "schneier": "https://www.schneier.com/feed/",                   # segurança com lente estratégica
+    "helpnet_security": "https://www.helpnetsecurity.com/feed/",    # 10/30d — segurança enterprise
+    "martech": "https://martech.org/feed/",                         # 10/30d — ângulo CMO
+    "practical_ecommerce": "https://www.practicalecommerce.com/feed/",  # 27/30d
+    "supply_chain_review": "https://www.scmr.com/feed/",            # 37/30d — supply chain (tarifas/China)
+    "finance_magnates": "https://www.financemagnates.com/feed/",    # 20/30d — fintech/mercados
+
     # ── v2.11: Brasil AI ──
     "ia_brasil_noticias": "https://iabrasilnoticias.com.br/feed/",
     # v2.16 removido: the_shift_br — o feed responde 200 com XML válido, mas ZERO
@@ -184,6 +226,31 @@ WORLD_FEEDS = {
     # v2.16: tecmundo.com.br/rss devolvia 0 itens; o feed vive em rss.tecmundo.
     "tecmundo": "https://rss.tecmundo.com.br/feed",
     "canaltech": "https://canaltech.com.br/rss/",
+
+    # ── v2.16b: expansão BR (9 → 20 fontes) ──
+    # A base brasileira tinha 9 feeds para uma quota de 12 no corte estratificado —
+    # não havia de onde tirar. Todas abaixo testadas ao vivo em 2026-07-20 com
+    # cadência medida (posts/30d) e conteúdo nativamente tech/negócios.
+    # Nota: a planilha Master Sources (2.165 linhas) NÃO tinha nenhum domínio .br;
+    # estas vieram de pesquisa dirigida.
+    "olhar_digital": "https://olhardigital.com.br/feed/",           # tech/IA, alto volume
+    "tecnoblog": "https://tecnoblog.net/feed/",                     # 50 posts/30d
+    "it_forum": "https://itforum.com.br/feed/",                     # enterprise IT, 32/30d
+    "ti_inside": "https://tiinside.com.br/feed/",                   # enterprise IT/telecom, 30/30d
+    "teletime": "https://teletime.com.br/feed/",                    # telecom/infra B2B, 30/30d
+    "convergencia_digital": "https://www.convergenciadigital.com.br/rss/",  # TI/telecom/IA enterprise
+    "mobile_time": "https://www.mobiletime.com.br/feed/",           # mobile + fintech + IA aplicada
+    "startupi": "https://startupi.com.br/feed/",                    # startups/VC Brasil
+    "finsiders_br": "https://finsidersbrasil.com.br/feed/",         # fintech/finanças digitais
+    # Cadência semanal, mas são as duas únicas vozes de engenharia/dev BR ainda
+    # vivas — os blogs de iFood, QuintoAndar, Loft, Stone, PicPay e Mercado Livre
+    # estão todos parados no Medium desde 2021-2023.
+    "nubank_eng": "https://building.nubank.com/feed/",
+    "hipsters_tech": "https://hipsters.tech/category/podcast/feed/",
+    # Recuperado da planilha Master Sources: /feed/ devolve 0 itens, mas
+    # /feed.xml está ativo com 30 posts/30d e pauta de gestão ("43% dos CEOs
+    # usam IA para fundamentar decisões") — exatamente o público do digest.
+    "startse": "https://startse.com/feed.xml",
 }
 
 # YouTube Channels (via RSS)
@@ -195,7 +262,12 @@ YOUTUBE_CHANNELS = {
     "ai_explained": "UCNJ1Ymd5yFuUPtn21xtRbbw",        # v2.16 corrigido
     "matt_wolfe": "UChpleBmo18P08aKCIgti38g",          # v2.16 corrigido
     "lex_fridman": "UCSHZKyawb77ixDdsGog4iWA",
-    "andrej_karpathy": "UCWN3xxRkmTPmbKwht9FuE5A",
+    # ⚠️ v2.16b — o ID anterior (UCWN3xxRkmTPmbKwht9FuE5A) NÃO era do Karpathy:
+    # devolvia o canal do Siraj Raval, e ele chegou a aparecer como fonte na
+    # edição 182 ("YouTube / Siraj Raval"). ID correto confirmado via oEmbed
+    # oficial do YouTube. O canal está parado há ~508 dias — mantido porque custa
+    # uma request/dia e, se ele voltar a publicar, cada vídeo é evento.
+    "andrej_karpathy": "UCXUPKJO5MZQN11PqgIvyuvQ",
     "ai_daily_brief": "UCKelCK4ZaO6HeEI1KQjqzWA",      # v2.16 corrigido
     # Sem vídeo novo há ~234 dias; mantido por ser a única voz BR do bloco —
     # se voltar a publicar, entra sozinho.
@@ -265,6 +337,22 @@ SUBSTACK_FEEDS = {
     # ── v2.15: strategy essays (Packy McCormick) + rationalist AI (Scott Alexander) ──
     "sub_not_boring": "https://www.notboring.co/feed",
     "sub_astral_codex_ten": "https://www.astralcodexten.com/feed",
+    # ── v2.16b: vozes de análise com cadência alta ──
+    # Zvi faz roundup quase diário e reage a cada release; os demais trazem
+    # ângulo de negócio/policy que o resto do catálogo não cobre.
+    "sub_zvi": "https://thezvi.substack.com/feed",                        # 20/30d
+    "sub_big_technology": "https://www.bigtechnology.com/feed",           # 9/30d — scoops de negócio
+    "sub_ai_supremacy": "https://www.ai-supremacy.com/feed",              # 7/30d — estratégia da indústria
+    "sub_understanding_ai": "https://www.understandingai.org/feed",       # AI policy independente
+    "sub_ed_zitron": "https://www.wheresyoured.at/feed",                  # 7/30d — crítica contrarian à bolha
+    "sub_strange_loop": "https://www.strangeloopcanon.com/feed",          # ensaios sobre agentes/benchmarks
+    # Ben's Bites (166k) é a única newsletter concorrente que entra — é comentário
+    # autoral de practitioner, não digest puro. TLDR AI e The Rundown ficaram DE FORA
+    # por decisão editorial: republicar a curadoria deles contradiz a premissa do
+    # produto ("trazer o que C-levels não encontram sozinhos") e quem assina os dois
+    # percebe a repetição.
+    "sub_bens_bites": "https://bensbites.com/feed",                       # 8/30d
+
     # ── v2.16: fontes novas verificadas ao vivo (RSS 200 + post recente) ──
     # Geopolítica de AI (China × EUA × Europa) — gap identificado na revisão.
     "sub_geopolitechs": "https://www.geopolitechs.org/feed",

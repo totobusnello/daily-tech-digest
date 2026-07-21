@@ -432,10 +432,18 @@ _MAINSTREAM_HINTS = (
 # Imprensa e ecossistema brasileiros — alimentam Radar Brasil e o ângulo BR
 # de Mundo Real.
 _BR_HINTS = (
+    # imprensa e portais
     'infomoney', 'poder360', 'valor', 'exame', 'neofeed', 'brazil journal',
     'braziljournal', 'tecmundo', 'canaltech', 'startups', 'ia brasil',
     'pipeline', 'distrito', 'techdrop', 'update diário', 'update diario',
     'aidrop', 'the brief', 'filipe', 'ai factory',
+    # v2.16b — expansão BR. IMPORTANTE: toda fonte BR nova precisa entrar aqui,
+    # senão `_source_tier` a classifica como 'primaria' e ela não conta para a
+    # quota de Brasil do corte estratificado (foi o que aconteceu na 1ª tentativa).
+    'olhar_digital', 'olhardigital', 'tecnoblog', 'it_forum', 'itforum',
+    'ti_inside', 'tiinside', 'teletime', 'convergencia', 'convergência',
+    'mobile_time', 'mobiletime', 'startupi', 'finsiders', 'nubank_eng',
+    'building nubank', 'hipsters', 'startse',
 )
 
 # Fontes BR generalistas: publicam de política a esporte no mesmo feed.
