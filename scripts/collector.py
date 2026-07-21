@@ -584,6 +584,11 @@ def collect_x_posts(bearer_token: str) -> List[RawItem]:
                     elif user_resp.status_code == 429:
                         print(f"   ⏳ X: rate limit em @{handle} — interrompendo coleta")
                         break
+                    else:
+                        # Qualquer outro código também nomeia o handle. Enumerar só os
+                        # status previstos recriava a cegueira que motivou este log:
+                        # um HTTP 400 apareceu no agregado sem dizer de quem era.
+                        print(f"   ⚠️ X: HTTP {user_resp.status_code} ao resolver @{handle}")
                     continue
                 user_id = user_resp.json().get('data', {}).get('id')
                 if not user_id:
