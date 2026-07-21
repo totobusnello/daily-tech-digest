@@ -1,6 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.15.1
-# Atualizado: 2026-07-05 (v2.15: +3 fontes | v2.15.1: 13 fixes CRITICAL+MEDIUM de code/security review)
+# THE DAILY BYTE - Configuração v2.16b
+# Atualizado: 2026-07-20 (v2.16: limpeza do catálogo + 3 bugs | v2.16b: expansão 105 → 149 feeds)
 # ============================================
 
 newsletter:
@@ -37,6 +37,29 @@ filters:
   # Escopo: world[], items[] (hoje_no_byte/saas_enterprise), radar_brasil[], quick_links[]
   # Excluídos: tool_of_day, watch_later, number_of_day
   # heat_score permanece como critério de seleção interno; nunca é renderizado.
+  #
+  # v2.16 — CALIBRAÇÃO: em 118 itens medidos (7 edições), a escala 0-10 usou só
+  # a faixa 4-8: zero GIGABYTE, zero byte. A regra anti-inflação estava rígida
+  # demais e o LED VU nunca acendia cheio nem ficava vazio. O prompt agora define
+  # 4 testes objetivos para liberar 9-10 (muda posição competitiva de um mercado /
+  # move preço de ativo / altera o que uma empresa pode fazer / redefine custo de
+  # operar com AI). O piso segue conservador — com heat_score mínimo 70, é
+  # coerente que pouca coisa pontue abaixo de 4.
+
+  # Corte estratificado do pool enviado ao curador (v2.16)
+  # Antes: os 80 itens mais recentes, puro frescor — o que premiava quem publica
+  # de hora em hora. Medido: pool com 51% de mainstream virava edição com 58-65%,
+  # e o Radar Brasil saía vazio 3 dias em 7 mesmo havendo itens BR coletados.
+  # Agora reservamos quota por tier antes de completar por frescor.
+  stratified_cut:
+    total: 80
+    min_primaria: 32      # labs, Substacks indie, community, papers
+    min_br: 12            # imprensa e ecossistema brasileiros
+    max_mainstream: 24    # teto SUAVE: cede se não houver alternativa no dia
+    # Fontes BR generalistas (InfoMoney, Poder360, Valor, Exame) publicam de
+    # esporte a política no mesmo feed — as editorias de tecnologia foram testadas
+    # e todas retornam 400/404. Por isso filtramos por assunto no nosso lado.
+    filtra_br_por_assunto: true
 
   # Máximo de itens no digest (v2.14 cortou de 18 para 15 — rigor > quantidade)
   max_items: 15
@@ -105,17 +128,55 @@ apis:
     rate_limit_per_15min: 15
 
 # ============================================
-# FONTES — v2.9 (Ineditismo)
+# FONTES — v2.16b (catálogo auditado E expandido, feed a feed)
 # ============================================
-# Total: ~200 fontes ativas
-#   - 65+ X handles (inclui indie builders: @simonw, @chipro, @levelsio, @GergelyOrosz)
-#   - 45+ RSS tech/AI (inclui labs primários: DeepMind, Meta AI, NVIDIA, MS Research)
-#                     (inclui community: Reddit ML, LocalLLaMA, HN Show, Lobsters, Product Hunt)
-#   - 37 RSS world/business (inclui Brasil expandido: NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal)
-#   - 41 Substacks curados (inclui indie voices: Simon Willison, Lilian Weng, Chip Huyen, SemiAnalysis, Stratechery)
-#   - 10 YouTube channels
-#   - 10 Newsletter scrapers
+# Total: 175 fontes — TODAS testadas ao vivo em 2026-07-20, com DUAS exigências:
+#   (1) HTTP 200 com entries parseáveis
+#   (2) cadência real medida (posts nos últimos 30 dias)
+# O critério (2) nasceu da descoberta de que mainstream não dominava por
+# privilégio, e sim por CADÊNCIA: 21 dos seus 24 feeds publicam diariamente,
+# contra apenas 15 dos 72 da camada primária. Substack semanal não cai na
+# janela de 36h na maioria dos dias — adicionar mais um quase não move nada.
+#
+#   -  56 RSS tech/AI      (labs, blogs de engenharia AI-first, changelogs,
+#                           mídia técnica, community, verticais de negócio)
+#   -  40 RSS world/business + BRASIL (21 fontes BR — ver nota)
+#   -  35 Substacks curados
+#   -  11 YouTube channels
+#   -  16 X handles
+#   -  10 Newsletter scrapers
+#
+# Distribuição por tier (como o corte estratificado enxerga), com destaque
+# para o que realmente importa — quantas publicam com frequência:
+#            | total | alta cadência (>=15 posts/30d)
+#   primária |  104  |  40   (era 72 total / 15 de alta cadência)
+#   BR       |   21  |  10   (era  9 total)
+#   mainstream|  24  |  21   (inalterado — tem teto no corte)
+#
+# ⚠️ v2.16 — a auditoria encontrou 57 de 140 feeds (41%) mortos ou abandonados,
+#    incluindo fontes adicionadas em v2.14/v2.15 que já nasceram quebradas
+#    (Karpathy Substack parado há 1199 dias, AI News/Buttondown há 451).
+#    Removidos os sem substituto; corrigidas as URLs de quem apenas migrou.
+#    A lista de X caiu de 66 para 16 porque continha dezenas de handles
+#    inexistentes e o custo de 2 chamadas/handle não cabe no free tier da API.
+#    * Anthropic usa mirror comunitário — não há RSS oficial.
+#
+# ⚠️ v2.16b — expansão de 105 → 149 feeds. Notas de quem for mexer aqui:
+#    · BRASIL era o gargalo: 9 fontes para uma quota de 12 no corte. Agora 21.
+#      Toda fonte BR nova PRECISA entrar em `_BR_HINTS` no processor.py, senão
+#      é classificada como 'primaria' e não conta na quota de Brasil.
+#    · A planilha Master Sources (2.165 linhas) rendeu pouco: ZERO domínios .br,
+#      e dos 201 canais de YouTube só 2 eram relevantes (o resto é viagem, saúde,
+#      finanças pessoais). Dos 741 feeds vivos que a varredura achou, aproveitamos
+#      ~14 — o resto é nicho fora do público C-level BR.
+#    · TLDR AI e The Rundown AI ficaram DE FORA por decisão editorial (são
+#      concorrentes; republicar a curadoria deles contradiz a premissa do produto).
+#      Só Ben's Bites entrou, por ser comentário autoral e não digest.
+#    · CORRIGIDO: o channel_id cadastrado como "andrej_karpathy" era do Siraj
+#      Raval — e ele chegou a sair como fonte na edição 182.
+#
 # NOTA: collector.py é a fonte de verdade para URLs. Este arquivo é documentação.
+# Antes de adicionar fonte nova: teste o RSS (HTTP 200 + entries com data recente).
 # ============================================
 
 sources:

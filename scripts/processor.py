@@ -72,15 +72,26 @@ Faixas (o rótulo é derivado pelo sistema, você só envia o número inteiro):
 - 5-6  KILOBYTE: relevante, incremental
 - 0-4  byte: nota de rodapé
 
-REGRA ANTI-INFLAÇÃO: GIGABYTE é raro — a maioria das edições NÃO tem um. Reserve para a
-notícia que você apostaria ser lembrada daqui a 6 meses. Se nada redefiniu o mercado hoje,
-o teto da edição é MEGABYTE. Numa edição típica espere ~0 GIGABYTE, 1-2 MEGABYTE, várias
-KILOBYTE e bytes nos quick links. NÃO infle.
+CALIBRAÇÃO (v2.16 — a escala 0-10 deve ser USADA POR INTEIRO):
+GIGABYTE não é "evento do século": é a maior notícia de um dia forte. Aplique 9-10 quando a
+notícia satisfizer PELO MENOS UM destes testes concretos:
+  (a) muda a posição competitiva de um mercado inteiro (novo líder técnico, fim de uma vantagem);
+  (b) move preço de ativo, ação ou commodity de forma material;
+  (c) altera o que uma empresa PODE ou NÃO PODE fazer (regulação, veto, controle de exportação);
+  (d) redefine a estrutura de custo de operar com AI (preço, capacidade, acesso a compute).
+Se algum item passa num desses testes, ele MERECE 9 ou 10 — não segure em 8 por prudência.
 
-EXEMPLOS-ÂNCORA:
-- GIGABYTE (9-10): "Lab lança modelo que supera humanos em raciocínio geral" / "Regulação que redefine modelos fechados entra em vigor na UE"
-- MEGABYTE (7-8): "Anthropic corta preço enterprise em 50%" / "Google embute Gemini nativo no Android para bilhões de devices"
-- KILOBYTE (5-6): "SaaS conhecido adiciona feature de agentes" / "Novo benchmark mostra modelo 5% acima do anterior"
+O que a régua NÃO deve virar: uma edição com tudo em 6-7. Se o topo do dia é notícia grande,
+marque 9. Se o dia foi fraco, o teto é 7 e está certo. Não distribua 8 como consolo.
+Numa semana típica espere 1-3 GIGABYTE no total (não por edição), vários MEGABYTE e KILOBYTE.
+
+EXEMPLOS-ÂNCORA (calibrados em notícias reais deste ciclo):
+- GIGABYTE (9-10): "Lab chinês lança modelo que iguala os melhores americanos" (teste a) /
+  "Casa Branca passa a controlar acesso a modelos frontier" (teste c) /
+  "Lançamento de modelo derruba ações de semicondutores" (teste b) /
+  "TSMC anuncia US$265B em fabs nos EUA" (teste d)
+- MEGABYTE (7-8): "Anthropic corta preço enterprise em 50%" / "Google embute Gemini nativo no Android"
+- KILOBYTE (5-6): "SaaS conhecido adiciona feature de agentes" / "Benchmark mostra modelo 5% acima do anterior"
 - byte (0-4): "Funding seed de US$2M para startup de nicho" / "Update de UI numa ferramenta popular"
 
 O byte_score vai em CADA item de "world", "items", "radar_brasil" e "quick_links".
@@ -96,7 +107,9 @@ LAYOUT CONSOLIDADO v2.14 — BIG STORY + 6 SEÇÕES + 2 MICRO-SEÇÕES:
    Cada item recebe uma TAG entre: [BREAKING], [AI], [BIG TECH], [ENTERPRISE].
    A tag vai no campo "tag" do JSON.
 3. "saas_enterprise" (1-2 itens): SaaS, valuations, CapEx, enterprise tech.
-3b. "radar_brasil" (1 item, opcional): Ecossistema brasileiro de tech/AI/negócios. Pode vir de fontes BR (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, Valor Econômico) ou de notícias internacionais que impactam o Brasil diretamente. Se não houver notícia BR relevante hoje, retorne array vazio [].
+3b. "radar_brasil" (1 item): Ecossistema brasileiro de tech/AI/negócios. Pode vir de fontes BR (NeoFeed, Exame, InfoMoney, Valor Econômico, Brazil Journal, TecMundo, CanalTech, Poder360, Startups.com.br) ou de notícia internacional que impacta o Brasil diretamente.
+   ⚠️ PREFERÊNCIA DE ALOCAÇÃO (v2.16): se você encontrar UMA notícia brasileira relevante, ela vai em "radar_brasil" — NÃO em "world". A seção "world" é para geopolítica e macroeconomia GLOBAL; o Brasil tem seção própria. Antes, notícias BR boas (ex.: aquisição bancária por fintech nacional) eram alocadas em "world" e o Radar Brasil saía vazio, desperdiçando a seção.
+   Só retorne array vazio [] se realmente NÃO houver nenhuma notícia BR de tech/AI/negócios no material de entrada — o que é raro, dado o volume de fontes brasileiras coletadas.
 4. "tool_of_day" (1 item): UMA ferramenta AI/tech prática que o leitor pode usar HOJE.
    DEVE incluir campo "how_to_use": um prompt ou mini-tutorial copy-paste de 2-3 linhas.
    DEVE incluir campo "prompt_of_day": um prompt COPY-PASTE ready para ChatGPT/Claude/Gemini, ligado à notícia principal do dia ou à ferramenta. Máximo 3 linhas.
@@ -274,7 +287,7 @@ LEMBRE-SE:
 - ⚠️ ESCREVA TUDO EM PORTUGUÊS BRASILEIRO — ZERO palavras em inglês no texto (exceto nomes de produtos/pessoas/URLs). Palavras como "Expect", "Result", "Click", "Open" devem ser escritas em PT-BR: "Espere", "Resultado", "Clique", "Abra".
 - "subject_hook" é uma frase-gancho de max 6 palavras sobre a notícia mais impactante
 - "number_of_day" é UM data point numérico impressionante extraído das notícias (value + context)
-- Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" INTEIRO 0-10. GIGABYTE (9-10) é raro. Itens com category "watch_later" NÃO recebem byte_score.
+- Cada item de world/items(exceto watch_later)/radar_brasil/quick_links DEVE ter "byte_score" INTEIRO 0-10. USE A ESCALA INTEIRA: se a notícia do topo passa num dos 4 testes de GIGABYTE, dê 9 ou 10 sem hesitar; se o dia foi fraco, o teto é 7. Itens com category "watch_later" NÃO recebem byte_score.
 - Cada item de world/items/radar_brasil/quick_links DEVE ter "hours_ago" INTEIRO (horas desde publicação). Copie do campo hours_ago do item original coletado. Se não tiver, estime baseado em published_at. Nunca deixe vazio ou null.
 - BIG STORY: marque UM ÚNICO item de items[] com "big_story": true — o de maior byte_score da edição (deve ser >= 8). Se nenhum item chega em byte_score 8, deixe TODOS com big_story=false ou omita o campo. Apenas UM item pode ter big_story=true.
 - HEAT SCORE mínimo agora é 70 (era 60). Fique impiedoso: notícias com heat_score 60-69 NÃO entram mais.
@@ -314,6 +327,8 @@ Todo texto que você gerar DEVE estar em português brasileiro. Se você percebe
 - Acentuação correta obrigatória: "análise" (não "analise"), "estratégia" (não "estrategia"), "mercê" (não "merce").
 - Em caso de dúvida sobre grafia, escolha uma palavra mais simples que você tenha 100% de certeza.
 - Palavras comumente erradas que você NÃO pode escrever errado: cético, análise, estratégia, trajetória, até, já, está, não.
+- NOMES PRÓPRIOS TAMBÉM LEVAM ACENTO (v2.16): América (não "America"), Ásia, África, Índia, Reino Unido, Japão, México, Emirados Árabes, Coreia do Sul, Cingapura.
+- PORTUGUÊS BRASILEIRO, NÃO EUROPEU (v2.16). Nunca use: "regressa" (use "volta"), "ecrã" (tela), "utilizador" (usuário), "equipa" (equipe), "telemóvel" (celular), "autocarro" (ônibus), "ficheiro" (arquivo), "rato" (mouse), "aplicação" no sentido de app (use "aplicativo"), "casa de banho". Registro: São Paulo corporativo.
 
 ⚠️ REGRA CRÍTICA — DEDUPLICAÇÃO ENTRE SEÇÕES (ANTI-REPETIÇÃO):
 - A MESMA notícia NÃO pode aparecer em múltiplas seções do digest — nem com headline diferente!
@@ -402,6 +417,174 @@ def _cap_per_source(items: list, max_per_source: int = 5) -> list:
     return result
 
 
+# v2.16: classificação de fonte para o corte estratificado.
+# Mainstream = grande imprensa generalista. Não é "ruim" — sustenta a seção
+# Mundo Real — mas não pode ocupar as vagas das seções de tech/AI, que existem
+# justamente para trazer o que o leitor não acha sozinho.
+_MAINSTREAM_HINTS = (
+    'bloomberg', 'cnbc', 'forbes', 'fortune', 'bbc', 'business insider',
+    'reuters', 'financial times', 'ft.com', 'axios', 'the verge', 'wired',
+    'techcrunch', 'engadget', 'zdnet', 'venturebeat', 'quartz', 'economist',
+    'nyt', 'new york times', 'wsj', 'inc.', 'fast company', 'geekwire',
+    'coindesk', 'decrypt', 'pymnts', 'finextra', 'politico',
+)
+
+# Imprensa e ecossistema brasileiros — alimentam Radar Brasil e o ângulo BR
+# de Mundo Real.
+_BR_HINTS = (
+    # imprensa e portais
+    'infomoney', 'poder360', 'valor', 'exame', 'neofeed', 'brazil journal',
+    'braziljournal', 'tecmundo', 'canaltech', 'startups', 'ia brasil',
+    'pipeline', 'distrito', 'techdrop', 'update diário', 'update diario',
+    'aidrop', 'the brief', 'filipe', 'ai factory',
+    # v2.16b — expansão BR. IMPORTANTE: toda fonte BR nova precisa entrar aqui,
+    # senão `_source_tier` a classifica como 'primaria' e ela não conta para a
+    # quota de Brasil do corte estratificado (foi o que aconteceu na 1ª tentativa).
+    'olhar_digital', 'olhardigital', 'tecnoblog', 'it_forum', 'itforum',
+    'ti_inside', 'tiinside', 'teletime', 'convergencia', 'convergência',
+    'mobile_time', 'mobiletime', 'startupi', 'finsiders', 'nubank_eng',
+    'building nubank', 'hipsters', 'startse',
+)
+
+# Fontes BR generalistas: publicam de política a esporte no mesmo feed.
+# As editorias específicas (/tecnologia/feed/, /rss/empresas/) foram testadas em
+# 2026-07-20 e TODAS retornam 400/404/0 itens — só o feed geral responde. Então
+# filtramos por assunto no nosso lado.
+_BR_GENERALISTAS = ('infomoney', 'poder360', 'valor', 'exame')
+
+# Sinais de que um item de feed generalista interessa a um C-level de tech.
+_BR_RELEVANTE = (
+    'ia ', 'ia,', 'ia.', 'inteligência artificial', 'inteligencia artificial',
+    'intelig', ' ai ', 'openai', 'anthropic', 'google', 'microsoft', 'meta',
+    'nvidia', 'apple', 'amazon', 'chatgpt', 'gemini', 'claude', 'copilot',
+    'algoritmo', 'dados', 'nuvem', 'cloud', 'software', 'saas', 'startup',
+    'fintech', 'tecnologia', 'tech', 'digital', 'app', 'aplicativo',
+    'plataforma', 'chip', 'semicondutor', 'data center', 'datacenter',
+    'cibersegurança', 'ciberseguranca', 'hacker', 'vazamento', 'privacidade',
+    'automação', 'automacao', 'robô', 'robo', 'inovação', 'inovacao',
+    'venture', 'aporte', 'rodada', 'investimento', 'aquisição', 'aquisicao',
+    'fusão', 'fusao', 'ipo', 'unicórnio', 'unicornio', 'valuation',
+    'banco digital', 'nubank', 'pix', 'regulação', 'regulacao', 'marco legal',
+)
+
+
+def _br_item_relevante(item: dict) -> bool:
+    """Um item de fonte BR generalista só entra na quota se falar de tech/negócios.
+
+    Sem isso, a quota reservada ao Brasil era gasta com esporte, política
+    partidária e variedades ("micoses pós-praia", "Messi", "caipirinha em
+    Copacabana") — o curador descartava tudo e o Radar Brasil saía vazio,
+    enquanto conteúdo bom de fontes primárias ficava de fora do corte.
+    """
+    titulo = (item.get('title') or item.get('headline') or '').strip().lower()
+    # Placeholder de scraping quebrado ("Home | TechDrops") — descarta sempre,
+    # venha de onde vier.
+    if not titulo or titulo.startswith('home |') or len(titulo) < 15:
+        return False
+    src = ((item.get('source_name') or '') + ' ' + (item.get('source') or '')).lower()
+    if not any(g in src for g in _BR_GENERALISTAS):
+        return True                      # fonte BR já especializada em tech/negócios
+    return any(k in titulo for k in _BR_RELEVANTE)
+
+
+def _source_tier(item: dict) -> str:
+    """Classifica um item em 'br', 'mainstream' ou 'primaria'.
+
+    'primaria' agrega tudo que não é grande imprensa nem BR: blogs de labs,
+    Substacks indie, community (HN, Reddit, Lobsters), papers e newsletters —
+    exatamente a camada que a filosofia de fontes do projeto prioriza.
+    """
+    src = ((item.get('source_name') or '') + ' ' + (item.get('source') or '')).lower()
+    if any(h in src for h in _BR_HINTS):
+        return 'br'
+    if any(h in src for h in _MAINSTREAM_HINTS):
+        return 'mainstream'
+    return 'primaria'
+
+
+def _stratified_cut(items: list, total: int = 80,
+                    min_primaria: int = 32, min_br: int = 12,
+                    max_mainstream: int = 24) -> list:
+    """Escolhe `total` itens com quota mínima por tier e TETO para mainstream.
+
+    A ordem importa: primeiro as quotas de fontes primárias/indie e de Brasil
+    (cada bucket já ordenado por frescor), depois o restante por frescor — mas
+    a grande imprensa nunca passa de `max_mainstream` (30% do corte). Sem esse
+    teto, toda vaga liberada por outro filtro era absorvida por mainstream,
+    que publica muito mais e sempre tem item mais recente na fila.
+    """
+    if len(items) <= total:
+        return items
+
+    # Descarta itens BR fora de assunto ANTES de qualquer alocação. Não basta
+    # excluí-los da quota: se ficassem na fila, voltariam pelo preenchimento por
+    # frescor e continuariam roubando vaga de fontes primárias.
+    elegiveis = [it for it in items
+                 if _source_tier(it) != 'br' or _br_item_relevante(it)]
+    descartados = len(items) - len(elegiveis)
+    if descartados:
+        print(f"🇧🇷 Filtro BR: {descartados} itens fora de assunto (esporte/política/variedades)")
+
+    buckets = {'primaria': [], 'br': [], 'mainstream': []}
+    for it in elegiveis:                  # já ordenado por frescor
+        buckets[_source_tier(it)].append(it)
+
+    items = elegiveis
+
+    escolhidos, vistos = [], set()
+
+    def _pegar(bucket: list, quantos: int):
+        for it in bucket:
+            if quantos <= 0:
+                break
+            marca = id(it)
+            if marca in vistos:
+                continue
+            vistos.add(marca)
+            escolhidos.append(it)
+            quantos -= 1
+
+    _pegar(buckets['primaria'], min_primaria)
+    _pegar(buckets['br'], min_br)
+
+    # Completa o resto por frescor, respeitando o teto de mainstream.
+    usados_mainstream = sum(1 for it in escolhidos if _source_tier(it) == 'mainstream')
+    for it in items:
+        if len(escolhidos) >= total:
+            break
+        if id(it) in vistos:
+            continue
+        if _source_tier(it) == 'mainstream':
+            if usados_mainstream >= max_mainstream:
+                continue
+            usados_mainstream += 1
+        vistos.add(id(it))
+        escolhidos.append(it)
+
+    # Teto é PREFERÊNCIA, não limite rígido: se sobrou vaga porque as fontes
+    # primárias/BR publicaram pouco naquele dia, é melhor completar com
+    # mainstream do que mandar um pool menor ao curador. Sem esta segunda
+    # passada, um dia fraco de indie entregava 24 itens em vez de 80.
+    if len(escolhidos) < total:
+        for it in items:
+            if len(escolhidos) >= total:
+                break
+            if id(it) not in vistos:
+                vistos.add(id(it))
+                escolhidos.append(it)
+
+    escolhidos.sort(key=lambda x: x.get('hours_ago', 999))
+
+    contagem = {}
+    for it in escolhidos:
+        t = _source_tier(it)
+        contagem[t] = contagem.get(t, 0) + 1
+    print(f"🎚️ Corte estratificado: {len(escolhidos)} itens "
+          f"(primária {contagem.get('primaria', 0)} · BR {contagem.get('br', 0)} · "
+          f"mainstream {contagem.get('mainstream', 0)})")
+    return escolhidos
+
+
 def curate_with_claude(raw_data: dict) -> dict:
     """Usa Claude para curar as notícias"""
 
@@ -458,8 +641,19 @@ def curate_with_claude(raw_data: dict) -> dict:
     # v2.9: Cap por fonte — max 5 itens por source_name para forçar diversidade
     slim_items = _cap_per_source(slim_items, max_per_source=5)
 
-    # Sort by freshness (hours_ago ascending) then send top 80
+    # Sort by freshness (hours_ago ascending)
     slim_items.sort(key=lambda x: x.get('hours_ago', 999))
+
+    # v2.16: o corte final é ESTRATIFICADO, não puramente por frescor.
+    # Antes, `slim_items[:80]` mandava só os 80 itens mais recentes — o que
+    # premiava quem publica de hora em hora. Mainstream (BBC, Bloomberg, Inc)
+    # lotava os 80 slots enquanto Substack indie (1 post/dia) e imprensa BR
+    # (publicada de manhã) ficavam de fora. Resultado medido: pool com 51% de
+    # mainstream virava edição com 58-65%, e "radar_brasil" saía vazio 3 dias
+    # em 7 mesmo havendo dezenas de itens BR coletados.
+    # Agora reservamos quota para as fontes que sustentam a proposta editorial
+    # (ineditismo + Brasil) antes de completar o restante por frescor.
+    slim_items = _stratified_cut(slim_items, total=80)
 
     # v2.4: Load feedback data from Buttondown (if available)
     feedback_section = ""
@@ -474,9 +668,23 @@ def curate_with_claude(raw_data: dict) -> dict:
             if hint:
                 feedback_lines.append(f"💡 Dica: {hint}")
             if agg:
-                feedback_lines.append(f"📈 Open rate médio: {agg.get('avg_open_rate', 0)}% | Click rate: {agg.get('avg_click_rate', 0)}% | Subscribers: {agg.get('subscriber_count', 0)}")
+                # v2.16: taxas podem ser None (sem denominador confiável). Reportar
+                # "indisponível" em vez de 0% — antes o curador lia 0% como sinal real.
+                _open = agg.get('avg_open_rate')
+                _click = agg.get('avg_click_rate')
+                _est = " [estimado sobre a base]" if agg.get('rates_estimated') else ""
+                _open_txt = f"{_open}%" if _open is not None else "indisponível"
+                _click_txt = f"{_click}%" if _click is not None else "indisponível"
+                feedback_lines.append(
+                    f"📈 Open rate médio: {_open_txt} | Click rate: {_click_txt}{_est} | "
+                    f"Subscribers: {agg.get('subscriber_count', 0)} | "
+                    f"Total: {agg.get('total_opens', 0)} opens, {agg.get('total_clicks', 0)} clicks"
+                )
             if top_themes:
-                theme_strs = [f"  - \"{t.get('hook', '')}\" ({t.get('clicks', 0)} clicks, {t.get('open_rate', 0)}% open rate)" for t in top_themes]
+                theme_strs = [
+                    f"  - \"{t.get('hook', '')}\" ({t.get('clicks', 0)} clicks)"
+                    for t in top_themes
+                ]
                 feedback_lines.append("🏆 Temas com mais engajamento:\n" + "\n".join(theme_strs))
             feedback_lines.append("→ Use estes dados para PRIORIZAR temas similares aos que geraram mais engajamento.")
 
@@ -488,7 +696,9 @@ def curate_with_claude(raw_data: dict) -> dict:
                 feedback_lines.append("→ O subject_hook de HOJE deve ser sobre um tema DIFERENTE dos listados acima. Diversifique! Se a notícia mais impactante for do mesmo tema, escolha o SEGUNDO tema mais impactante para o hook.")
 
             feedback_section = "\n".join(feedback_lines)
-            print(f"📊 Feedback loop ativo: {len(top_themes)} temas top, open rate {agg.get('avg_open_rate', 0)}%")
+            _or = agg.get('avg_open_rate')
+            print(f"📊 Feedback loop ativo: {len(top_themes)} temas top, open rate "
+                  f"{f'{_or}%' if _or is not None else 'indisponível'}")
         else:
             print("📊 Feedback loop: sem dados disponíveis (primeiro run ou API indisponível)")
 
@@ -516,7 +726,7 @@ DEEP DIVE SEMANAL:
 
     prompt = CURATOR_USER_TEMPLATE.format(
         total=len(slim_items),
-        items=json.dumps(slim_items[:80], ensure_ascii=False, indent=2),  # v2.3: 80 items (stripped raw_data)
+        items=json.dumps(slim_items, ensure_ascii=False, indent=2),  # v2.16: já cortado por _stratified_cut
         feedback_section=feedback_section + workflow_section
     )
 
