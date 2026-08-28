@@ -116,7 +116,7 @@ Ver `collector.py` para lista completa.
 | There's An AI For That | AI tools (2.8M subs) | EN |
 | Turing Post | AI strategy, geopolitica | EN |
 | Import AI | AI policy, research (Jack Clark) | EN |
-| Distrito News Inside VC | VC/startups Brasil | PT-BR |
+| Innovation News by Distrito | VC/startups Brasil (MENSAL) | PT-BR |
 | The BRIEF | Tech+business diario, tom direto | PT-BR |
 
 ### Substacks Curados (42 feeds via RSS)

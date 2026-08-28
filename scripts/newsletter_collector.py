@@ -82,15 +82,18 @@ NEWSLETTER_SOURCES = {
         "category_hint": "ai_models",
         "description": "Jack Clark (ex-OpenAI policy). AI policy, research, geopolitics. Weekly deep analysis."
     },
-    # ⚠️ VERIFICADO EM 2026-08-28: o feed devolve HTTP 400 de qualquer origem
-    # (não é bloqueio ao runner). A raiz da publicação responde 200 mas sem entries,
-    # e não achamos espelho (distrito.me e insidevc.com.br não têm feed).
-    # Provavelmente a publicação foi renomeada ou o RSS desativado.
-    # Mantido à espera de decisão editorial: achar a URL nova ou remover a fonte.
+    # v2.17 — URL corrigida. A antiga (insidevcnews.substack.com) devolvia HTTP 400
+    # com o corpo dizendo "This publication is invite-only": a publicação foi fechada,
+    # não é bloqueio de IP nem domínio morto. Não há como acessar sem convite.
+    # A Distrito migrou o conteúdo público para distrito.substack.com
+    # ("Innovation News by Distrito"), verificado em 2026-08-28: HTTP 200, 20 entries.
+    # ⚠️ CADÊNCIA MENSAL (edições #28–#47, uma por mês). Com a janela de 36h das
+    # newsletters, este feed fica vazio ~29 dias em 30 — é esperado, não é falha.
+    # "Inside VC" sobrevive como nome de report, não de newsletter.
     "distrito_news": {
-        "name": "Distrito News Inside VC",
-        "base_url": "https://insidevcnews.substack.com",
-        "rss_url": "https://insidevcnews.substack.com/feed",
+        "name": "Innovation News by Distrito",
+        "base_url": "https://distrito.substack.com",
+        "rss_url": "https://distrito.substack.com/feed",
         "language": "pt-br",
         "category_hint": "saas_enterprise",
         "description": "Brazil VC/startup ecosystem. Funding rounds, valuations, exits. PT-BR."
