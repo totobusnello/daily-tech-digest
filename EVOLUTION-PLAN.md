@@ -758,6 +758,27 @@ Backlog relacionado marcado como parcialmente coberto:
 
 ## Proximas Evolucoes (Backlog)
 
+### 🗓️ Próximo ciclo — aberto na v2.17 (28/08/2026)
+
+**A. Confirmar no runner o que só foi validado do sandbox** — *olhar no primeiro run.*
+- [ ] **API de arquivo do Substack.** Funcionou daqui em Doomberg, Zvi, Capital Wars e Import AI. Se no runner voltar a dar 0 itens, o fallback para `/feed` segura (não quebra), mas o ganho não aconteceu. Sinal no log: `📝 Coletando Substacks` deve subir bem acima dos 13 itens de 27/08.
+- [ ] **GitHub releases (6 repos).** Não consegui testar — o sandbox bloqueia github.com. Se derem 0 itens, remover as 6 linhas de `RSS_FEEDS`.
+
+**B. Medir o efeito da recalibração do Heat Score** — *não mexer de novo antes de ter dados.*
+- [ ] A régua nova (freshness 25, ineditismo +25) foi calculada, não observada. Acompanhar por ~1 semana quantos itens do Hoje no Byte vêm de fonte primária/indie contra mídia. Baseline de 28/08: **4 de 5 eram mídia**.
+- [ ] Se continuar mainstream mesmo com o pool cheio de primárias, o problema não é a régua — é o prompt não amarrar ineditismo na montagem das seções.
+
+**C. IMAP para newsletters que bloqueiam scraping** — aprovado em conceito, adiado por exigir passo manual.
+- [ ] Caso concreto: **There's An AI For That** (2,8M assinantes) não tem RSS — é beehiiv com feed desativado, e responde 403 a qualquer cliente automatizado.
+- [ ] Desenho: conta dedicada (Fastmail ~US$5/mês é mais confiável que Gmail para uso não-supervisionado), assinar as newsletters com ela, ler por IMAP no pipeline.
+- [ ] Destrava uma classe inteira: **qualquer** newsletter que bloqueie bot mas entregue email.
+- [ ] Passo manual do Totó: criar a conta e assinar. Por isso ficou fora da v2.17.
+
+**D. Fontes que seguem quebradas ou limitadas**
+- [ ] **X/Twitter** — token revogado, coleta falhando. Bluesky cobre só 3 handles (Simon Willison, Ethan Mollick, David Ha); os outros não migraram de fato. Decidir: renovar o token ou aposentar o X.
+- [ ] **Distrito** — URL corrigida, mas cadência é **mensal**. Feed vazio ~29 dias em 30 é esperado, não falha.
+- [ ] **Health check** — agora abre issue na virada do limiar. Conferir que os 16 feeds antigos saem da lista de quebrados quando a API de arquivo pegar.
+
 ### 🗓️ Próximo ciclo — aberto na v2.16b (20/07/2026)
 
 **A. Medir mainstream ao longo de vários dias** — *antes de mexer no prompt de novo.*

@@ -4,7 +4,8 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.17 (recalibra Heat Score, conserta diagnostico de feeds, +5 fontes, 3 melhorias de formato)
+**Versao atual:** v2.17b (Heat Score recalibrado · diagnostico de feeds · API de arquivo do Substack · camada primaria · Bluesky)
+**Ultima rodada de evolucao:** 2026-08-28 — ver `EVOLUTION-PLAN.md` (changelog v2.17/v2.17b + backlog do proximo ciclo)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -176,7 +177,7 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 
 7. **max_items = 18** em todos os arquivos (config.yaml, SKILL.md, prompts).
 
-8. **subject_hook** — frase-gancho de max 6 palavras sobre a noticia mais impactante. Usada no subject do email.
+8. **subject_hook** — frase-gancho de 5 a 9 palavras, FRASE GRAMATICAL COMPLETA (sujeito + verbo + objeto). Usada no subject do email. v2.17 subiu de 6 palavras porque o limite apertado amputava a sintaxe — ver regra 60.
 
 9. **number_of_day** — data point numerico impressionante extraido das noticias (value + context).
 
