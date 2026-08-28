@@ -26,7 +26,7 @@ sender.py             -> Buttondown API -> email HTML
 ```
 
 **Orquestrador:** `run.py` (ou GitHub Actions via `daily-digest.yml`)
-**Schedule:** Diario as 03:00 BRT (06:00 UTC) via GitHub Actions — compensando delays de 2-6h da fila do GH Actions, entrega estimada 05:00-09:00 BRT
+**Schedule:** Diario as 05:23 BRT (08:23 UTC) via GitHub Actions — com o atraso tipico da fila (~30-40 min), entrega cai ~06:00 BRT. NAO usar minuto ':00' (slot congestionado, GH descarta eventos silenciosamente)
 
 ---
 
@@ -141,7 +141,7 @@ Newsletter Bonus:   Insight exclusivo=+10, Cross-validacao=+5
 Ineditismo Bonus:   Fonte primaria=+15, Community-driven=+10, Indie builder=+10
 Penalidade:         3+ fontes mainstream cobrindo mesma historia=-10
 
-Threshold minimo: 60 pontos
+Threshold minimo: 70 pontos (v2.14 subiu de 60 — rigor > quantidade)
 ```
 
 ---
@@ -379,7 +379,7 @@ Ver `EVOLUTION-PLAN.md` para historico e backlog.
 
 ## Deploy
 
-Push para `main` -> GitHub Actions pega automaticamente no proximo run (03:00 BRT / 06:00 UTC).
+Push para `main` -> GitHub Actions pega automaticamente no proximo run (05:23 BRT / 08:23 UTC).
 Nao precisa de deploy manual. O workflow faz `checkout@v4` fresh toda vez.
 
 Para rodar manualmente: GitHub Actions -> "Run workflow" -> preview_only true/false.

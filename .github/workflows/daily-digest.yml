@@ -1,9 +1,15 @@
 name: 🔥 THE DAILY BYTE - Daily Digest
 
 on:
-  # Executa todo dia às 06:00 UTC (03:00 BRT) - compensando delays de 2-6h do GH Actions
+  # Executa todo dia às 08:23 UTC (05:23 BRT).
+  # Com o atraso tipico da fila do GH Actions (~30-40 min), a entrega cai ~06:00 BRT.
+  #
+  # IMPORTANTE — nao voltar para minuto ':00'. O slot de hora cheia e o mais
+  # congestionado do GH Actions: quando a fila satura, eventos agendados sao
+  # DESCARTADOS silenciosamente (sem run, sem alerta). Foi o que derrubou a
+  # edicao de 2026-08-28 e atrasou a de 27/08 em 11h. Minuto impar evita a contencao.
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '23 8 * * *'
 
   # Permite executar manualmente
   workflow_dispatch:
