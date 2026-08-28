@@ -4,6 +4,60 @@
 
 ## Changelog
 
+### v2.17b — 2026-08-28 (destrava o tier indie e abre a camada primária)
+
+Continuação direta da v2.17. A pergunta que originou: "que ferramenta incorporar para
+aumentar o número de fontes diferentes e frescas?" A resposta acabou sendo **nenhuma
+ferramenta paga** — o que faltava era usar endpoints públicos que já existiam.
+
+**O achado principal: a API de arquivo do Substack.**
+
+O `/feed` do Substack é bloqueado para automação, mas `/api/v1/archive` **no mesmo host**
+responde 200 com JSON. Testado nos feeds que estavam mudos há 39 dias:
+
+| Feed | Antes | Pela API de arquivo |
+|---|---|---|
+| doomberg | 0 itens | ✅ post de 28/08 |
+| thezvi | 0 itens | ✅ post de 27/08 |
+| capital_wars | 0 itens | ✅ post de 26/08 |
+| import_ai | 403 | ✅ post de 24/08 |
+
+Custo zero, sem chave, ~40 linhas. `_fetch_feed()` tenta esse caminho antes para hosts
+`*.substack.com` e cai no `/feed` se falhar. **31 feeds do catálogo estão nesse domínio.**
+
+**Camada primária nova** (tudo grátis, sem auth):
+- `collect_hf_daily_papers()` — curadoria **humana** votada por praticantes, filtro de
+  upvotes ≥ 3. O arXiv despeja centenas de papers/dia sem hierarquia; aqui o sinal de
+  relevância vem de quem trabalha com o assunto.
+- arXiv `cs.CL` e `cs.LG` — só `cs.AI` deixava de fora justamente onde sai o trabalho de LLM.
+- GitHub releases `.atom` de 6 repos de infra AI — quando o vLLM lança versão aparece ali
+  antes de qualquer veículo. ⚠️ Não verificados do sandbox; conferir no primeiro run.
+
+**Bluesky: a migração do X não aconteceu.** A API pública não pede auth, o que resolveria o
+token revogado do X. Mas verificando handle a handle, **só 3 publicam de fato**: Simon
+Willison (hoje), Ethan Mollick (hoje), David Ha (1d). Karpathy está parado há 1189 dias,
+levelsio 638, danshipper 618, swyx 164. Sem conta: benedictevans, chipro, natfriedman,
+jack-clark. Handle inválido: ylecun. Entraram os 3 — não a lista inteira.
+
+**Ferramentas pagas avaliadas e descartadas** (preços verificados em 28/08): Firecrawl não
+documenta proxy residencial, que é o que consertaria bloqueio por IP de datacenter (free
+1.000 créditos, depois US$16/mês); ScrapingBee e ScraperAPI pedem US$49/mês de piso para
+~1.500 fetches. O caso principal se resolve de graça. Jina Reader foi reportado como
+solução para o TAAFT mas **não consegui reproduzir** — deu 403 no meu teste; registrado
+como não-confirmado em vez de adotado.
+
+**Distrito:** a URL antiga devolvia 400 com o corpo dizendo `This publication is
+invite-only` — a publicação foi fechada, não morreu. Conteúdo público migrou para
+`distrito.substack.com`. Cadência mensal, então o feed fica vazio ~29 dias em 30.
+
+**Fica para depois:** IMAP próprio para newsletters que bloqueiam scraping mas entregam
+email (caso do There's An AI For That, que não tem RSS — beehiiv com feed desativado).
+Exige criar conta e assinar manualmente, então não cabia nesta rodada.
+
+**Catálogo: 154 → 162 feeds** + HF Daily Papers + 3 handles de Bluesky.
+
+---
+
 ### v2.17 — 2026-08-28 (recalibra curadoria, conserta observabilidade, +5 fontes, 3 melhorias de formato)
 
 **Gatilho:** a edição de 28/08 saiu com subject quebrado e pauta fraca. Investigando os

@@ -13,7 +13,7 @@ Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFO
 
 ```
 collector.py          -> /tmp/digest_raw.json
-  (RSS + YouTube + X + Newsletters)
+  (RSS + YouTube + X + Bluesky + Newsletters + HF Papers)
        |
 feedback.py           -> /tmp/digest_feedback.json
   (Buttondown API: opens, clicks, top temas)
@@ -42,7 +42,7 @@ sender.py             -> Buttondown API -> email HTML
 | `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas, recent_hooks) para informar curadoria |
 | `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
 | `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send). Flags: `--preview`, `--skip-collect`, `--skip-process` |
-| `scripts/health_check.py` | Monitora saude de 154 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
+| `scripts/health_check.py` | Monitora saude de 162 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
 | `scripts/alert_failure.py` | Cria GitHub Issue quando pipeline falha (via gh CLI no Actions). Notifica owner por email |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
@@ -83,7 +83,7 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Fontes (154 feeds ativos)
+## Fontes (162 feeds + HF Papers + 3 handles Bluesky)
 
 ### Filosofia de Fontes (v2.9)
 **O Daily Byte existe para trazer o que C-levels NAO encontram sozinhos.**
@@ -103,7 +103,8 @@ Ver `collector.py` para lista completa.
 **Tech media:** HN (100+ pts), TechCrunch AI, MIT Tech Review, The Decoder
 **World:** Reuters, BBC, Forbes, CNBC, WSJ
 **Brasil:** Poder360, InfoMoney, Startups.com.br, Valor Economico, NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech, IA Brasil Noticias
-**Research:** arXiv cs.AI
+**Research:** arXiv cs.AI, cs.CL, cs.LG · Hugging Face Daily Papers (curadoria humana)
+**Releases:** GitHub `.atom` de 6 repos de infra AI (ollama, vLLM, llama.cpp, transformers, pytorch, langchain)
 
 ### Tier 3 — Newsletters (10 fontes, via scraping + RSS)
 | Newsletter | Foco | Idioma |
@@ -310,6 +311,17 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 67. **Tempo de leitura por item e derivado no codigo (v2.17)** — `_item_read_min()` estima a partir do tamanho do resumo que o curador escreveu (fator 25x, faixa 1-9 min), renderizado ao lado da barra LED. **Deliberadamente nao e campo do JSON:** o modelo nao abre o link e chutaria o numero. Mesmo principio do `byte_score`, cujo tier tambem e derivado no sender e nunca enviado pelo curador.
 
 68. **O log da curadoria mentia sobre o tamanho da edicao (v2.17)** — `processor.py` imprimia `items[:5]` sob o rotulo "HOJE NO BYTE" independente da categoria real, escondia SaaS e Watch Later, e o contador mostrava `len(items[])` como "Selecionados". Numa edicao de 18 pecas ele exibia **"Selecionados: 9"**, o que levou a diagnosticar edicao curta onde nao havia. Agora agrupa pela categoria real, sinaliza categoria desconhecida, e o contador soma o digest inteiro discriminando por secao. **O log e a unica janela do operador para o que foi ao ar — se ele mente, todo diagnostico em cima dele nasce errado.**
+
+69. **API de arquivo do Substack (v2.17)** — o `/feed` do Substack e bloqueado para automacao (403, ou 200 com pagina HTML de desafio que o feedparser le como zero entries). Mas `/api/v1/archive` **no mesmo host** responde 200 com JSON dos posts. `_fetch_feed()` tenta esse caminho antes para qualquer host `*.substack.com` e so cai no `/feed` se falhar. **Foi o que manteve mudos por 39 dias feeds que estavam vivos** (Doomberg, Zvi, Capital Wars, Import AI). Custo zero, sem chave. Campos uteis: `title`, `description`/`subtitle`, `canonical_url`, `post_date`. ⚠️ Validado do sandbox, nao do runner — conferir no primeiro run.
+
+70. **Camada primaria legivel por maquina (v2.17)** — categorias que o catalogo nao usava:
+    - **HF Daily Papers** (`huggingface.co/api/daily_papers`, JSON sem auth) — curadoria HUMANA votada por praticantes. O arXiv despeja centenas de papers/dia sem hierarquia; aqui o sinal de "isto importa" vem de quem trabalha com o assunto. Filtro de `upvotes >= 3` corta o que nao teve tracao.
+    - **arXiv cs.CL e cs.LG** — so `cs.AI` deixava de fora justamente onde sai o trabalho de LLM.
+    - **GitHub releases `.atom`** — feed publico, sem auth, ja compativel com o feedparser. Quando o vLLM ou llama.cpp lanca versao, aparece ali ANTES de qualquer veiculo. 6 repos selecionados onde release e noticia de fato. ⚠️ Nao verificados do sandbox (github.com bloqueado la) — conferir no primeiro run e remover os que derem 0.
+
+71. **Bluesky nao e migracao automatica do X (v2.17)** — a API publica (`public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed`) nao pede auth, o que resolve o problema do token do X revogado. **Mas quase ninguem migrou de fato.** Verificados um a um: so 3 publicam (Simon Willison, Ethan Mollick, David Ha). Karpathy esta parado ha 1189 dias, levelsio 638, danshipper 618, swyx 164; benedictevans, chipro, natfriedman e jack-clark nao tem conta encontrada; o handle do ylecun da 400. **Ao acrescentar alguem, confira a data do ultimo post — nao presuma que quem e ativo no X migrou.** O coletor descarta repost, resposta e post com menos de 60 caracteres.
+
+72. **Ferramentas de scraping pago nao resolvem este problema (v2.17)** — avaliados com precos verificados em 28/08: Firecrawl (free 1.000 creditos/mes, depois US$16/mes) nao documenta proxy residencial, que e o que consertaria bloqueio por IP de datacenter; ScrapingBee e ScraperAPI tem piso de **US$49/mes** para ~1.500 fetches. **O caso principal (Substack) se resolve de graca pela API de arquivo.** Jina Reader (`r.jina.ai`) foi reportado como solucao mas **nao consegui reproduzir** — deu 403 no teste. Descartados tambem: rss.app (free tier de 2 feeds), rsshub publico (403), openrss.org (devolve HTML), politepol (TLS falha), Feedrabbit (e RSS→email, direcao oposta).
 
 ---
 
