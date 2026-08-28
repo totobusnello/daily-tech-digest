@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.16b (auditoria do catalogo: 57 feeds mortos removidos + expansao para 149 feeds)
+**Versao atual:** v2.17 (recalibra Heat Score, conserta diagnostico de feeds, +5 fontes, 3 melhorias de formato)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -13,7 +13,7 @@ Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFO
 
 ```
 collector.py          -> /tmp/digest_raw.json
-  (RSS + YouTube + X + Newsletters)
+  (RSS + YouTube + X + Bluesky + Newsletters + HF Papers)
        |
 feedback.py           -> /tmp/digest_feedback.json
   (Buttondown API: opens, clicks, top temas)
@@ -26,7 +26,7 @@ sender.py             -> Buttondown API -> email HTML
 ```
 
 **Orquestrador:** `run.py` (ou GitHub Actions via `daily-digest.yml`)
-**Schedule:** Diario as 03:00 BRT (06:00 UTC) via GitHub Actions — compensando delays de 2-6h da fila do GH Actions, entrega estimada 05:00-09:00 BRT
+**Schedule:** Diario as 05:23 BRT (08:23 UTC) via GitHub Actions — com o atraso tipico da fila (~30-40 min), entrega cai ~06:00 BRT. NAO usar minuto ':00' (slot congestionado, GH descarta eventos silenciosamente)
 
 ---
 
@@ -42,7 +42,7 @@ sender.py             -> Buttondown API -> email HTML
 | `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas, recent_hooks) para informar curadoria |
 | `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
 | `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send). Flags: `--preview`, `--skip-collect`, `--skip-process` |
-| `scripts/health_check.py` | Monitora saude de ~200 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
+| `scripts/health_check.py` | Monitora saude de 162 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
 | `scripts/alert_failure.py` | Cria GitHub Issue quando pipeline falha (via gh CLI no Actions). Notifica owner por email |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
@@ -70,7 +70,7 @@ sender.py             -> Buttondown API -> email HTML
 **Total maximo:** 15 itens (10 principais + 5 quick links). Rigor > quantidade. Heat threshold 70.
 
 **JSON do curador:**
-- `subject_hook` — frase-gancho de max 6 palavras para subject line
+- `subject_hook` — frase-gancho de 5 a 9 palavras, GRAMATICAL COMPLETA (v2.17: era max 6, o que produzia fragmento quebrado)
 - `number_of_day{}` — {value, context} — data point numerico impressionante
 - `world[]` — array de 3 itens (headline, context, source_url, source_name, byte_score int)
 - `items[]` — array com category `hoje_no_byte|saas_enterprise|watch_later`, campo `tag`, `byte_score` int e `big_story` bool (opcional, UM unico item marca true)
@@ -83,7 +83,7 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Fontes (~200 feeds ativos)
+## Fontes (162 feeds + HF Papers + 3 handles Bluesky)
 
 ### Filosofia de Fontes (v2.9)
 **O Daily Byte existe para trazer o que C-levels NAO encontram sozinhos.**
@@ -103,7 +103,8 @@ Ver `collector.py` para lista completa.
 **Tech media:** HN (100+ pts), TechCrunch AI, MIT Tech Review, The Decoder
 **World:** Reuters, BBC, Forbes, CNBC, WSJ
 **Brasil:** Poder360, InfoMoney, Startups.com.br, Valor Economico, NeoFeed, Startse, Exame, Pipeline Valor, Brazil Journal, Tecmundo, Canaltech, IA Brasil Noticias
-**Research:** arXiv cs.AI
+**Research:** arXiv cs.AI, cs.CL, cs.LG · Hugging Face Daily Papers (curadoria humana)
+**Releases:** GitHub `.atom` de 6 repos de infra AI (ollama, vLLM, llama.cpp, transformers, pytorch, langchain)
 
 ### Tier 3 — Newsletters (10 fontes, via scraping + RSS)
 | Newsletter | Foco | Idioma |
@@ -116,7 +117,7 @@ Ver `collector.py` para lista completa.
 | There's An AI For That | AI tools (2.8M subs) | EN |
 | Turing Post | AI strategy, geopolitica | EN |
 | Import AI | AI policy, research (Jack Clark) | EN |
-| Distrito News Inside VC | VC/startups Brasil | PT-BR |
+| Innovation News by Distrito | VC/startups Brasil (MENSAL) | PT-BR |
 | The BRIEF | Tech+business diario, tom direto | PT-BR |
 
 ### Substacks Curados (42 feeds via RSS)
@@ -134,14 +135,19 @@ Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI
 ## Heat Score (curadoria)
 
 ```
-Freshness (40 pts): <6h=40, 6-12h=30, 12-24h=20, >24h=0
+Freshness (25 pts): <6h=25, 6-12h=20, 12-24h=12, 24-36h=6, >36h=0   [v2.17: era 40]
 Fonte (30 pts):     Fundador/blog oficial=30, Jornalista=25, Release=20, Newsletter=15, Agregador=0
 Impacto (30 pts):   Lancamento=30, M&A=25, Drama=20, Incremental=5
 Newsletter Bonus:   Insight exclusivo=+10, Cross-validacao=+5
-Ineditismo Bonus:   Fonte primaria=+15, Community-driven=+10, Indie builder=+10
+Ineditismo Bonus:   Fonte primaria=+25, Community-driven=+18, Indie builder=+18   [v2.17: era +15/+10/+10]
 Penalidade:         3+ fontes mainstream cobrindo mesma historia=-10
 
-Threshold minimo: 60 pontos
+Threshold minimo: 70 pontos (v2.14 subiu de 60 — rigor > quantidade)
+
+v2.17 — por que freshness caiu e ineditismo subiu:
+Com a regua antiga, materia de veiculo de alta frequencia batia analise indie por
+construcao (Forbes 2h = 85 pts vs indie 20h = 70 pts). O digest enchia de commodity
+fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 ```
 
 ---
@@ -208,7 +214,7 @@ Threshold minimo: 60 pontos
 
 26. **Ineditismo minimo 30% (v2.9)** — prompt exige que pelo menos 4 dos 12 itens principais sejam de fontes primarias ou noticias nao amplamente cobertas. Regra 6 do CURATOR_SYSTEM: "INEDITISMO OBRIGATORIO".
 
-27. **Health check de feeds (v2.10)** — `health_check.py` monitora ~200 feeds antes da coleta. ThreadPoolExecutor(15 workers), timeout 10s, requests com browser UA + feedparser fallback. Rastreia falhas consecutivas em `/tmp/digest_feed_health.json`. Alerta se feed tem 3+ falhas consecutivas. Roda como step no workflow com `continue-on-error: true` (nao-bloqueante).
+27. **Health check de feeds (v2.10)** — `health_check.py` monitora 154 feeds antes da coleta. ThreadPoolExecutor(15 workers), timeout 10s, requests com browser UA + feedparser fallback. Rastreia falhas consecutivas em `/tmp/digest_feed_health.json`. Alerta se feed tem 3+ falhas consecutivas. Roda como step no workflow com `continue-on-error: true` (nao-bloqueante).
 
 28. **Radar Brasil (v2.10)** — secao 3b do layout. 1-2 itens sobre ecossistema brasileiro de tech/AI/negocios (NeoFeed, Startse, Exame, InfoMoney, Pipeline Valor, Brazil Journal, etc). Pode ser array vazio se nao houver noticia BR relevante. Dedup integrado em `dedup_across_sections()` (step 2.5). Renderizado em sender.py (HTML + markdown) com bandeira BR e cor verde.
 
@@ -275,7 +281,7 @@ Threshold minimo: 60 pontos
 54. **X/Twitter: 401 silencioso (v2.16)** — `collect_x_posts` fazia `if status_code != 200: continue` **sem log nenhum**. O token estava revogado (HTTP 401) havia meses e o pipeline so reportava "→ 0 tweets", sem sinal de problema. A lista tinha 66 handles, dezenas deles **inexistentes** (`swaborak`, `ziaborak`, `emaborak`, `jackclarkaborak`, `polyaborak`, `maborak`, `daborak`...) — provavelmente alucinados numa expansao anterior e nunca validados, justamente porque a falha era engolida. Fixes: log explicito por status (404 = handle inexistente, 401/403 = token, 429 = interrompe), resumo de erros ao final, lista reduzida a 16 handles notorios, e cache de `user_id` em `/tmp/digest_x_user_ids.json` (corta metade das chamadas).
     ⚠️ **Pendente:** renovar `X_BEARER_TOKEN` em developer.x.com e atualizar o secret. Os 16 handles ainda nao foram validados contra a API — rodar `collector.py` com token novo e conferir o log `handle inexistente`.
 
-55. **Expansão do catálogo — cadência > quantidade (v2.16b)** — 105 → 149 feeds. A medição que orientou a escolha: mainstream nao domina por privilegio, domina por CADENCIA. Antes: 21 dos 24 feeds mainstream publicavam diariamente, contra 15 dos 72 da camada primaria. Substack semanal simplesmente nao cai na janela de 36h na maioria dos dias. Depois: primaria 104 feeds / 40 de alta cadencia; BR 21 / 10; mainstream 24 / 21.
+55. **Expansão do catálogo — cadência > quantidade (v2.16b)** — 105 → 154 feeds. A medição que orientou a escolha: mainstream nao domina por privilegio, domina por CADENCIA. Antes: 21 dos 24 feeds mainstream publicavam diariamente, contra 15 dos 72 da camada primaria. Substack semanal simplesmente nao cai na janela de 36h na maioria dos dias. Depois: primaria 104 feeds / 40 de alta cadencia; BR 21 / 10; mainstream 24 / 21.
     **Regra:** toda fonte nova precisa passar em DOIS filtros — RSS vivo (HTTP 200 + entries) **e** cadencia real (posts/30d medidos no feed). Preferir 3x+/semana.
     **⚠️ Fonte BR nova PRECISA entrar em `_BR_HINTS` no processor.py** — senao `_source_tier` a classifica como 'primaria' e ela nao conta na quota de Brasil do corte estratificado (erro cometido e corrigido na propria v2.16b: adicionei 12 fontes BR e o contador continuou em 9).
     Adicionadas: 12 BR (Olhar Digital, Tecnoblog, IT Forum, TI Inside, TeleTime, ConvergenciaDigital, Mobile Time, Startupi, Finsiders, Building Nubank, Hipsters, StartSe), 18 primarias (Cloudflare, Supabase, Sourcegraph, Together AI, Ramp Eng, Weaviate, changelogs GitHub/Vercel, Zvi, Understanding AI, Big Technology, AI Supremacy, Ed Zitron, Strange Loop, Alignment Forum, LessWrong, Console.dev, Ben's Bites), 7 de midia tecnica (IEEE Spectrum, Next Platform, Datacenter Dynamics, Tech.eu, Robot Report, Fintech Futures, MIT Sloan) e 6 verticais de negocio (Schneier, Help Net Security, MarTech, Practical Ecommerce, Supply Chain Review, Finance Magnates).
@@ -285,6 +291,37 @@ Threshold minimo: 60 pontos
 57. **Concorrentes como fonte — decisao editorial (v2.16b)** — TLDR AI (1,1M subs) e The Rundown AI (2M) tem RSS ativo e cadencia diaria, mas ficaram DE FORA: republicar a curadoria deles contradiz a premissa do produto ("trazer o que C-levels nao encontram sozinhos") e quem assina os dois percebe a repeticao. **Ben's Bites entrou** por ser comentario autoral de practitioner (Ben Tossell), nao digest puro. Se um dia entrarem, que seja como sinal de validacao (confirmar que uma historia e grande), nunca como fonte citada — o `source_url` deve sempre apontar para a origem primaria.
 
 58. **Canal errado do Karpathy (v2.16b)** — o `channel_id` cadastrado como `andrej_karpathy` (`UCWN3xxRkmTPmbKwht9FuE5A`) era do **Siraj Raval**, e ele saiu como fonte na edicao 182 ("YouTube / Siraj Raval"). ID correto: `UCXUPKJO5MZQN11PqgIvyuvQ`, confirmado via **oEmbed oficial do YouTube** (`youtube.com/oembed?url=<video>`) — scraping da pagina do canal NAO e confiavel, devolve `channelId` de canais recomendados (na tentativa, retornou 3Blue1Brown para `@AndrejKarpathy`). Ao adicionar canal novo, confira o `<title>` do feed antes de commitar.
+
+59. **Freshness vale menos que ineditismo (v2.17)** — recalibracao do Heat Score: freshness 40→25 pts, ineditismo +15→+25 (community/indie +10→+18). **Diagnostico:** a regua antiga fazia veiculo de alta frequencia ganhar por construcao. Materia da Forbes com 2h somava 85 pts (40 fresh + 25 jornalista + 20 drama); analise indie original de 20h somava 70 (20 + 30 + 5 + 15) e ficava de fora. Na edicao de 28/08, **4 dos 5 itens do Hoje no Byte vieram de midia tech** apesar de o corte estratificado ter entregue 44 itens primarios ao curador — a materia-prima estava la, a pontuacao e que preferia mainstream. Com a regua nova o mesmo par fica Forbes 70 vs indie 80. **Recencia virou criterio de desempate, nao de vitoria.** Se o digest voltar a encher de commodity, checar esta regua antes de mexer no prompt.
+
+60. **subject_hook precisa ser frase, nao fragmento (v2.17)** — limite subiu de 6 para 5-9 palavras com exigencia explicita de frase gramatical (sujeito + verbo + objeto). **Por que:** com 6 palavras o curador amputava a sintaxe. A edicao de 28/08 saiu com `"Juiz bloqueia Pentagon contra Anthropic"` — ingles no meio E sentido invertido (quem foi barrado foi o Pentagono, nao a Anthropic). O corpo do email trazia a manchete correta; so o hook quebrou, porque so ele tinha o limite apertado. Regra nova de nomes proprios (Pentagon→Pentagono, White House→Casa Branca) vale inclusive no hook — e o que o assinante le na caixa de entrada antes de abrir qualquer coisa.
+
+61. **Teste de consequencia no Mundo Real (v2.17)** — antes de entrar em `world[]`, o item precisa responder "isso muda alguma decisao de um CEO/CFO brasileiro?". **Por que:** na edicao de 28/08 entrou "Trump renomeia Lago Ontario de 'Lago America'" — fresco e polemico, portanto pontuava bem, mas nenhum C-level muda nada por causa disso. Ocupou 1 de 3 vagas. Descarta gesto simbolico, rebatismo, briga de rede social, declaracao sem medida concreta. Se sobrarem 2 itens que passem no teste, entrega 2 — **nunca completa a cota com trivia**.
+
+62. **O diagnostico do health check precisa dizer O QUE quebrou (v2.17)** — `_check_feed()` engolia toda excecao num `except: pass` e caia num return generico, entao timeout, 403, DNS e feed-vazio viravam a MESMA string `"No entries returned"`. **Consequencia real:** 16 feeds passaram **39 dias** marcados como quebrados sem ninguem poder agir, porque o sinal nao distinguia "o site nos bloqueou" de "o autor nao publicou". Testados a mao, 7 deles respondiam HTTP 200 com 20-32 entries e posts do dia — estavam vivos. Agora reporta status HTTP, timeout, TLS, DNS, e detecta HTML servido com 200 (bloqueio anti-bot). **Nunca voltar a colapsar modos de falha numa mensagem so.**
+
+63. **Alertar so na virada do limiar (v2.17)** — o health check abre GitHub Issue quando um feed **cruza** `FAILURE_THRESHOLD` (`== 3`), nao a cada dia em que esta `>= 3`. Alertar por todos os `>=` teria gerado **39 issues identicas** para os mesmos 16 feeds. O step continua `continue-on-error` — alerta nunca derruba o pipeline.
+
+64. **rss_fallbacks para feeds bloqueados no runner (v2.17)** — `newsletter_collector.py` aceita lista `rss_fallbacks` e tenta espelhos em outro dominio quando o principal falha. **Caso conhecido:** Import AI responde 403 ao IP do GitHub Actions mas `jack-clark.net/feed/` serve os mesmos posts. **Diagnostico importa:** nem todo 403 e bloqueio ao runner — Distrito News devolve **400 de qualquer origem** (URL provavelmente morta, sem espelho conhecido) e There's An AI For That bloqueia **qualquer** cliente automatizado. Os dois estao anotados no proprio `newsletter_collector.py` com o estado verificado, aguardando decisao editorial (achar feed oficial ou remover) em vez de ficarem quebrando em silencio.
+
+65. **Big Story ganha `details[]` (v2.17)** — ate 3 bullets de dado duro (numero, preco, prazo, benchmark, valor de contrato) entre o `why_it_matters` e o rodape do card. **Por que:** e o item que o leitor encaminha para o board, e ele pulava da manchete direto para uma frase imperativa — manchete + verbo nao sustentam decisao, numero sustenta. Campo **opcional**: sem `details[]` o card renderiza como antes. O prompt proibe inventar numero — sem dado concreto no material de entrada, lista vazia.
+
+66. **PROMPT DO DIA e secao propria (v2.17)** — saiu de dentro do card do Tool do Dia, onde competia com a ferramenta pela atencao, e virou secao numerada com caixa monoespacada. Nos concorrentes que o isolam (Superhuman, The Neuron) e o elemento mais copiado e encaminhado do email. Le `tool_of_day.prompt_of_day` — o JSON nao mudou.
+
+67. **Tempo de leitura por item e derivado no codigo (v2.17)** — `_item_read_min()` estima a partir do tamanho do resumo que o curador escreveu (fator 25x, faixa 1-9 min), renderizado ao lado da barra LED. **Deliberadamente nao e campo do JSON:** o modelo nao abre o link e chutaria o numero. Mesmo principio do `byte_score`, cujo tier tambem e derivado no sender e nunca enviado pelo curador.
+
+68. **O log da curadoria mentia sobre o tamanho da edicao (v2.17)** — `processor.py` imprimia `items[:5]` sob o rotulo "HOJE NO BYTE" independente da categoria real, escondia SaaS e Watch Later, e o contador mostrava `len(items[])` como "Selecionados". Numa edicao de 18 pecas ele exibia **"Selecionados: 9"**, o que levou a diagnosticar edicao curta onde nao havia. Agora agrupa pela categoria real, sinaliza categoria desconhecida, e o contador soma o digest inteiro discriminando por secao. **O log e a unica janela do operador para o que foi ao ar — se ele mente, todo diagnostico em cima dele nasce errado.**
+
+69. **API de arquivo do Substack (v2.17)** — o `/feed` do Substack e bloqueado para automacao (403, ou 200 com pagina HTML de desafio que o feedparser le como zero entries). Mas `/api/v1/archive` **no mesmo host** responde 200 com JSON dos posts. `_fetch_feed()` tenta esse caminho antes para qualquer host `*.substack.com` e so cai no `/feed` se falhar. **Foi o que manteve mudos por 39 dias feeds que estavam vivos** (Doomberg, Zvi, Capital Wars, Import AI). Custo zero, sem chave. Campos uteis: `title`, `description`/`subtitle`, `canonical_url`, `post_date`. ⚠️ Validado do sandbox, nao do runner — conferir no primeiro run.
+
+70. **Camada primaria legivel por maquina (v2.17)** — categorias que o catalogo nao usava:
+    - **HF Daily Papers** (`huggingface.co/api/daily_papers`, JSON sem auth) — curadoria HUMANA votada por praticantes. O arXiv despeja centenas de papers/dia sem hierarquia; aqui o sinal de "isto importa" vem de quem trabalha com o assunto. Filtro de `upvotes >= 3` corta o que nao teve tracao.
+    - **arXiv cs.CL e cs.LG** — so `cs.AI` deixava de fora justamente onde sai o trabalho de LLM.
+    - **GitHub releases `.atom`** — feed publico, sem auth, ja compativel com o feedparser. Quando o vLLM ou llama.cpp lanca versao, aparece ali ANTES de qualquer veiculo. 6 repos selecionados onde release e noticia de fato. ⚠️ Nao verificados do sandbox (github.com bloqueado la) — conferir no primeiro run e remover os que derem 0.
+
+71. **Bluesky nao e migracao automatica do X (v2.17)** — a API publica (`public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed`) nao pede auth, o que resolve o problema do token do X revogado. **Mas quase ninguem migrou de fato.** Verificados um a um: so 3 publicam (Simon Willison, Ethan Mollick, David Ha). Karpathy esta parado ha 1189 dias, levelsio 638, danshipper 618, swyx 164; benedictevans, chipro, natfriedman e jack-clark nao tem conta encontrada; o handle do ylecun da 400. **Ao acrescentar alguem, confira a data do ultimo post — nao presuma que quem e ativo no X migrou.** O coletor descarta repost, resposta e post com menos de 60 caracteres.
+
+72. **Ferramentas de scraping pago nao resolvem este problema (v2.17)** — avaliados com precos verificados em 28/08: Firecrawl (free 1.000 creditos/mes, depois US$16/mes) nao documenta proxy residencial, que e o que consertaria bloqueio por IP de datacenter; ScrapingBee e ScraperAPI tem piso de **US$49/mes** para ~1.500 fetches. **O caso principal (Substack) se resolve de graca pela API de arquivo.** Jina Reader (`r.jina.ai`) foi reportado como solucao mas **nao consegui reproduzir** — deu 403 no teste. Descartados tambem: rss.app (free tier de 2 feeds), rsshub publico (403), openrss.org (devolve HTML), politepol (TLS falha), Feedrabbit (e RSS→email, direcao oposta).
 
 ---
 
@@ -379,7 +416,7 @@ Ver `EVOLUTION-PLAN.md` para historico e backlog.
 
 ## Deploy
 
-Push para `main` -> GitHub Actions pega automaticamente no proximo run (03:00 BRT / 06:00 UTC).
+Push para `main` -> GitHub Actions pega automaticamente no proximo run (05:23 BRT / 08:23 UTC).
 Nao precisa de deploy manual. O workflow faz `checkout@v4` fresh toda vez.
 
 Para rodar manualmente: GitHub Actions -> "Run workflow" -> preview_only true/false.

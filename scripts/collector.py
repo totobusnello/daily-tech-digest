@@ -6,6 +6,7 @@ Coleta notícias de X, YouTube, LinkedIn e RSS feeds
 
 import os
 import json
+import re
 import time
 import feedparser
 import requests
@@ -72,6 +73,25 @@ RSS_FEEDS = {
     "techcrunch_ai": "https://techcrunch.com/category/artificial-intelligence/feed/",
     "mit_tech_review": "https://www.technologyreview.com/feed/",
     "arxiv_ai": "http://export.arxiv.org/rss/cs.AI",
+    # v2.17: cs.AI sozinho deixava de fora justamente as categorias onde sai o
+    # trabalho de LLM. cs.CL (linguagem) e cs.LG (aprendizado) são as duas de
+    # maior densidade para o digest. Verificados em 28/08 com posts do dia.
+    "arxiv_cl": "http://export.arxiv.org/rss/cs.CL",                # NLP/LLM
+    "arxiv_lg": "http://export.arxiv.org/rss/cs.LG",                # machine learning
+
+    # ── v2.17: GitHub releases — o sinal mais primário que existe ──
+    # Quando o vLLM ou o llama.cpp lança versão, aparece aqui ANTES de qualquer
+    # veículo escrever. `.atom` é feed público, sem auth, e o feedparser já lê.
+    # Seleção deliberadamente curta: só repos onde um release é notícia de fato,
+    # não bump de patch. O heat threshold filtra o resto.
+    # ⚠️ NÃO VERIFICADO do runner: o sandbox onde foram adicionados bloqueia
+    # github.com. Conferir no primeiro run se trazem itens; se derem 0, remover.
+    "gh_ollama": "https://github.com/ollama/ollama/releases.atom",
+    "gh_vllm": "https://github.com/vllm-project/vllm/releases.atom",
+    "gh_llamacpp": "https://github.com/ggml-org/llama.cpp/releases.atom",
+    "gh_transformers": "https://github.com/huggingface/transformers/releases.atom",
+    "gh_pytorch": "https://github.com/pytorch/pytorch/releases.atom",
+    "gh_langchain": "https://github.com/langchain-ai/langchain/releases.atom",
     "the_decoder": "https://the-decoder.com/feed/",
     # ── v2.3 Expansion: AI & Enterprise Tech ──
     "venturebeat": "https://feeds.feedburner.com/venturebeat/SZYF",
@@ -162,6 +182,18 @@ RSS_FEEDS = {
     "schneier": "https://www.schneier.com/feed/",                   # segurança com lente estratégica
     "helpnet_security": "https://www.helpnetsecurity.com/feed/",    # 10/30d — segurança enterprise
     "martech": "https://martech.org/feed/",                         # 10/30d — ângulo CMO
+
+    # ── v2.17: segurança de AI em primeira mão + lado do comprador enterprise ──
+    # Johann Rehberger publica red-teaming de AI antes da imprensa cobrir
+    # ("Breaking Claude Code Auto Mode", "Hijacking LiteLLM"). Cadência baixa
+    # (~3-4/mês) mas é fonte primária de praticante — o tier mais alto da filosofia.
+    "embrace_the_red": "https://embracethered.com/blog/index.xml",   # 3-4/mês — pesquisa de prompt injection
+    # CIO/CFO Dive cobrem quem COMPRA AI, não quem vende: "CIOs ainda esperam a
+    # economia prometida", "só 35% dos líderes de finanças medem ROI de AI".
+    # O catálogo pendia para engenharia; o público do digest inclui CFO e CMO.
+    # Ressalva: ~40% do CFO Dive é macro e nomeações — o heat threshold filtra.
+    "cio_dive": "https://www.ciodive.com/feeds/news/",              # diário — adoção enterprise vista pelo comprador
+    "cfo_dive": "https://www.cfodive.com/feeds/news/",              # diário — ângulo CFO/ROI
     "practical_ecommerce": "https://www.practicalecommerce.com/feed/",  # 27/30d
     "supply_chain_review": "https://www.scmr.com/feed/",            # 37/30d — supply chain (tarifas/China)
     "finance_magnates": "https://www.financemagnates.com/feed/",    # 20/30d — fintech/mercados
@@ -242,6 +274,11 @@ WORLD_FEEDS = {
     "mobile_time": "https://www.mobiletime.com.br/feed/",           # mobile + fintech + IA aplicada
     "startupi": "https://startupi.com.br/feed/",                    # startups/VC Brasil
     "finsiders_br": "https://finsidersbrasil.com.br/feed/",         # fintech/finanças digitais
+    # v2.17: redação independente do Sérgio Spagnuolo. É a única fonte BR do
+    # catálogo que faz regulação e accountability de plataforma ("AGU quer R$500
+    # milhões do Discord") — todas as outras cobrem negócio/startup. Alimenta o
+    # Radar Brasil, que vinha saindo vazio por falta de pauta BR não-business.
+    "nucleo_jor": "https://nucleo.jor.br/feed",                     # diário — regulação/investigativo BR
     # Cadência semanal, mas são as duas únicas vozes de engenharia/dev BR ainda
     # vivas — os blogs de iFood, QuintoAndar, Loft, Stone, PicPay e Mercado Livre
     # estão todos parados no Medium desde 2021-2023.
@@ -352,6 +389,12 @@ SUBSTACK_FEEDS = {
     # produto ("trazer o que C-levels não encontram sozinhos") e quem assina os dois
     # percebe a repetição.
     "sub_bens_bites": "https://bensbites.com/feed",                       # 8/30d
+    # ── v2.17: geopolítica de chips e AI vista pela China ──
+    # Jordan Schneider cobre o lado chinês de controles de exportação e corrida
+    # de compute — ponto cego do catálogo, que lê a disputa só pela ótica americana.
+    # Formato longo e denso em política dos EUA: taxa de aproveitamento por edição
+    # é baixa, mas quando entra é um ângulo que nenhuma outra fonte dá.
+    "sub_chinatalk": "https://www.chinatalk.media/feed",                  # várias/semana — China, chips, export controls
 
     # ── v2.16: fontes novas verificadas ao vivo (RSS 200 + post recente) ──
     # Geopolítica de AI (China × EUA × Europa) — gap identificado na revisão.
@@ -402,12 +445,93 @@ _BROWSER_HEADERS = {
 }
 
 
+_SUBSTACK_HOST_RE = re.compile(r'^https?://([^/]+\.substack\.com)(?:/|$)', re.I)
+
+
+class _ArchiveEntry(dict):
+    """Entry no formato que _fetch_single_feed espera do feedparser.
+
+    Precisa responder tanto a .get() quanto a hasattr(e, 'published_parsed'),
+    porque o parser de itens usa as duas formas de acesso.
+    """
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(key)
+
+
+class _ArchiveFeed:
+    """Envelope mínimo com .entries, compatível com o retorno do feedparser."""
+    def __init__(self, entries):
+        self.entries = entries
+
+
+def _fetch_substack_archive(host: str, limit: int = 20):
+    """Lê posts pela API de arquivo do Substack em vez do /feed (v2.17).
+
+    Por que existe: o Substack bloqueia /feed para clientes automatizados —
+    responde 403, ou 200 com uma página HTML de desafio (que o feedparser lê
+    como zero entries). O endpoint /api/v1/archive, no MESMO host, não está
+    sob a mesma regra e devolve JSON com os posts.
+
+    Foi o que manteve mudos por 39 dias feeds que estavam vivos o tempo todo
+    (Doomberg, Zvi, Capital Wars, Import AI). Verificado em 2026-08-28.
+
+    Devolve None quando não dá para usar — aí o chamador cai no /feed normal.
+    """
+    try:
+        resp = requests.get(
+            f"https://{host}/api/v1/archive",
+            params={"sort": "new", "limit": limit},
+            headers=_BROWSER_HEADERS, timeout=20,
+        )
+        if resp.status_code != 200:
+            return None
+        posts = resp.json()
+    except Exception:
+        return None
+
+    if not isinstance(posts, list) or not posts:
+        return None
+
+    entries = []
+    for p in posts:
+        if not isinstance(p, dict):
+            continue
+        published_parsed = None
+        raw_date = p.get("post_date") or p.get("published_at")
+        if raw_date:
+            try:
+                # Formato ISO com Z: "2026-08-24T13:12:40.123Z"
+                dt = datetime.strptime(raw_date[:19], "%Y-%m-%dT%H:%M:%S")
+                published_parsed = dt.timetuple()
+            except (ValueError, TypeError):
+                published_parsed = None
+        entries.append(_ArchiveEntry(
+            title=p.get("title") or "",
+            summary=p.get("description") or p.get("subtitle") or "",
+            link=p.get("canonical_url") or "",
+            author=(p.get("publishedBylines") or [{}])[0].get("name") or host,
+            published_parsed=published_parsed,
+        ))
+    return _ArchiveFeed(entries) if entries else None
+
+
 def _fetch_feed(feed_url: str, max_retries: int = 3):
     """Fetch RSS feed with retry + exponential backoff.
     v2.5: Retry com backoff (2s, 4s, 8s) antes de desistir.
     Strategy: requests com browser UA primeiro (Substack bloqueia bots),
     feedparser direto como fallback.
+    v2.17: para hosts *.substack.com, tenta antes a API de arquivo — o /feed
+    deles é bloqueado para automação. Se falhar, segue o caminho normal.
     """
+    _m = _SUBSTACK_HOST_RE.match(feed_url or '')
+    if _m:
+        _arq = _fetch_substack_archive(_m.group(1))
+        if _arq is not None:
+            return _arq
+
     feed = None
     for attempt in range(max_retries):
         # Primary: requests com browser headers (evita bloqueio Substack)
@@ -503,6 +627,146 @@ def collect_world_feeds() -> List[RawItem]:
         source_type_fn=lambda _: 'world',
         max_per_feed=10
     )
+
+
+def collect_hf_daily_papers(max_items: int = 12) -> List[RawItem]:
+    """Papers do dia com curadoria HUMANA da comunidade Hugging Face (v2.17).
+
+    Por que vale: o arXiv despeja centenas de papers por dia sem hierarquia.
+    O Daily Papers é uma seleção votada por praticantes — o sinal de "isto aqui
+    importa" vem de gente que trabalha com o assunto, não de um algoritmo de
+    recência. É fonte primária no topo da hierarquia da filosofia de fontes.
+
+    Endpoint público, sem chave. Ordena por upvotes e corta os sem tração:
+    paper com 1-2 votos é ruído, não descoberta.
+    """
+    items = []
+    try:
+        resp = requests.get(
+            "https://huggingface.co/api/daily_papers",
+            headers=_BROWSER_HEADERS, timeout=20,
+        )
+        if resp.status_code != 200:
+            print(f"   ⚠️ HF Daily Papers: HTTP {resp.status_code}")
+            return items
+        dados = resp.json()
+    except Exception as e:
+        print(f"   ⚠️ HF Daily Papers: {type(e).__name__}")
+        return items
+
+    if not isinstance(dados, list):
+        return items
+
+    ordenados = sorted(
+        (d for d in dados if isinstance(d, dict)),
+        key=lambda d: (d.get('paper') or {}).get('upvotes') or 0,
+        reverse=True,
+    )
+    for d in ordenados[:max_items]:
+        paper = d.get('paper') or {}
+        upvotes = paper.get('upvotes') or 0
+        if upvotes < 3:      # sem tração da comunidade não é descoberta
+            continue
+        pid = paper.get('id') or ''
+        if not pid:
+            continue
+        published = datetime.utcnow()
+        raw = d.get('publishedAt') or paper.get('publishedAt')
+        if raw:
+            try:
+                published = datetime.strptime(str(raw)[:19], "%Y-%m-%dT%H:%M:%S")
+            except (ValueError, TypeError):
+                pass
+        items.append(RawItem(
+            title=paper.get('title') or '',
+            content=(paper.get('summary') or '')[:1200],
+            url=f"https://huggingface.co/papers/{pid}",
+            source_name="Hugging Face Daily Papers",
+            source_type='paper',
+            author=", ".join(
+                a.get('name', '') for a in (paper.get('authors') or [])[:3] if isinstance(a, dict)
+            ) or "Hugging Face",
+            published_at=published,
+            engagement={'likes': upvotes},
+            raw_data={},
+        ))
+    return items
+
+
+# ── Bluesky (v2.17) — substituto parcial do X ──
+# A API pública do Bluesky não pede autenticação, ao contrário do X, cujo token
+# está revogado e cuja coleta vem falhando. Mas migração não é automática:
+# a maioria dos handles do X ou não existe no Bluesky ou abandonou a conta.
+# Esta lista tem SÓ quem foi verificado publicando de fato (28/08/2026).
+# Testados e DESCARTADOS por inatividade: karpathy (1189d), levelsio (638d),
+# danshipper (618d), swyx (164d). Sem conta encontrada: benedictevans, chipro,
+# natfriedman, jack-clark. Handle inválido: ylecun.
+# Ao acrescentar alguém, confira a data do último post antes — não presuma
+# que quem é ativo no X migrou.
+BLUESKY_HANDLES = {
+    "Simon Willison": "simonwillison.net",
+    "Ethan Mollick": "emollick.bsky.social",
+    "David Ha": "hardmaru.bsky.social",
+}
+
+
+def collect_bluesky_posts(max_per_handle: int = 5) -> List[RawItem]:
+    """Posts recentes de praticantes no Bluesky, via API pública sem auth."""
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    items = []
+    for nome, handle in BLUESKY_HANDLES.items():
+        try:
+            resp = requests.get(
+                "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed",
+                params={"actor": handle, "limit": 20, "filter": "posts_no_replies"},
+                headers=_BROWSER_HEADERS, timeout=20,
+            )
+            if resp.status_code != 200:
+                print(f"   ⚠️ Bluesky {handle}: HTTP {resp.status_code}")
+                continue
+            feed = resp.json().get('feed', [])
+        except Exception as e:
+            print(f"   ⚠️ Bluesky {handle}: {type(e).__name__}")
+            continue
+
+        n = 0
+        for entry in feed:
+            if n >= max_per_handle:
+                break
+            post = entry.get('post') or {}
+            # Repost não é conteúdo original do autor — o 'reason' marca isso
+            if entry.get('reason'):
+                continue
+            record = post.get('record') or {}
+            texto = (record.get('text') or '').strip()
+            if len(texto) < 60:       # post curto raramente carrega notícia
+                continue
+            criado = record.get('createdAt') or ''
+            try:
+                published = datetime.strptime(criado[:19], "%Y-%m-%dT%H:%M:%S")
+            except (ValueError, TypeError):
+                continue
+            if published < cutoff:
+                continue
+
+            uri = post.get('uri') or ''
+            rkey = uri.rsplit('/', 1)[-1] if uri else ''
+            items.append(RawItem(
+                title=texto[:140],
+                content=texto,
+                url=f"https://bsky.app/profile/{handle}/post/{rkey}" if rkey else f"https://bsky.app/profile/{handle}",
+                source_name=f"{nome} (Bluesky)",
+                source_type='tweet',
+                author=nome,
+                published_at=published,
+                engagement={
+                    'likes': post.get('likeCount', 0),
+                    'retweets': post.get('repostCount', 0),
+                },
+                raw_data={},
+            ))
+            n += 1
+    return items
 
 
 def collect_youtube_feeds() -> List[RawItem]:
@@ -685,6 +949,18 @@ def collect_all() -> Dict:
     substack_items = collect_substack_feeds()
     all_items.extend(substack_items)
     print(f"   → {len(substack_items)} itens de Substacks")
+
+    # Hugging Face Daily Papers (v2.17) — curadoria humana, fonte primária
+    print("🤗 Coletando HF Daily Papers...")
+    hf_items = collect_hf_daily_papers()
+    all_items.extend(hf_items)
+    print(f"   → {len(hf_items)} papers com tração da comunidade")
+
+    # Bluesky (v2.17) — praticantes que saíram do X
+    print("🦋 Coletando Bluesky...")
+    bsky_items = collect_bluesky_posts()
+    all_items.extend(bsky_items)
+    print(f"   → {len(bsky_items)} posts de {len(BLUESKY_HANDLES)} handles")
 
     # X/Twitter
     print("🐦 Coletando X...")

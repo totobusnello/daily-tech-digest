@@ -53,6 +53,10 @@ NEWSLETTER_SOURCES = {
         "category_hint": "ai_models",
         "description": "Research-to-product bridge: AI papers with practical applications"
     },
+    # ⚠️ VERIFICADO EM 2026-08-28: responde 403 a qualquer cliente automatizado,
+    # não só ao runner do GitHub Actions (testado também de IP residencial).
+    # Não há rota de RSS conhecida. Mantido no catálogo à espera de decisão editorial:
+    # ou se descobre um feed oficial, ou a fonte sai. Hoje ela nunca contribui itens.
     "taaft": {
         "name": "There's An AI For That",
         "base_url": "https://newsletter.theresanaiforthat.com",
@@ -71,14 +75,25 @@ NEWSLETTER_SOURCES = {
         "name": "Import AI",
         "base_url": "https://importai.substack.com",
         "rss_url": "https://importai.substack.com/feed",
+        # Espelho no site do Jack Clark: o feed do Substack responde 403 ao IP do
+        # runner do GitHub Actions, mas jack-clark.net serve os mesmos posts.
+        "rss_fallbacks": ["https://jack-clark.net/feed/"],
         "language": "en",
         "category_hint": "ai_models",
         "description": "Jack Clark (ex-OpenAI policy). AI policy, research, geopolitics. Weekly deep analysis."
     },
+    # v2.17 — URL corrigida. A antiga (insidevcnews.substack.com) devolvia HTTP 400
+    # com o corpo dizendo "This publication is invite-only": a publicação foi fechada,
+    # não é bloqueio de IP nem domínio morto. Não há como acessar sem convite.
+    # A Distrito migrou o conteúdo público para distrito.substack.com
+    # ("Innovation News by Distrito"), verificado em 2026-08-28: HTTP 200, 20 entries.
+    # ⚠️ CADÊNCIA MENSAL (edições #28–#47, uma por mês). Com a janela de 36h das
+    # newsletters, este feed fica vazio ~29 dias em 30 — é esperado, não é falha.
+    # "Inside VC" sobrevive como nome de report, não de newsletter.
     "distrito_news": {
-        "name": "Distrito News Inside VC",
-        "base_url": "https://insidevcnews.substack.com",
-        "rss_url": "https://insidevcnews.substack.com/feed",
+        "name": "Innovation News by Distrito",
+        "base_url": "https://distrito.substack.com",
+        "rss_url": "https://distrito.substack.com/feed",
         "language": "pt-br",
         "category_hint": "saas_enterprise",
         "description": "Brazil VC/startup ecosystem. Funding rounds, valuations, exits. PT-BR."
@@ -389,9 +404,23 @@ def _collect_via_rss(source_key: str, source_config: dict, cutoff: datetime, max
     if not rss_url:
         return []
 
+    # v2.17: tenta espelhos em outro domínio quando o principal falha.
+    # Vários feeds respondem 200 numa máquina comum e 403 no runner do GitHub Actions
+    # (bloqueio por IP de datacenter). Quando a publicação também vive num domínio
+    # próprio, esse espelho costuma passar. Import AI é o caso conhecido.
+    urls_a_tentar = [rss_url] + list(source_config.get('rss_fallbacks', []) or [])
+
     items = []
     try:
-        feed = _fetch_feed(rss_url)
+        feed = None
+        for i, u in enumerate(urls_a_tentar):
+            feed = _fetch_feed(u)
+            if getattr(feed, 'entries', None):
+                if i > 0:
+                    print(f"    ↩️  usando espelho: {u}")
+                break
+        if feed is None or not getattr(feed, 'entries', None):
+            return []
         for entry in feed.entries[:max_items]:
             published = None
             if hasattr(entry, 'published_parsed') and entry.published_parsed:

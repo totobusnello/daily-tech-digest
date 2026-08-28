@@ -4,6 +4,138 @@
 
 ## Changelog
 
+### v2.17b — 2026-08-28 (destrava o tier indie e abre a camada primária)
+
+Continuação direta da v2.17. A pergunta que originou: "que ferramenta incorporar para
+aumentar o número de fontes diferentes e frescas?" A resposta acabou sendo **nenhuma
+ferramenta paga** — o que faltava era usar endpoints públicos que já existiam.
+
+**O achado principal: a API de arquivo do Substack.**
+
+O `/feed` do Substack é bloqueado para automação, mas `/api/v1/archive` **no mesmo host**
+responde 200 com JSON. Testado nos feeds que estavam mudos há 39 dias:
+
+| Feed | Antes | Pela API de arquivo |
+|---|---|---|
+| doomberg | 0 itens | ✅ post de 28/08 |
+| thezvi | 0 itens | ✅ post de 27/08 |
+| capital_wars | 0 itens | ✅ post de 26/08 |
+| import_ai | 403 | ✅ post de 24/08 |
+
+Custo zero, sem chave, ~40 linhas. `_fetch_feed()` tenta esse caminho antes para hosts
+`*.substack.com` e cai no `/feed` se falhar. **31 feeds do catálogo estão nesse domínio.**
+
+**Camada primária nova** (tudo grátis, sem auth):
+- `collect_hf_daily_papers()` — curadoria **humana** votada por praticantes, filtro de
+  upvotes ≥ 3. O arXiv despeja centenas de papers/dia sem hierarquia; aqui o sinal de
+  relevância vem de quem trabalha com o assunto.
+- arXiv `cs.CL` e `cs.LG` — só `cs.AI` deixava de fora justamente onde sai o trabalho de LLM.
+- GitHub releases `.atom` de 6 repos de infra AI — quando o vLLM lança versão aparece ali
+  antes de qualquer veículo. ⚠️ Não verificados do sandbox; conferir no primeiro run.
+
+**Bluesky: a migração do X não aconteceu.** A API pública não pede auth, o que resolveria o
+token revogado do X. Mas verificando handle a handle, **só 3 publicam de fato**: Simon
+Willison (hoje), Ethan Mollick (hoje), David Ha (1d). Karpathy está parado há 1189 dias,
+levelsio 638, danshipper 618, swyx 164. Sem conta: benedictevans, chipro, natfriedman,
+jack-clark. Handle inválido: ylecun. Entraram os 3 — não a lista inteira.
+
+**Ferramentas pagas avaliadas e descartadas** (preços verificados em 28/08): Firecrawl não
+documenta proxy residencial, que é o que consertaria bloqueio por IP de datacenter (free
+1.000 créditos, depois US$16/mês); ScrapingBee e ScraperAPI pedem US$49/mês de piso para
+~1.500 fetches. O caso principal se resolve de graça. Jina Reader foi reportado como
+solução para o TAAFT mas **não consegui reproduzir** — deu 403 no meu teste; registrado
+como não-confirmado em vez de adotado.
+
+**Distrito:** a URL antiga devolvia 400 com o corpo dizendo `This publication is
+invite-only` — a publicação foi fechada, não morreu. Conteúdo público migrou para
+`distrito.substack.com`. Cadência mensal, então o feed fica vazio ~29 dias em 30.
+
+**Fica para depois:** IMAP próprio para newsletters que bloqueiam scraping mas entregam
+email (caso do There's An AI For That, que não tem RSS — beehiiv com feed desativado).
+Exige criar conta e assinar manualmente, então não cabia nesta rodada.
+
+**Catálogo: 154 → 162 feeds** + HF Daily Papers + 3 handles de Bluesky.
+
+---
+
+### v2.17 — 2026-08-28 (recalibra curadoria, conserta observabilidade, +5 fontes, 3 melhorias de formato)
+
+**Gatilho:** a edição de 28/08 saiu com subject quebrado e pauta fraca. Investigando os
+logs dos runs de 27 e 28/08, os dois sintomas tinham raízes diferentes — e uma delas
+estava escondida havia 39 dias.
+
+**O que os dados mostraram (edição de 27/08, 757 itens coletados):**
+
+| Origem | Itens | % |
+|---|---|---|
+| RSS tech/AI | 376 | 50% |
+| Mundo (mainstream) | 308 | 41% |
+| Substacks (indie/builder) | 13 | 1,7% |
+| Newsletters curadas | 13 | 1,7% |
+
+O tier que é o diferencial editorial do produto entregava 3,4% do pool. E na edição de
+28/08, **4 dos 5 itens do Hoje no Byte vieram de mídia tech** — apesar de o corte
+estratificado ter entregue **44 itens primários** ao curador. A matéria-prima estava lá;
+a pontuação é que preferia mainstream.
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | **Heat Score recalibrado**: freshness 40→25, ineditismo +15→+25 (community/indie +10→+18). **subject_hook** 6→5-9 palavras com exigência de frase gramatical + regra de nomes próprios em PT-BR. **Teste de consequência** no Mundo Real (descarta trivia). **`details[]`** no schema da Big Story. **Log da curadoria** agrupa por categoria real e conta o digest inteiro. |
+| `scripts/health_check.py` | `_check_feed()` passa a reportar o erro real (status HTTP, timeout, TLS, DNS, HTML-com-200) em vez de colapsar tudo em `"No entries returned"`. Abre GitHub Issue na **virada** do limiar. |
+| `scripts/newsletter_collector.py` | Novo `rss_fallbacks` (espelho em outro domínio). Import AI ganha `jack-clark.net`. Distrito News e TAAFT anotados com estado verificado. |
+| `scripts/collector.py` | +5 fontes verificadas: `nucleo_jor`, `embrace_the_red`, `cio_dive`, `cfo_dive`, `sub_chinatalk`. Catálogo vai a **154**. |
+| `scripts/sender.py` | Big Story renderiza `details[]`. **PROMPT DO DIA** vira seção própria. **Tempo de leitura por item** derivado no código. |
+| `.github/workflows/daily-digest.yml` | Cron sai do slot `:00` para `23 8 * * *` — ver seção abaixo. |
+
+**Os 16 feeds mudos há 39 dias.** O health check os marcava como quebrados com a mensagem
+`"No entries returned"`. Testados à mão, 7 deles respondiam **HTTP 200 com 20-32 entries e
+posts do próprio dia** — Doomberg, Zvi, Capital Wars, State of AI, Beautiful Mess. Estavam
+vivos. A causa era `_check_feed()` engolir toda exceção num `except: pass` e cair num return
+genérico: timeout, 403, DNS e feed-vazio viravam a mesma string. O sinal existia, mas não
+distinguia "o site nos bloqueou" de "o autor não publicou" — e por isso ninguém podia agir.
+
+**As 3 newsletters em 403 têm naturezas diferentes** (verificado em 28/08):
+- **Import AI** — 200 aqui, 403 no runner. Bloqueio por IP de datacenter. Resolvido com espelho.
+- **Distrito News** — **400 de qualquer origem**. URL provavelmente morta, sem espelho conhecido.
+- **There's An AI For That** — **403 para qualquer bot**, não é o runner. Sem rota de RSS.
+
+Os dois últimos ficaram anotados no código aguardando decisão editorial, em vez de continuarem
+quebrando em silêncio.
+
+**Fontes rejeitadas nesta rodada** (pesquisadas e testadas): SVPG (403 Cloudflare + ~1-2/mês),
+The News/Waffle (mainstream generalista com celebridades), Digg (sem RSS), Prompt Engineering
+Daily (posta ~1x/ano apesar do nome), Fabricated Knowledge e Hyperdimensional (inativos há
+>30 dias), MIT Tech Review Brasil (conteúdo traduzido = redundante).
+
+**Correção de leitura durante a análise:** o log dizia `"Selecionados: 9"` numa edição de 18
+peças, o que me levou a diagnosticar edição curta onde não havia. Era `len(items[])`, não o
+total. O contador e o agrupamento do log foram corrigidos junto.
+
+**Testes:** `scripts/test_byte_score.py` passa inteiro.
+
+---
+
+### Cron: por que a edição de 28/08 não saiu sozinha
+
+O evento agendado **não foi enfileirado nem executado — foi descartado pelo GitHub**. Não é
+falha de código: o workflow estava `active`, o cron sintaticamente correto, e todos os runs
+anteriores tiveram sucesso.
+
+| Período | Atraso vs 06:00 UTC |
+|---|---|
+| Ago 8–26 | 26–42 min (normal) |
+| Ago 27 | **11h12m** |
+| Ago 28 | **descartado** |
+
+O cron estava em `0 6 * * *` — minuto `:00`, o slot mais congestionado do GH Actions. Quando a
+fila dos runners compartilhados satura, eventos agendados são descartados silenciosamente.
+Novo cron: `23 8 * * *` (08:23 UTC / 05:23 BRT) — minuto ímpar sai da contenção e, com o atraso
+típico de ~30-40 min, a entrega cai **~06:00 BRT**, mais perto do horário de leitura real que os
+~03:30 BRT anteriores. O YAML carrega o comentário explicando, para ninguém devolver ao `:00`.
+
+---
+
+
 ### v2.16b — 2026-07-20 (Expansão do catálogo — 105 → 149 feeds)
 
 **Contexto:** logo após a limpeza, ficou claro que 35 feeds líquidos a menos deixavam o corte estratificado sem alternativa — a quota BR era 12 e só havia 9 fontes brasileiras. A pergunta virou "como aumentar a base *utilizável*".

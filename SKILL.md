@@ -52,7 +52,7 @@ NEWSLETTER BONUS:
 
 **Threshold mínimo: 60 pontos para entrar no digest**
 
-## Fontes (~200 ativas)
+## Fontes (154 ativas)
 
 ### Tier 1 — Primeira Mao (52 X/Twitter handles)
 AI Labs, fundadores, researchers, VCs, geopolítica, markets, crypto.
@@ -182,7 +182,7 @@ python run.py --skip-collect   # Pula coleta, usa /tmp/digest_raw.json existente
 python run.py --skip-process   # Pula curadoria, usa /tmp/digest_curated.json existente
 ```
 
-**Schedule:** Diário às 03:00 BRT (06:00 UTC) via GitHub Actions — compensando delays do GH Actions.
+**Schedule:** Diário às 05:23 BRT (08:23 UTC) via GitHub Actions — entrega ~06:00 BRT após atraso tipico da fila (~30-40 min). Minuto impar evita o slot ':00' congestionado.
 
 ## Anti-Patterns a Evitar
 

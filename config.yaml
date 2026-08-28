@@ -1,6 +1,6 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.16b
-# Atualizado: 2026-07-20 (v2.16: limpeza do catálogo + 3 bugs | v2.16b: expansão 105 → 149 feeds)
+# THE DAILY BYTE - Configuração v2.17
+# Atualizado: 2026-08-28 (Heat Score recalibrado + diagnóstico de feeds + 5 fontes + formato)
 # ============================================
 
 newsletter:
