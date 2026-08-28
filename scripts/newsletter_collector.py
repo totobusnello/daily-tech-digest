@@ -53,6 +53,10 @@ NEWSLETTER_SOURCES = {
         "category_hint": "ai_models",
         "description": "Research-to-product bridge: AI papers with practical applications"
     },
+    # ⚠️ VERIFICADO EM 2026-08-28: responde 403 a qualquer cliente automatizado,
+    # não só ao runner do GitHub Actions (testado também de IP residencial).
+    # Não há rota de RSS conhecida. Mantido no catálogo à espera de decisão editorial:
+    # ou se descobre um feed oficial, ou a fonte sai. Hoje ela nunca contribui itens.
     "taaft": {
         "name": "There's An AI For That",
         "base_url": "https://newsletter.theresanaiforthat.com",
@@ -71,10 +75,18 @@ NEWSLETTER_SOURCES = {
         "name": "Import AI",
         "base_url": "https://importai.substack.com",
         "rss_url": "https://importai.substack.com/feed",
+        # Espelho no site do Jack Clark: o feed do Substack responde 403 ao IP do
+        # runner do GitHub Actions, mas jack-clark.net serve os mesmos posts.
+        "rss_fallbacks": ["https://jack-clark.net/feed/"],
         "language": "en",
         "category_hint": "ai_models",
         "description": "Jack Clark (ex-OpenAI policy). AI policy, research, geopolitics. Weekly deep analysis."
     },
+    # ⚠️ VERIFICADO EM 2026-08-28: o feed devolve HTTP 400 de qualquer origem
+    # (não é bloqueio ao runner). A raiz da publicação responde 200 mas sem entries,
+    # e não achamos espelho (distrito.me e insidevc.com.br não têm feed).
+    # Provavelmente a publicação foi renomeada ou o RSS desativado.
+    # Mantido à espera de decisão editorial: achar a URL nova ou remover a fonte.
     "distrito_news": {
         "name": "Distrito News Inside VC",
         "base_url": "https://insidevcnews.substack.com",
@@ -389,9 +401,23 @@ def _collect_via_rss(source_key: str, source_config: dict, cutoff: datetime, max
     if not rss_url:
         return []
 
+    # v2.17: tenta espelhos em outro domínio quando o principal falha.
+    # Vários feeds respondem 200 numa máquina comum e 403 no runner do GitHub Actions
+    # (bloqueio por IP de datacenter). Quando a publicação também vive num domínio
+    # próprio, esse espelho costuma passar. Import AI é o caso conhecido.
+    urls_a_tentar = [rss_url] + list(source_config.get('rss_fallbacks', []) or [])
+
     items = []
     try:
-        feed = _fetch_feed(rss_url)
+        feed = None
+        for i, u in enumerate(urls_a_tentar):
+            feed = _fetch_feed(u)
+            if getattr(feed, 'entries', None):
+                if i > 0:
+                    print(f"    ↩️  usando espelho: {u}")
+                break
+        if feed is None or not getattr(feed, 'entries', None):
+            return []
         for entry in feed.entries[:max_items]:
             published = None
             if hasattr(entry, 'published_parsed') and entry.published_parsed:

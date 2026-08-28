@@ -209,6 +209,29 @@ def _render_big_story_html(item: Dict) -> str:
     hours = _esc(str(item.get('hours_ago', '?')))
     led = _byte_led_html(item.get('byte_score'))
     led_inline = f'&nbsp;&middot;&nbsp; {led}' if led else ''
+    _rm = _read_min_html(item)
+    read_inline = f'&nbsp;&middot;&nbsp; {_rm}' if _rm else ''
+
+    # v2.17: bullets de especificidade dura (números, preços, prazos, benchmarks).
+    # A Big Story é o item que o leitor encaminha para o board — antes ela pulava
+    # da manchete direto para uma frase imperativa, sem nenhum dado de apoio.
+    # Campo opcional: se o curador não mandar details[], o card fica como antes.
+    detalhes = item.get('details') or []
+    detalhes_html = ''
+    if isinstance(detalhes, list) and detalhes:
+        linhas = ''.join(
+            f'<tr><td style="padding:0 0 6px 0;font-family:\'Helvetica Neue\',Arial,sans-serif;'
+            f'font-size:14px;color:#3d3d3d;line-height:1.45;">'
+            f'<span style="color:{COLORS["brand"]};font-weight:800;">&bull;</span>&nbsp; {_esc(str(d))}'
+            f'</td></tr>'
+            for d in detalhes[:3]
+        )
+        detalhes_html = (
+            '<tr><td style="padding-bottom:12px;">'
+            '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
+            f'{linhas}</table></td></tr>'
+        )
+
     return f'''<tr>
   <td style="background-color:#fff8f2;border:2px solid {COLORS["brand"]};border-radius:12px;padding:20px 22px;box-shadow:0 4px 12px rgba(255,107,53,0.15);">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -227,15 +250,41 @@ def _render_big_story_html(item: Dict) -> str:
           {why}
         </td>
       </tr>
+      {detalhes_html}
       <tr>
         <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;">
           <a href="{url}" style="display:inline-block;color:#ffffff;background-color:{COLORS["brand"]};text-decoration:none;font-weight:700;padding:8px 18px;border-radius:20px;font-size:13px;">Ler agora &#x2197;</a>
-          &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{led_inline}
+          &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{read_inline}{led_inline}
         </td>
       </tr>
     </table>
   </td>
 </tr>'''
+
+
+def _item_read_min(item: Dict) -> int:
+    """Minutos de leitura do ARTIGO no destino, estimado a partir do resumo (v2.17).
+
+    Deliberadamente derivado no código, não pedido ao curador: o modelo não abre
+    o link e chutaria o número. Usa o tamanho do que ELE escreveu sobre a notícia
+    como proxy — matéria que rendeu análise longa tende a ser leitura mais longa.
+    Fator 25x sobre o resumo, faixa 1-9 min para não prometer precisão que não existe.
+    """
+    texto = " ".join(str(item.get(c, '') or '') for c in
+                     ('headline', 'why_it_matters', 'context'))
+    palavras = len(texto.split())
+    if not palavras:
+        return 0
+    return max(1, min(9, round(palavras * 25 / 220)))
+
+
+def _read_min_html(item: Dict) -> str:
+    """Selo discreto de tempo de leitura. '' quando não há texto para estimar."""
+    m = _item_read_min(item)
+    if not m:
+        return ""
+    return (f'<span style="font-family:\'Helvetica Neue\',Arial,sans-serif;'
+            f'font-size:11px;color:#9ca3af;">{m} min</span>')
 
 
 def _estimate_reading_time(curated: Dict) -> int:
@@ -317,6 +366,8 @@ def _render_item_html(item: Dict) -> str:
     hours = _esc(str(item.get('hours_ago', '?')))
     led_html = _byte_led_html(item.get('byte_score'))
     led_inline = f'&nbsp;&middot;&nbsp; {led_html}' if led_html else ''
+    _rm = _read_min_html(item)
+    read_inline = f'&nbsp;&middot;&nbsp; {_rm}' if _rm else ''
 
     tag_html = f'<span style="display:inline-block;background-color:#FF6B35;color:#ffffff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:6px;vertical-align:middle;text-transform:uppercase;">{_esc(tag)}</span>' if tag else ''
 
@@ -334,7 +385,7 @@ def _render_item_html(item: Dict) -> str:
   <tr>
     <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;line-height:1.4;">
       <a href="{url}" style="display:inline-block;color:#2563eb;text-decoration:none;font-weight:600;border:1px solid #2563eb;padding:4px 12px;border-radius:16px;font-size:12px;">Ver original &#x2197;</a>
-      &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{led_inline}
+      &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{read_inline}{led_inline}
     </td>
   </tr>
 </table>'''
@@ -430,6 +481,8 @@ def generate_email_html(curated: Dict) -> str:
             wi_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(wi_hours))}h' if wi_hours is not None else ''
             wi_led_html = _byte_led_html(wi.get('byte_score'))
             wi_led_inline = f' &nbsp;&middot;&nbsp; {wi_led_html}' if wi_led_html else ''
+            _wrm = _read_min_html(wi)
+            wi_read_inline = f' &nbsp;&middot;&nbsp; {_wrm}' if _wrm else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(world_items) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
@@ -444,7 +497,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{wi_hours_inline}{wi_led_inline}
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{wi_hours_inline}{wi_read_inline}{wi_led_inline}
         </td>
       </tr>
     </table>''')
@@ -491,6 +544,8 @@ def generate_email_html(curated: Dict) -> str:
             rb_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(rb_hours))}h' if rb_hours is not None else ''
             rb_led_html = _byte_led_html(rb.get('byte_score'))
             rb_led_inline = f' &nbsp;&middot;&nbsp; {rb_led_html}' if rb_led_html else ''
+            _rrm = _read_min_html(rb)
+            rb_read_inline = f' &nbsp;&middot;&nbsp; {_rrm}' if _rrm else ''
             border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(radar_brasil) - 1 else ''
             body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
       <tr>
@@ -505,7 +560,7 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
       <tr>
         <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{rb_hours_inline}{rb_led_inline}
+          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{rb_hours_inline}{rb_read_inline}{rb_led_inline}
         </td>
       </tr>
     </table>''')
@@ -527,7 +582,7 @@ def generate_email_html(curated: Dict) -> str:
         tool_url = _safe_url(tool.get('source_url', ''))
         tool_source = _esc(tool.get('source_name', ''))
         how_to = _esc(tool.get('how_to_use', ''))
-        prompt = _esc(tool.get('prompt_of_day', ''))
+        # prompt_of_day não é lido aqui: virou seção própria logo abaixo (v2.17)
 
         body_rows.append(f'''{_card_start()}
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -563,26 +618,31 @@ def generate_email_html(curated: Dict) -> str:
       </tr>
     </table>''')
 
-        if prompt:
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:12px;">
+        body_rows.append(_card_end())
+        body_rows.append(_card_bottom())
+        body_rows.append(_spacer())
+
+    # ── 4a. PROMPT DO DIA (v2.17) ───────────────
+    # Promovido a seção própria. Estava enterrado dentro do card do Tool do Dia,
+    # onde competia com a ferramenta pela atenção. Nos concorrentes que rodam
+    # prompt em bloco separado (Superhuman, The Neuron) é o elemento mais
+    # copiado e encaminhado do email — merece a própria moldura.
+    _prompt_do_dia = (tool or {}).get('prompt_of_day', '') if tool else ''
+    if _prompt_do_dia:
+        body_rows.append(_section_header('&#x1F9E0;', 'PROMPT DO DIA', COLORS["analysis"]))
+        body_rows.append(_card_start())
+        body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;color:{COLORS["analysis"]};text-transform:uppercase;letter-spacing:0.5px;padding-bottom:6px;">
-          &#x1F9E0; PROMPT DO DIA <span style="font-weight:400;font-style:italic;text-transform:none;letter-spacing:0;">(copy-paste ready)</span>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#6b7280;padding-bottom:8px;">
+          Copie e cole no ChatGPT, Claude ou Gemini &#x2014; funciona como está.
         </td>
       </tr>
       <tr>
-        <td>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="background-color:#f8f4ff;border-left:4px solid {COLORS["analysis"]};padding:12px 16px;font-family:'Courier New',monospace;font-size:14px;color:#1a1a2e;line-height:1.5;border-radius:0 6px 6px 0;">
-                {prompt}
-              </td>
-            </tr>
-          </table>
+        <td style="background-color:#f8f4ff;border:1px solid #ddd6fe;border-left:4px solid {COLORS["analysis"]};padding:14px 16px;font-family:'Courier New',Courier,monospace;font-size:14px;color:#1a1a2e;line-height:1.55;border-radius:0 6px 6px 0;">
+          {_esc(_prompt_do_dia)}
         </td>
       </tr>
     </table>''')
-
         body_rows.append(_card_end())
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())

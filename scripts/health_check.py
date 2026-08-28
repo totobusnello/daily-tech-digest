@@ -38,22 +38,50 @@ def _build_feed_dict():
     return feeds
 
 def _check_feed(name, url):
-    """Try fetching a feed. Returns (name, ok, error_msg)."""
+    """Try fetching a feed. Returns (name, ok, error_msg).
+
+    O erro devolvido precisa dizer O QUE aconteceu. Até a v2.16 esta função
+    engolia toda exceção num `except: pass` e caía num return genérico, então
+    timeout, 403, DNS e feed-realmente-vazio viravam a MESMA string
+    "No entries returned". Resultado: 16 feeds passaram 39 dias marcados como
+    quebrados sem que ninguém pudesse agir, porque o sinal não distinguia
+    "o site nos bloqueou" de "o autor não publicou".
+    """
+    erro_http = None
     try:
         resp = requests.get(url, timeout=TIMEOUT, headers=_BROWSER_HEADERS, allow_redirects=True)
         if resp.status_code == 200:
-            feed = feedparser.parse(resp.text)
+            feed = feedparser.parse(resp.content)
             if feed.entries:
                 return (name, True, None)
-    except Exception:
-        pass
+            # 200 sem entries: pode ser feed vazio de verdade ou uma página de
+            # desafio/anti-bot devolvida com status 200. Distinguir pelo content-type.
+            ctype = (resp.headers.get("Content-Type") or "").split(";")[0].strip()
+            if "html" in ctype.lower():
+                erro_http = f"HTTP 200 mas veio HTML ({ctype}) — provável bloqueio anti-bot"
+            else:
+                erro_http = f"HTTP 200, content-type {ctype or 'desconhecido'}, zero entries"
+        else:
+            erro_http = f"HTTP {resp.status_code}"
+    except requests.exceptions.Timeout:
+        erro_http = f"timeout apos {TIMEOUT}s"
+    except requests.exceptions.SSLError as e:
+        erro_http = f"erro TLS: {str(e)[:80]}"
+    except requests.exceptions.ConnectionError as e:
+        erro_http = f"falha de conexao/DNS: {str(e)[:80]}"
+    except Exception as e:
+        erro_http = f"{type(e).__name__}: {str(e)[:80]}"
+
+    # Fallback: feedparser sozinho (UA próprio dele, às vezes passa onde requests apanha)
     try:
         feed = feedparser.parse(url)
         if feed.entries:
             return (name, True, None)
+        erro_fb = "sem entries"
     except Exception as e:
-        return (name, False, str(e))
-    return (name, False, "No entries returned")
+        erro_fb = f"{type(e).__name__}: {str(e)[:60]}"
+
+    return (name, False, f"{erro_http} | fallback feedparser: {erro_fb}")
 
 def main():
     feeds = _build_feed_dict()
@@ -87,6 +115,49 @@ def main():
         r = results[name]
         print(f"   WARNING: {name} — {r['consecutive_failures']} consecutive failures — {r['last_error']}")
     print(f"📄 Saved to {HEALTH_FILE}")
+
+    # Alerta só para quem CRUZOU o limiar hoje (== FAILURE_THRESHOLD).
+    # Alertar por todos os >= threshold repetiria a mesma issue todo dia:
+    # os 16 feeds que ficaram 39 dias quebrados teriam gerado 39 issues idênticas.
+    novos = sorted(n for n, r in results.items() if r["consecutive_failures"] == FAILURE_THRESHOLD)
+    if novos:
+        _abrir_issue(novos, results)
+
+
+def _abrir_issue(novos, results):
+    """Abre GitHub Issue para feeds que acabaram de cruzar o limiar de falhas.
+
+    Silencioso fora do GitHub Actions (gh CLI ausente) — o health check é
+    não-bloqueante e nunca deve derrubar o pipeline por causa do alerta.
+    """
+    import subprocess
+    from datetime import date
+
+    linhas = [f"- `{n}` — {results[n]['last_error']}" for n in novos]
+    corpo = (
+        f"## 🩺 {len(novos)} feed(s) cruzaram {FAILURE_THRESHOLD} falhas consecutivas\n\n"
+        + "\n".join(linhas)
+        + "\n\n### Como agir\n"
+        "1. Teste o feed fora do runner: `curl -sI -A 'Mozilla/5.0' <url>`\n"
+        "2. Se responder 200 na sua máquina e falhar aqui, é bloqueio ao IP do GitHub Actions "
+        "— procure um feed alternativo (domínio próprio da publicação em vez de `*.substack.com`).\n"
+        "3. Se o autor simplesmente parou de publicar, remova a fonte do `collector.py`.\n\n"
+        "> Alerta automático do health check. Só dispara na virada do limiar, "
+        "não todo dia — se a fonte continuar quebrada, esta issue segue valendo.\n"
+    )
+    try:
+        subprocess.run(
+            ["gh", "issue", "create",
+             "--title", f"🩺 {len(novos)} feed(s) quebrados — {date.today().isoformat()}",
+             "--body", corpo,
+             "--label", "pipeline-failure"],
+            check=True, capture_output=True, timeout=30,
+        )
+        print(f"   🔔 Issue aberta para {len(novos)} feed(s) recém-quebrados")
+    except FileNotFoundError:
+        print("   (gh CLI ausente — alerta só no log)")
+    except Exception as e:
+        print(f"   ⚠️ Não consegui abrir issue: {type(e).__name__}")
 
 if __name__ == "__main__":
     main()

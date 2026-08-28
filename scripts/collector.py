@@ -162,6 +162,18 @@ RSS_FEEDS = {
     "schneier": "https://www.schneier.com/feed/",                   # segurança com lente estratégica
     "helpnet_security": "https://www.helpnetsecurity.com/feed/",    # 10/30d — segurança enterprise
     "martech": "https://martech.org/feed/",                         # 10/30d — ângulo CMO
+
+    # ── v2.17: segurança de AI em primeira mão + lado do comprador enterprise ──
+    # Johann Rehberger publica red-teaming de AI antes da imprensa cobrir
+    # ("Breaking Claude Code Auto Mode", "Hijacking LiteLLM"). Cadência baixa
+    # (~3-4/mês) mas é fonte primária de praticante — o tier mais alto da filosofia.
+    "embrace_the_red": "https://embracethered.com/blog/index.xml",   # 3-4/mês — pesquisa de prompt injection
+    # CIO/CFO Dive cobrem quem COMPRA AI, não quem vende: "CIOs ainda esperam a
+    # economia prometida", "só 35% dos líderes de finanças medem ROI de AI".
+    # O catálogo pendia para engenharia; o público do digest inclui CFO e CMO.
+    # Ressalva: ~40% do CFO Dive é macro e nomeações — o heat threshold filtra.
+    "cio_dive": "https://www.ciodive.com/feeds/news/",              # diário — adoção enterprise vista pelo comprador
+    "cfo_dive": "https://www.cfodive.com/feeds/news/",              # diário — ângulo CFO/ROI
     "practical_ecommerce": "https://www.practicalecommerce.com/feed/",  # 27/30d
     "supply_chain_review": "https://www.scmr.com/feed/",            # 37/30d — supply chain (tarifas/China)
     "finance_magnates": "https://www.financemagnates.com/feed/",    # 20/30d — fintech/mercados
@@ -242,6 +254,11 @@ WORLD_FEEDS = {
     "mobile_time": "https://www.mobiletime.com.br/feed/",           # mobile + fintech + IA aplicada
     "startupi": "https://startupi.com.br/feed/",                    # startups/VC Brasil
     "finsiders_br": "https://finsidersbrasil.com.br/feed/",         # fintech/finanças digitais
+    # v2.17: redação independente do Sérgio Spagnuolo. É a única fonte BR do
+    # catálogo que faz regulação e accountability de plataforma ("AGU quer R$500
+    # milhões do Discord") — todas as outras cobrem negócio/startup. Alimenta o
+    # Radar Brasil, que vinha saindo vazio por falta de pauta BR não-business.
+    "nucleo_jor": "https://nucleo.jor.br/feed",                     # diário — regulação/investigativo BR
     # Cadência semanal, mas são as duas únicas vozes de engenharia/dev BR ainda
     # vivas — os blogs de iFood, QuintoAndar, Loft, Stone, PicPay e Mercado Livre
     # estão todos parados no Medium desde 2021-2023.
@@ -352,6 +369,12 @@ SUBSTACK_FEEDS = {
     # produto ("trazer o que C-levels não encontram sozinhos") e quem assina os dois
     # percebe a repetição.
     "sub_bens_bites": "https://bensbites.com/feed",                       # 8/30d
+    # ── v2.17: geopolítica de chips e AI vista pela China ──
+    # Jordan Schneider cobre o lado chinês de controles de exportação e corrida
+    # de compute — ponto cego do catálogo, que lê a disputa só pela ótica americana.
+    # Formato longo e denso em política dos EUA: taxa de aproveitamento por edição
+    # é baixa, mas quando entra é um ângulo que nenhuma outra fonte dá.
+    "sub_chinatalk": "https://www.chinatalk.media/feed",                  # várias/semana — China, chips, export controls
 
     # ── v2.16: fontes novas verificadas ao vivo (RSS 200 + post recente) ──
     # Geopolítica de AI (China × EUA × Europa) — gap identificado na revisão.
