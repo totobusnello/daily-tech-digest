@@ -1,5 +1,5 @@
 # ============================================
-# THE DAILY BYTE - Configuração v2.17
+# THE DAILY BYTE - Configuração v2.17b
 # Atualizado: 2026-08-28 (Heat Score recalibrado + diagnóstico de feeds + 5 fontes + formato)
 # ============================================
 
@@ -12,9 +12,13 @@ newsletter:
 
 # Horário de envio (BRT)
 schedule:
-  time: "03:00"
+  time: "05:23"
   timezone: "America/Sao_Paulo"
-  note: "Cron 06:00 UTC = 03:00 BRT, compensando delays de 2-6h do GH Actions"
+  # v2.17: cron 08:23 UTC. O minuto ímpar é proposital — o slot de hora cheia
+  # (:00) é o mais congestionado do GH Actions e eventos agendados chegam a ser
+  # DESCARTADOS silenciosamente (foi o que derrubou a edição de 28/08).
+  # Com o atraso típico da fila (~30-40 min), a entrega cai ~06:00 BRT.
+  note: "Cron 08:23 UTC = 05:23 BRT; entrega ~06:00 BRT. NÃO usar minuto :00"
 
 # Filtros de curadoria
 filters:
@@ -130,7 +134,9 @@ apis:
 # ============================================
 # FONTES — v2.16b (catálogo auditado E expandido, feed a feed)
 # ============================================
-# Total: 175 fontes — TODAS testadas ao vivo em 2026-07-20, com DUAS exigências:
+# Total (v2.17b): 162 feeds RSS/YouTube + 16 X handles + 10 newsletter scrapers
+#                 + 3 handles Bluesky + Hugging Face Daily Papers.
+# TODAS testadas ao vivo, com DUAS exigências:
 #   (1) HTTP 200 com entries parseáveis
 #   (2) cadência real medida (posts nos últimos 30 dias)
 # O critério (2) nasceu da descoberta de que mainstream não dominava por
@@ -160,6 +166,17 @@ apis:
 #    A lista de X caiu de 66 para 16 porque continha dezenas de handles
 #    inexistentes e o custo de 2 chamadas/handle não cabe no free tier da API.
 #    * Anthropic usa mirror comunitário — não há RSS oficial.
+#
+# ⚠️ v2.17 — +8 feeds e duas categorias novas de fonte:
+#    · API DE ARQUIVO DO SUBSTACK: o /feed deles é bloqueado para automação, mas
+#      /api/v1/archive no mesmo host responde 200. `_fetch_feed()` tenta esse
+#      caminho antes para *.substack.com. Foi o que manteve mudos por 39 dias
+#      feeds que estavam vivos (Doomberg, Zvi, Capital Wars, Import AI).
+#    · HF DAILY PAPERS: curadoria humana votada, `collect_hf_daily_papers()`.
+#    · BLUESKY: API pública sem auth, mas só 3 handles publicam de fato —
+#      verificar data do último post antes de acrescentar alguém.
+#    · GitHub releases .atom de 6 repos: NÃO verificados do sandbox. Conferir
+#      no primeiro run; se derem 0 itens, remover.
 #
 # ⚠️ v2.16b — expansão de 105 → 149 feeds. Notas de quem for mexer aqui:
 #    · BRASIL era o gargalo: 9 fontes para uma quota de 12 no corte. Agora 21.

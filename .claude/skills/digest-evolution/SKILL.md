@@ -11,6 +11,36 @@ Você é o agente de evolução contínua do THE DAILY BYTE. Seu trabalho é ana
 
 ## Workflow Completo (executar na ordem)
 
+### FASE 0: LER OS LOGS DO ÚLTIMO RUN — antes de qualquer outra coisa
+
+**Esta fase foi acrescentada depois da rodada de 28/08/2026, onde ela teria evitado dois
+diagnósticos errados. Não pule.** O código diz o que *deveria* acontecer; o log diz o que
+aconteceu. As duas coisas divergiam havia 39 dias sem ninguém notar.
+
+```bash
+# lista os runs recentes
+curl -sS "https://api.github.com/repos/totobusnello/daily-tech-digest/actions/runs?per_page=5" \
+  -H "Authorization: Bearer $GH_TOKEN"
+# baixa o log do job (só funciona com o run já concluído)
+curl -sSL "https://api.github.com/repos/totobusnello/daily-tech-digest/actions/jobs/<JOB_ID>/logs" \
+  -H "Authorization: Bearer $GH_TOKEN" -o run.txt
+```
+
+Extrair **quatro** números antes de formar qualquer opinião:
+
+1. **Composição do pool** (linhas `→ N itens de ...`). Em 27/08: RSS 376, mundo 308,
+   Substacks **13**, newsletters **13**. O tier que é o diferencial editorial entregava
+   **1,7%** do material. Nenhuma leitura do código revelaria isso.
+2. **Health check** (`⚠️ Unhealthy`). Quantos feeds, e há quantos dias. Se o número de
+   falhas consecutivas for igual para muitos feeds, é sintoma **sistêmico**, não fontes
+   morrendo por acaso.
+3. **Corte estratificado** (`🎚️ Corte estratificado: 80 itens (primária X · BR Y · mainstream Z)`).
+   Compare com o que **de fato saiu** na edição. Em 28/08 o corte entregou **44 itens
+   primários** e mesmo assim 4 dos 5 itens do Hoje no Byte vieram de mídia — o gargalo
+   não era falta de matéria-prima, era a pontuação do Heat Score.
+4. **Fontes da edição** (linhas `Heat: NN | Fonte`). É a checagem mais direta de se a
+   filosofia de fontes está sendo cumprida.
+
 ### FASE 1: Análise do Estado Atual (5 min)
 
 1. **Ler configuração atual:**
@@ -137,6 +167,41 @@ Para CADA sugestão, usar o formato:
 4. **Público-alvo claro** — C-levels brasileiros (CEO, CFO, CMO, CPO) que querem notícias de tech acionáveis.
 5. **Curadoria > Quantidade** — Nunca sugira adicionar 10 fontes de uma vez. Máximo 2-3 por ciclo.
 6. **Respeitar a identidade** — O Daily Byte é direto, provocativo, confiante. Não diluir isso.
+
+### Lições de método (rodada de 28/08/2026 — cada uma custou um diagnóstico errado)
+
+7. **Teste antes de declarar morto, não só antes de adicionar.** A regra 47 do CLAUDE.md
+   manda testar feed antes de incluir. Faltava a metade inversa: 16 feeds estavam marcados
+   como quebrados havia 39 dias e, testados à mão, **7 respondiam HTTP 200 com posts do
+   próprio dia**. O problema era o diagnóstico do health check, não as fontes.
+
+8. **Um bloqueio tem várias naturezas — distinga antes de escolher a solução.** Três
+   newsletters davam 403 e cada uma pedia uma resposta diferente: Import AI só bloqueava
+   o IP do runner (resolvido com espelho em outro domínio); Distrito devolvia 400 de
+   qualquer origem porque a publicação virou *invite-only*; There's An AI For That bloqueia
+   qualquer bot e não tem RSS nenhum. Tratar os três como "403" levaria a comprar uma
+   ferramenta que não resolveria dois deles.
+
+9. **Antes de propor ferramenta paga, procure o endpoint público.** O maior ganho da
+   rodada foi descobrir que `/api/v1/archive` do Substack responde 200 onde o `/feed`
+   dá 403 — de graça, no mesmo host. Firecrawl, ScrapingBee e ScraperAPI foram avaliados
+   e nenhum resolveria melhor: o piso deles é US$16–49/mês e nenhum documenta proxy
+   residencial, que é o que consertaria bloqueio por IP de datacenter.
+
+10. **Não presuma migração de plataforma.** A API pública do Bluesky não pede auth e
+    parecia a saída óbvia para o X com token revogado. Verificando handle a handle: só
+    **3 de 13** publicam de fato. Karpathy está parado lá há 1189 dias. Sempre confira
+    a data do último post antes de incluir alguém.
+
+11. **Desconfie do próprio log antes de diagnosticar em cima dele.** `Selecionados: 9`
+    numa edição de 18 peças me levou a concluir que a edição estava curta — era
+    `len(items[])`, não o total. Se um número do log parecer estranho, leia o código que
+    o imprime antes de construir uma tese sobre ele.
+
+12. **Separe "falta matéria-prima" de "a seleção prefere outra coisa".** O sintoma era o
+    mesmo (edição cheia de mídia mainstream), mas a causa não: o corte estratificado
+    entregava 44 itens primários e o curador escolhia mainstream porque a fórmula do Heat
+    Score premiava recência. Corrigir sourcing não teria resolvido.
 
 ## Referências de Benchmark
 

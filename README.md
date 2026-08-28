@@ -79,10 +79,10 @@ AiDrop, Evolving AI, Update Diário, TechDrop, AlphaSignal, There's An AI For Th
 ## Critérios de Curadoria
 
 **Heat Score (máximo 100 pontos):**
-- Freshness (40): <6h=40, 6-12h=30, 12-24h=20, >24h=0
+- Freshness (25): <6h=25, 6-12h=20, 12-24h=12, 24-36h=6, >36h=0   [v2.17: era 40]
 - Fonte (30): Fundador/blog oficial=30, Jornalista=25, Release=20, Newsletter=15
 - Impacto (30): Lançamento=30, M&A=25, Drama=20, Incremental=5
-- Bônus: Ineditismo (+15), Engagement alto (+10), Cross-validação (+5)
+- Bônus: Ineditismo (+25 primária / +18 community / +18 indie), Engagement alto (+10), Cross-validação (+5)   [v2.17: ineditismo era +15/+10/+10]
 
 **Regras críticas:**
 - Mínimo 60 pontos para entrar
