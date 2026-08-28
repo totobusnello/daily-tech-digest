@@ -52,7 +52,7 @@ NEWSLETTER BONUS:
 
 **Threshold mínimo: 60 pontos para entrar no digest**
 
-## Fontes (~200 ativas)
+## Fontes (154 ativas)
 
 ### Tier 1 — Primeira Mao (52 X/Twitter handles)
 AI Labs, fundadores, researchers, VCs, geopolítica, markets, crypto.

@@ -18,7 +18,7 @@ A arquitetura usa Python para coleta paralela, prompts especializados para curad
 
 ## Funcionalidades Principais
 
-- Coleta paralela de ~200 feeds de múltiplas fontes (RSS, X/Twitter, YouTube, newsletters)
+- Coleta paralela de 154 feeds de múltiplas fontes (RSS, X/Twitter, YouTube, newsletters)
 - Curadoria inteligente com Claude Sonnet 4.6 usando heat score (relevância + recência + fonte)
 - Dedup em 6 camadas: URL (5 dias), hash de título, clustering semântico, cap por fonte, intra-edition, TF-IDF cosine
 - Layout editorial de 6 seções: Numero do Dia, Mundo Real, Hoje no Byte, SaaS & Enterprise, Radar Brasil, Tool do Dia
@@ -37,7 +37,7 @@ daily-tech-digest/
 │   ├── sender.py                 # Renderização HTML e envio via Buttondown
 │   ├── feedback.py               # Extração de métricas Buttondown (opens, clicks, hooks)
 │   ├── dedup.py                  # Cache 5-dias + dedup URL/título/semântico
-│   ├── health_check.py           # Monitor de saúde de feeds (~200 fontes)
+│   ├── health_check.py           # Monitor de saúde de feeds (154 fontes)
 │   ├── alert_failure.py          # Cria GitHub Issue em caso de falha
 │   └── run.py                    # Orquestrador (pipeline completo)
 ├── config.yaml                   # Configuração central (modelo, distribuição, fontes)
@@ -53,7 +53,7 @@ daily-tech-digest/
 
 ## Como Funciona
 
-1. **Coleta** (01:00 BRT) — `collector.py` busca conteúdo de ~200 fontes em paralelo, normaliza URLs, remove duplicatas crudas
+1. **Coleta** (05:23 BRT) — `collector.py` busca conteúdo de 154 fontes em paralelo, normaliza URLs, remove duplicatas crudas
 2. **Feedback** (02:00 BRT) — `feedback.py` extrai métricas da última newsletter (opens, clicks, subject hooks) via Buttondown API
 3. **Curadoria** (02:30 BRT) — `processor.py` aplica heat score (relevância 30pts + recência 40pts + fonte 30pts), pré-agrupa por tema, envia melhor representante de cada cluster ao Claude
 4. **Renderização** (05:23 BRT) — `sender.py` converte JSON curado para HTML (table-based, inline CSS) e envia via Buttondown
@@ -61,7 +61,7 @@ daily-tech-digest/
 
 **Agendamento:** GitHub Actions dispara às 08:23 UTC / 05:23 BRT, com entrega estimada ~06:00 BRT (o atraso tipico da fila e ~30-40 min). O minuto impar e proposital: o slot de hora cheia (':00') e o mais congestionado do Actions e eventos agendados chegam a ser descartados silenciosamente.
 
-## Fontes (~200 feeds)
+## Fontes (154 feeds)
 
 ### Tier 1 — Primeira Mão (65+ X/Twitter)
 Fundadores e labs (Sam Altman, Anthropic, Sundar Pichai, LeCun, Demis Hassabis, Karpathy), builders indie (Simonw, Chipro, Gergelý Orosz, Levelsio), investidores e estrategistas.

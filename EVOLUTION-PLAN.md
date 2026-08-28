@@ -4,6 +4,84 @@
 
 ## Changelog
 
+### v2.17 — 2026-08-28 (recalibra curadoria, conserta observabilidade, +5 fontes, 3 melhorias de formato)
+
+**Gatilho:** a edição de 28/08 saiu com subject quebrado e pauta fraca. Investigando os
+logs dos runs de 27 e 28/08, os dois sintomas tinham raízes diferentes — e uma delas
+estava escondida havia 39 dias.
+
+**O que os dados mostraram (edição de 27/08, 757 itens coletados):**
+
+| Origem | Itens | % |
+|---|---|---|
+| RSS tech/AI | 376 | 50% |
+| Mundo (mainstream) | 308 | 41% |
+| Substacks (indie/builder) | 13 | 1,7% |
+| Newsletters curadas | 13 | 1,7% |
+
+O tier que é o diferencial editorial do produto entregava 3,4% do pool. E na edição de
+28/08, **4 dos 5 itens do Hoje no Byte vieram de mídia tech** — apesar de o corte
+estratificado ter entregue **44 itens primários** ao curador. A matéria-prima estava lá;
+a pontuação é que preferia mainstream.
+
+| Arquivo | O que mudou |
+|---------|------------|
+| `scripts/processor.py` | **Heat Score recalibrado**: freshness 40→25, ineditismo +15→+25 (community/indie +10→+18). **subject_hook** 6→5-9 palavras com exigência de frase gramatical + regra de nomes próprios em PT-BR. **Teste de consequência** no Mundo Real (descarta trivia). **`details[]`** no schema da Big Story. **Log da curadoria** agrupa por categoria real e conta o digest inteiro. |
+| `scripts/health_check.py` | `_check_feed()` passa a reportar o erro real (status HTTP, timeout, TLS, DNS, HTML-com-200) em vez de colapsar tudo em `"No entries returned"`. Abre GitHub Issue na **virada** do limiar. |
+| `scripts/newsletter_collector.py` | Novo `rss_fallbacks` (espelho em outro domínio). Import AI ganha `jack-clark.net`. Distrito News e TAAFT anotados com estado verificado. |
+| `scripts/collector.py` | +5 fontes verificadas: `nucleo_jor`, `embrace_the_red`, `cio_dive`, `cfo_dive`, `sub_chinatalk`. Catálogo vai a **154**. |
+| `scripts/sender.py` | Big Story renderiza `details[]`. **PROMPT DO DIA** vira seção própria. **Tempo de leitura por item** derivado no código. |
+| `.github/workflows/daily-digest.yml` | Cron sai do slot `:00` para `23 8 * * *` — ver seção abaixo. |
+
+**Os 16 feeds mudos há 39 dias.** O health check os marcava como quebrados com a mensagem
+`"No entries returned"`. Testados à mão, 7 deles respondiam **HTTP 200 com 20-32 entries e
+posts do próprio dia** — Doomberg, Zvi, Capital Wars, State of AI, Beautiful Mess. Estavam
+vivos. A causa era `_check_feed()` engolir toda exceção num `except: pass` e cair num return
+genérico: timeout, 403, DNS e feed-vazio viravam a mesma string. O sinal existia, mas não
+distinguia "o site nos bloqueou" de "o autor não publicou" — e por isso ninguém podia agir.
+
+**As 3 newsletters em 403 têm naturezas diferentes** (verificado em 28/08):
+- **Import AI** — 200 aqui, 403 no runner. Bloqueio por IP de datacenter. Resolvido com espelho.
+- **Distrito News** — **400 de qualquer origem**. URL provavelmente morta, sem espelho conhecido.
+- **There's An AI For That** — **403 para qualquer bot**, não é o runner. Sem rota de RSS.
+
+Os dois últimos ficaram anotados no código aguardando decisão editorial, em vez de continuarem
+quebrando em silêncio.
+
+**Fontes rejeitadas nesta rodada** (pesquisadas e testadas): SVPG (403 Cloudflare + ~1-2/mês),
+The News/Waffle (mainstream generalista com celebridades), Digg (sem RSS), Prompt Engineering
+Daily (posta ~1x/ano apesar do nome), Fabricated Knowledge e Hyperdimensional (inativos há
+>30 dias), MIT Tech Review Brasil (conteúdo traduzido = redundante).
+
+**Correção de leitura durante a análise:** o log dizia `"Selecionados: 9"` numa edição de 18
+peças, o que me levou a diagnosticar edição curta onde não havia. Era `len(items[])`, não o
+total. O contador e o agrupamento do log foram corrigidos junto.
+
+**Testes:** `scripts/test_byte_score.py` passa inteiro.
+
+---
+
+### Cron: por que a edição de 28/08 não saiu sozinha
+
+O evento agendado **não foi enfileirado nem executado — foi descartado pelo GitHub**. Não é
+falha de código: o workflow estava `active`, o cron sintaticamente correto, e todos os runs
+anteriores tiveram sucesso.
+
+| Período | Atraso vs 06:00 UTC |
+|---|---|
+| Ago 8–26 | 26–42 min (normal) |
+| Ago 27 | **11h12m** |
+| Ago 28 | **descartado** |
+
+O cron estava em `0 6 * * *` — minuto `:00`, o slot mais congestionado do GH Actions. Quando a
+fila dos runners compartilhados satura, eventos agendados são descartados silenciosamente.
+Novo cron: `23 8 * * *` (08:23 UTC / 05:23 BRT) — minuto ímpar sai da contenção e, com o atraso
+típico de ~30-40 min, a entrega cai **~06:00 BRT**, mais perto do horário de leitura real que os
+~03:30 BRT anteriores. O YAML carrega o comentário explicando, para ninguém devolver ao `:00`.
+
+---
+
+
 ### v2.16b — 2026-07-20 (Expansão do catálogo — 105 → 149 feeds)
 
 **Contexto:** logo após a limpeza, ficou claro que 35 feeds líquidos a menos deixavam o corte estratificado sem alternativa — a quota BR era 12 e só havia 9 fontes brasileiras. A pergunta virou "como aumentar a base *utilizável*".
