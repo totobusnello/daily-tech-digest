@@ -194,6 +194,13 @@ RSS_FEEDS = {
     # Ressalva: ~40% do CFO Dive é macro e nomeações — o heat threshold filtra.
     "cio_dive": "https://www.ciodive.com/feeds/news/",              # diário — adoção enterprise vista pelo comprador
     "cfo_dive": "https://www.cfodive.com/feeds/news/",              # diário — ângulo CFO/ROI
+    # ── v2.17b: substitutos de fontes perdidas para o bloqueio de *.substack.com ──
+    # Ben Lorica roda as pesquisas de adoção de AI em enterprise; cobre agentes em
+    # produção e tradeoff de custo/infra. Entra no lugar de sub_ai_to_roi.
+    "gradient_flow": "https://gradientflow.com/feed/",              # 3x/semana — AI enterprise na prática
+    # Análise de NEGÓCIO de banking/fintech e entrevistas com C-level do setor,
+    # não cobertura de meios de pagamento. Entra no lugar de sub_fintech_biz_weekly.
+    "tearsheet": "https://www.tearsheet.co/feed",                   # diário seg-sex — fintech/banking
     "practical_ecommerce": "https://www.practicalecommerce.com/feed/",  # 27/30d
     "supply_chain_review": "https://www.scmr.com/feed/",            # 37/30d — supply chain (tarifas/China)
     "finance_magnates": "https://www.financemagnates.com/feed/",    # 20/30d — fintech/mercados
@@ -401,7 +408,15 @@ SUBSTACK_FEEDS = {
     # de compute — ponto cego do catálogo, que lê a disputa só pela ótica americana.
     # Formato longo e denso em política dos EUA: taxa de aproveitamento por edição
     # é baixa, mas quando entra é um ângulo que nenhuma outra fonte dá.
-    "sub_chinatalk": "https://www.chinatalk.media/feed",                  # várias/semana — China, chips, export controls
+    "sub_chinatalk": "https://www.chinatalk.media/feed",
+    # ── v2.17b: substitutos das fontes perdidas para o bloqueio de *.substack.com ──
+    # ⚠️ Os dois rodam no Substack, mas em DOMÍNIO PRÓPRIO — é isso que os torna
+    # alcançáveis do runner. Ao avaliar candidata nova, olhe o host do feed:
+    # <nome>.substack.com é inalcançável; domínio próprio passa.
+    # Entram no lugar de sub_capital_wars (macro/fluxo de capital), que ficou
+    # preso em capitalwars.substack.com.
+    "sub_noahpinion": "https://www.noahpinion.blog/feed",                 # 3x/semana — macro e geoeconomia
+    "sub_exponential_view": "https://www.exponentialview.co/feed",        # 4x/semana — economia da AI escrita para board                  # várias/semana — China, chips, export controls
 
     # ── v2.16: fontes novas verificadas ao vivo (RSS 200 + post recente) ──
     # Geopolítica de AI (China × EUA × Europa) — gap identificado na revisão.
