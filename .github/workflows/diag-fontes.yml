@@ -1,0 +1,101 @@
+name: 🔬 Diagnóstico de rotas de fonte (temporário)
+
+# WORKFLOW DESCARTÁVEL — criado em 2026-08-29 para responder uma pergunta que só
+# pode ser respondida de dentro do runner: quais rotas de fetch funcionam a partir
+# do IP do GitHub Actions.
+#
+# Contexto: 16 feeds (Doomberg, Zvi, Capital Wars, State of AI...) respondem
+# HTTP 200 de uma máquina comum e HTTP 403 do runner. É bloqueio ao range de IP
+# de datacenter, não fontes mortas. A API de arquivo do Substack resolveu o
+# problema no sandbox mas não no runner.
+#
+# APAGAR este arquivo depois de coletar o resultado.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Deps
+        run: pip install requests --quiet
+
+      - name: 🔬 Testar rotas
+        env:
+          # Opcional: se existir um JINA_API_KEY nos secrets, usa (100 RPM em vez de 20).
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os, requests
+
+          UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+          H = {"User-Agent": UA,
+               "Accept": "application/rss+xml,application/atom+xml,application/xml;q=0.9,*/*;q=0.8"}
+
+          JK = os.environ.get("JINA_API_KEY", "").strip()
+
+          def sonda(rotulo, url, headers=None, timeout=45):
+              try:
+                  r = requests.get(url, headers=headers or H, timeout=timeout, allow_redirects=True)
+                  corpo = r.content or b""
+                  amostra = corpo[:80].decode("utf-8", "ignore").replace("\n", " ").strip()
+                  # sniff: é XML de feed, HTML, ou JSON?
+                  low = corpo[:400].lower()
+                  if b"<rss" in low or b"<feed" in low: tipo = "FEED-XML"
+                  elif low.lstrip().startswith(b"[") or low.lstrip().startswith(b"{"): tipo = "JSON"
+                  elif b"<html" in low or b"<!doctype html" in low: tipo = "HTML"
+                  else: tipo = "?"
+                  marca = "✅" if r.status_code == 200 else "❌"
+                  print(f"{marca} {rotulo:38s} HTTP {r.status_code} | {len(corpo):7d}B | {tipo:8s} | {amostra[:52]}")
+                  return r.status_code == 200, tipo
+              except Exception as e:
+                  print(f"❌ {rotulo:38s} ERRO {type(e).__name__}: {str(e)[:48]}")
+                  return False, None
+
+          print("=" * 100)
+          print("1) BASELINE — confirmar que o bloqueio existe mesmo daqui")
+          print("=" * 100)
+          sonda("substack /feed (doomberg)",  "https://doomberg.substack.com/feed")
+          sonda("substack /feed (zvi)",       "https://thezvi.substack.com/feed")
+          sonda("itforum /feed (nao-substack)","https://itforum.com.br/feed/")
+          sonda("substack /feed (notboring)", "https://www.notboring.co/feed")
+
+          print()
+          print("=" * 100)
+          print("2) API DE ARQUIVO DO SUBSTACK — funcionou no sandbox; funciona aqui?")
+          print("=" * 100)
+          sonda("archive (doomberg)", "https://doomberg.substack.com/api/v1/archive?sort=new&limit=5")
+          sonda("archive (zvi)",      "https://thezvi.substack.com/api/v1/archive?sort=new&limit=5")
+
+          print()
+          print("=" * 100)
+          print(f"3) JINA READER  (com chave: {'SIM' if JK else 'NAO — modo keyless, 20 RPM'})")
+          print("=" * 100)
+          hj = dict(H)
+          if JK:
+              hj["Authorization"] = f"Bearer {JK}"
+          sonda("jina -> substack /feed",   "https://r.jina.ai/https://doomberg.substack.com/feed", headers=hj)
+          sonda("jina -> substack archive", "https://r.jina.ai/https://doomberg.substack.com/api/v1/archive?sort=new&limit=5", headers=hj)
+          sonda("jina -> taaft (bloqueia todos)", "https://r.jina.ai/https://newsletter.theresanaiforthat.com/", headers=hj)
+
+          print()
+          print("=" * 100)
+          print("4) GITHUB RELEASES — nunca verificados; feeds .atom publicos")
+          print("=" * 100)
+          for repo in ["ollama/ollama", "vllm-project/vllm", "ggml-org/llama.cpp",
+                       "huggingface/transformers", "pytorch/pytorch", "langchain-ai/langchain"]:
+              sonda(f"releases.atom {repo}", f"https://github.com/{repo}/releases.atom")
+
+          print()
+          print("=" * 100)
+          print("LEITURA: 'FEED-XML' ou 'JSON' com HTTP 200 = rota utilizavel.")
+          print("         'HTML' com 200 = pagina de desafio anti-bot (feedparser leria 0 entries).")
+          print("=" * 100)
+          PY
