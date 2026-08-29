@@ -43,7 +43,7 @@ sender.py             -> Buttondown API -> email HTML
 | `scripts/feedback.py` | Puxa metricas Buttondown (opens, clicks, top temas, recent_hooks) para informar curadoria |
 | `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
 | `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send). Flags: `--preview`, `--skip-collect`, `--skip-process` |
-| `scripts/health_check.py` | Monitora saude de 162 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
+| `scripts/health_check.py` | Monitora saude de 154 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
 | `scripts/alert_failure.py` | Cria GitHub Issue quando pipeline falha (via gh CLI no Actions). Notifica owner por email |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
@@ -84,7 +84,7 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Fontes (162 feeds + HF Papers + 3 handles Bluesky)
+## Fontes (154 feeds + HF Papers + 3 handles Bluesky)
 
 ### Filosofia de Fontes (v2.9)
 **O Daily Byte existe para trazer o que C-levels NAO encontram sozinhos.**
@@ -121,12 +121,16 @@ Ver `collector.py` para lista completa.
 | Innovation News by Distrito | VC/startups Brasil (MENSAL) | PT-BR |
 | The BRIEF | Tech+business diario, tom direto | PT-BR |
 
-### Substacks Curados (42 feeds via RSS)
-**Indie/Practitioners (v2.9):** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter, Neatprompts
-**AI Engineering:** Latent Space, State of AI
-**Business/Strategy:** Capital Wars, Doomberg, CFO Dynamics
-**Verticais:** fintech, biotech, e-commerce, edtech, sustainability
-Ver `collector.py` para lista completa.
+### Substacks Curados
+**Indie/Practitioners:** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter, Neatprompts
+**AI Engineering:** Latent Space, Zvi (espelho WordPress)
+**Business/Strategy:** Doomberg (dominio proprio), Noahpinion, Exponential View, CFO Dynamics
+**Verticais:** e-commerce, biotech (dominio proprio)
+⚠️ **v2.17b — leia a regra 73 antes de mexer aqui.** As verticais de fintech, edtech,
+sustentabilidade e health tech saíram porque só existiam em `*.substack.com`, que é
+inalcancavel do runner. Capital Wars e State of AI saíram pelo mesmo motivo (o segundo
+tambem estava parado ha 68 dias). Ao avaliar candidata nova, **olhe o host do feed**.
+Ver `collector.py` para a lista completa, com o motivo de cada remocao no lugar da linha.
 
 ### YouTube (11 canais)
 Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov, Nate Herk
@@ -313,7 +317,7 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 
 68. **O log da curadoria mentia sobre o tamanho da edicao (v2.17)** — `processor.py` imprimia `items[:5]` sob o rotulo "HOJE NO BYTE" independente da categoria real, escondia SaaS e Watch Later, e o contador mostrava `len(items[])` como "Selecionados". Numa edicao de 18 pecas ele exibia **"Selecionados: 9"**, o que levou a diagnosticar edicao curta onde nao havia. Agora agrupa pela categoria real, sinaliza categoria desconhecida, e o contador soma o digest inteiro discriminando por secao. **O log e a unica janela do operador para o que foi ao ar — se ele mente, todo diagnostico em cima dele nasce errado.**
 
-69. **API de arquivo do Substack (v2.17)** — o `/feed` do Substack e bloqueado para automacao (403, ou 200 com pagina HTML de desafio que o feedparser le como zero entries). Mas `/api/v1/archive` **no mesmo host** responde 200 com JSON dos posts. `_fetch_feed()` tenta esse caminho antes para qualquer host `*.substack.com` e so cai no `/feed` se falhar. **Foi o que manteve mudos por 39 dias feeds que estavam vivos** (Doomberg, Zvi, Capital Wars, Import AI). Custo zero, sem chave. Campos uteis: `title`, `description`/`subtitle`, `canonical_url`, `post_date`. ⚠️ Validado do sandbox, nao do runner — conferir no primeiro run.
+69. **API de arquivo do Substack (v2.17)** — ⚠️ **SUPERADA PELA REGRA 74:** nao funciona no runner (403 tambem em `/api/v1/archive`). O codigo foi removido na v2.17b. Mantida aqui pelo registro do raciocinio e porque a API segue util para DIAGNOSTICO fora do runner. — o `/feed` do Substack e bloqueado para automacao (403, ou 200 com pagina HTML de desafio que o feedparser le como zero entries). Mas `/api/v1/archive` **no mesmo host** responde 200 com JSON dos posts. `_fetch_feed()` tenta esse caminho antes para qualquer host `*.substack.com` e so cai no `/feed` se falhar. **Foi o que manteve mudos por 39 dias feeds que estavam vivos** (Doomberg, Zvi, Capital Wars, Import AI). Custo zero, sem chave. Campos uteis: `title`, `description`/`subtitle`, `canonical_url`, `post_date`. ⚠️ Validado do sandbox, nao do runner — conferir no primeiro run.
 
 70. **Camada primaria legivel por maquina (v2.17)** — categorias que o catalogo nao usava:
     - **HF Daily Papers** (`huggingface.co/api/daily_papers`, JSON sem auth) — curadoria HUMANA votada por praticantes. O arXiv despeja centenas de papers/dia sem hierarquia; aqui o sinal de "isto importa" vem de quem trabalha com o assunto. Filtro de `upvotes >= 3` corta o que nao teve tracao.
@@ -323,6 +327,22 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 71. **Bluesky nao e migracao automatica do X (v2.17)** — a API publica (`public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed`) nao pede auth, o que resolve o problema do token do X revogado. **Mas quase ninguem migrou de fato.** Verificados um a um: so 3 publicam (Simon Willison, Ethan Mollick, David Ha). Karpathy esta parado ha 1189 dias, levelsio 638, danshipper 618, swyx 164; benedictevans, chipro, natfriedman e jack-clark nao tem conta encontrada; o handle do ylecun da 400. **Ao acrescentar alguem, confira a data do ultimo post — nao presuma que quem e ativo no X migrou.** O coletor descarta repost, resposta e post com menos de 60 caracteres.
 
 72. **Ferramentas de scraping pago nao resolvem este problema (v2.17)** — avaliados com precos verificados em 28/08: Firecrawl (free 1.000 creditos/mes, depois US$16/mes) nao documenta proxy residencial, que e o que consertaria bloqueio por IP de datacenter; ScrapingBee e ScraperAPI tem piso de **US$49/mes** para ~1.500 fetches. **O caso principal (Substack) se resolve de graca pela API de arquivo.** Jina Reader (`r.jina.ai`) foi reportado como solucao mas **nao consegui reproduzir** — deu 403 no teste. Descartados tambem: rss.app (free tier de 2 feeds), rsshub publico (403), openrss.org (devolve HTML), politepol (TLS falha), Feedrabbit (e RSS→email, direcao oposta).
+
+73. **O bloqueio e do HOST `*.substack.com`, nao da plataforma (v2.17b)** — a regra operacional mais importante desta rodada, provada por workflow de diagnostico rodando DENTRO do runner em 2026-08-29:
+    ```
+    ❌ doomberg.substack.com/feed   HTTP 403  HTML "Just a moment..." (Cloudflare)
+    ✅ notboring.co/feed            HTTP 200  FEED-XML
+    ```
+    O Cloudflare do Substack desafia o range de IP do GitHub Actions em `*.substack.com`. Publicacao que roda no Substack mas em **dominio proprio passa normalmente**. Consequencias praticas:
+    - **Ao avaliar fonte nova, olhe o HOST do feed.** `<nome>.substack.com` sera inalcancavel em producao por mais viva e boa que a publicacao seja. Dominio proprio (Noahpinion, Exponential View, Not Boring, Stratechery) funciona.
+    - **Para resgatar um feed bloqueado**, descubra se a publicacao tem dominio proprio lendo `canonical_url` da API de arquivo (`https://<host>/api/v1/archive?limit=1`) a partir de uma maquina comum. Foi assim que Doomberg (`newsletter.doomberg.com`), Biotech Blueprint (`www.biotechblueprint.com`) e Zvi (espelho em `thezvi.wordpress.com`) voltaram.
+    - Nem so o Substack faz isso: `itforum.com.br/feed/` da 403 e `itforum.com.br/rss/` passa — WAF do proprio site, sensivel ao path.
+
+74. **A API de arquivo do Substack NAO funciona no runner (v2.17b)** — corrige a regra 69. Ela funciona de uma maquina comum e foi por isso que entrou na v2.17, mas o diagnostico mostrou **403 tambem em `/api/v1/archive`** a partir do Actions. O codigo foi removido: so somava uma request perdida por feed a cada rodada. **A API segue util para DIAGNOSTICO fora do runner** (ler `canonical_url`, conferir data do ultimo post), nao como rota de coleta.
+
+75. **Jina Reader nao resolve bloqueio de IP de datacenter (v2.17b)** — testado do runner nos tres casos (feed do Substack, API de arquivo, TAAFT): **403 nos tres**, corpo sempre a mesma pagina de desafio do Cloudflare (~5,8KB). Nao adotar. Junto com a regra 72 (Firecrawl/ScrapingBee sem proxy residencial), a conclusao e que **nenhuma ferramenta de leitura testada contorna bloqueio por IP** — a saida real e achar outra rota (dominio proprio, espelho, path diferente) ou trocar a fonte.
+
+76. **Fonte ativa mas inalcancavel deve SAIR do catalogo (v2.17b)** — 10 fontes publicavam normalmente e mesmo assim foram removidas por so existirem em `*.substack.com`. A tentacao e manter "ate o bloqueio afrouxar", mas fonte que nunca contribui item so gera ruido diario no health check e esconde as quebras que importam. Cada remocao ficou registrada em comentario no lugar da linha, com o motivo, para ninguem readicionar sem contexto. **Substituidas por:** Noahpinion e Exponential View (no lugar de Capital Wars), Gradient Flow (AI to ROI), Tearsheet (Fintech Business Weekly). **Sem substituto encontrado:** o angulo de produto/organizacao do A Beautiful Mess (todas as vozes fortes estao em `*.substack.com` ou publicam 2x/mes) e o ecossistema de AI brasileiro do AI Factory BR. MIT Tech Review Brasil foi avaliado e **rejeitado**: e traducao do MIT TR americano, que ja esta no catalogo — duplicaria historias em vez de trazer pauta BR.
 
 ---
 
