@@ -84,8 +84,8 @@ RSS_FEEDS = {
     # veículo escrever. `.atom` é feed público, sem auth, e o feedparser já lê.
     # Seleção deliberadamente curta: só repos onde um release é notícia de fato,
     # não bump de patch. O heat threshold filtra o resto.
-    # ⚠️ NÃO VERIFICADO do runner: o sandbox onde foram adicionados bloqueia
-    # github.com. Conferir no primeiro run se trazem itens; se derem 0, remover.
+    # ✅ VERIFICADOS do runner em 2026-08-29 (workflow de diagnóstico): os 6
+    # devolvem HTTP 200 com Atom válido, de 14KB (ollama) a 1,1MB (transformers).
     "gh_ollama": "https://github.com/ollama/ollama/releases.atom",
     "gh_vllm": "https://github.com/vllm-project/vllm/releases.atom",
     "gh_llamacpp": "https://github.com/ggml-org/llama.cpp/releases.atom",
@@ -267,7 +267,9 @@ WORLD_FEEDS = {
     # estas vieram de pesquisa dirigida.
     "olhar_digital": "https://olhardigital.com.br/feed/",           # tech/IA, alto volume
     "tecnoblog": "https://tecnoblog.net/feed/",                     # 50 posts/30d
-    "it_forum": "https://itforum.com.br/feed/",                     # enterprise IT, 32/30d
+    # v2.17b: /feed/ dá 403 do runner (WAF do próprio site); /rss/ serve o mesmo
+    # conteúdo e passou no teste. ⚠️ Verificado do sandbox — conferir no próximo run.
+    "it_forum": "https://itforum.com.br/rss/",                     # enterprise IT, 32/30d
     "ti_inside": "https://tiinside.com.br/feed/",                   # enterprise IT/telecom, 30/30d
     "teletime": "https://teletime.com.br/feed/",                    # telecom/infra B2B, 30/30d
     "convergencia_digital": "https://www.convergenciadigital.com.br/rss/",  # TI/telecom/IA enterprise
@@ -320,35 +322,38 @@ YOUTUBE_CHANNELS = {
 # Substack Feeds — v2.3 (curated newsletters via RSS)
 SUBSTACK_FEEDS = {
     # ── Business / Strategy ──
-    "sub_capital_wars": "https://capitalwars.substack.com/feed",
+    # v2.17b removido: sub_capital_wars — ativo (0d) mas só em *.substack.com — sem rota do runner
     # v2.16 removido: sub_cfo_dynamics — HTTP 404.
-    "sub_doomberg": "https://doomberg.substack.com/feed",
-    "sub_beautiful_mess": "https://cutlefish.substack.com/feed",
-    "sub_contrarian_hr": "https://thecontrarianhr.substack.com/feed",
+    # v2.17b: era doomberg.substack.com/feed — 403 do runner (Cloudflare bloqueia
+    # o range de IP do Actions em *.substack.com). O domínio próprio passa.
+    "sub_doomberg": "https://newsletter.doomberg.com/feed",
+    # v2.17b removido: sub_beautiful_mess — ativo (3d) mas só em *.substack.com — sem rota do runner
+    # v2.17b removido: sub_contrarian_hr — ativo (11d) mas só em *.substack.com — sem rota do runner
     # ── AI / Tech ──
     # v2.16: bloco podado de 10 → 1. Removidos por HTTP 404 (sub_ai_chat,
     #   sub_ai_explored, sub_how_i_ai, sub_conversations_ai) e por abandono
     #   (sub_ai_at_work 1200d, sub_ai_marketing 1257d, sub_everyday_ai 912d,
     #   sub_authentic_ai 471d, sub_ai_today 383d).
-    "sub_ai_for_humans": "https://aiforhumans.substack.com/feed",
+    # v2.17b removido: sub_ai_for_humans — PARADO ha 57 dias (bencravens.com) — removido por inatividade
     # ── Fintech ──
-    "sub_fintech_biz_weekly": "https://fintechbusinessweekly.substack.com/feed",
+    # v2.17b removido: sub_fintech_biz_weekly — ativo (5d) mas só em *.substack.com — sem rota do runner
     # v2.16 removidos: sub_fintech_hunting e sub_fintech_newscast (HTTP 404),
     #   sub_fintech_confidential (2067d sem post) e sub_connecting_dots_fintech (1433d).
     # ── Biotech / Pharma ──
     # v2.16 removidos: sub_ai_pharma e sub_biotech_strategy (HTTP 404),
     #   sub_biotech_bytes (806d sem post).
-    "sub_biotech_blueprint": "https://biotechblueprint.substack.com/feed",
-    "sub_health_tech": "https://longyearhealth.substack.com/feed",
+    # v2.17b: domínio próprio da publicação, alcançável do runner.
+    "sub_biotech_blueprint": "https://www.biotechblueprint.com/feed",
+    # v2.17b removido: sub_health_tech — ativo (11d) mas só em *.substack.com — sem rota do runner
     # ── E-commerce / EdTech / Sustainability ──
     # v2.16 removido: sub_ecommerce_playbook — HTTP 404.
-    "sub_edtech_partnerships": "https://edtechpartnerships.substack.com/feed",
-    "sub_sustainability_numbers": "https://hannahritchie.substack.com/feed",
+    # v2.17b removido: sub_edtech_partnerships — ativo (4d) mas só em *.substack.com — sem rota do runner
+    # v2.17b removido: sub_sustainability_numbers — ativo (11d) mas só em *.substack.com — sem rota do runner
     # ── Education / AI in Edu ──
-    "sub_toms_ai_edu": "https://tomstakesaitools.substack.com/feed",
+    # v2.17b removido: sub_toms_ai_edu — ativo (1d) mas só em *.substack.com — sem rota do runner
     # ── v2.6 Expansion: AI Engineering + Macro Strategy ──
     "sub_latent_space": "https://www.latent.space/feed",
-    "sub_state_of_ai": "https://nathanbenaich.substack.com/feed",
+    # v2.17b removido: sub_state_of_ai — PARADO ha 68 dias — removido por inatividade
     # ── v2.9 Expansion: Indie Voices / Builders / Practitioners ──
     "sub_simon_willison": "https://simonwillison.net/atom/everything/",
     "sub_lilian_weng": "https://lilianweng.github.io/index.xml",
@@ -377,7 +382,9 @@ SUBSTACK_FEEDS = {
     # ── v2.16b: vozes de análise com cadência alta ──
     # Zvi faz roundup quase diário e reage a cada release; os demais trazem
     # ângulo de negócio/policy que o resto do catálogo não cobre.
-    "sub_zvi": "https://thezvi.substack.com/feed",                        # 20/30d
+    # v2.17b: o Substack do Zvi é inalcançável do runner (403). Ele republica
+    # tudo no WordPress, que responde normalmente.
+    "sub_zvi": "https://thezvi.wordpress.com/feed/",                        # 20/30d
     "sub_big_technology": "https://www.bigtechnology.com/feed",           # 9/30d — scoops de negócio
     "sub_ai_supremacy": "https://www.ai-supremacy.com/feed",              # 7/30d — estratégia da indústria
     "sub_understanding_ai": "https://www.understandingai.org/feed",       # AI policy independente
@@ -400,9 +407,9 @@ SUBSTACK_FEEDS = {
     # Geopolítica de AI (China × EUA × Europa) — gap identificado na revisão.
     "sub_geopolitechs": "https://www.geopolitechs.org/feed",
     # ROI/adoção enterprise com métrica ("AI Metric of the Week") — outro gap.
-    "sub_ai_to_roi": "https://ai2roi.substack.com/feed",
+    # v2.17b removido: sub_ai_to_roi — ativo (0d) mas só em *.substack.com — sem rota do runner
     # PT-BR: AI + enterprise pela lente do Distrito (distinto do Inside VC).
-    "sub_ai_factory_br": "https://insideinnovation.substack.com/feed",
+    # v2.17b removido: sub_ai_factory_br — ativo (1d) mas só em *.substack.com — sem rota do runner
     # Agentic coding na prática (orquestração de subagents, padrões de loop).
     "sub_ai_engineer": "https://newsletter.aiengineer.co/feed",
 }
@@ -445,93 +452,18 @@ _BROWSER_HEADERS = {
 }
 
 
-_SUBSTACK_HOST_RE = re.compile(r'^https?://([^/]+\.substack\.com)(?:/|$)', re.I)
-
-
-class _ArchiveEntry(dict):
-    """Entry no formato que _fetch_single_feed espera do feedparser.
-
-    Precisa responder tanto a .get() quanto a hasattr(e, 'published_parsed'),
-    porque o parser de itens usa as duas formas de acesso.
-    """
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            raise AttributeError(key)
-
-
-class _ArchiveFeed:
-    """Envelope mínimo com .entries, compatível com o retorno do feedparser."""
-    def __init__(self, entries):
-        self.entries = entries
-
-
-def _fetch_substack_archive(host: str, limit: int = 20):
-    """Lê posts pela API de arquivo do Substack em vez do /feed (v2.17).
-
-    Por que existe: o Substack bloqueia /feed para clientes automatizados —
-    responde 403, ou 200 com uma página HTML de desafio (que o feedparser lê
-    como zero entries). O endpoint /api/v1/archive, no MESMO host, não está
-    sob a mesma regra e devolve JSON com os posts.
-
-    Foi o que manteve mudos por 39 dias feeds que estavam vivos o tempo todo
-    (Doomberg, Zvi, Capital Wars, Import AI). Verificado em 2026-08-28.
-
-    Devolve None quando não dá para usar — aí o chamador cai no /feed normal.
-    """
-    try:
-        resp = requests.get(
-            f"https://{host}/api/v1/archive",
-            params={"sort": "new", "limit": limit},
-            headers=_BROWSER_HEADERS, timeout=20,
-        )
-        if resp.status_code != 200:
-            return None
-        posts = resp.json()
-    except Exception:
-        return None
-
-    if not isinstance(posts, list) or not posts:
-        return None
-
-    entries = []
-    for p in posts:
-        if not isinstance(p, dict):
-            continue
-        published_parsed = None
-        raw_date = p.get("post_date") or p.get("published_at")
-        if raw_date:
-            try:
-                # Formato ISO com Z: "2026-08-24T13:12:40.123Z"
-                dt = datetime.strptime(raw_date[:19], "%Y-%m-%dT%H:%M:%S")
-                published_parsed = dt.timetuple()
-            except (ValueError, TypeError):
-                published_parsed = None
-        entries.append(_ArchiveEntry(
-            title=p.get("title") or "",
-            summary=p.get("description") or p.get("subtitle") or "",
-            link=p.get("canonical_url") or "",
-            author=(p.get("publishedBylines") or [{}])[0].get("name") or host,
-            published_parsed=published_parsed,
-        ))
-    return _ArchiveFeed(entries) if entries else None
-
-
 def _fetch_feed(feed_url: str, max_retries: int = 3):
     """Fetch RSS feed with retry + exponential backoff.
     v2.5: Retry com backoff (2s, 4s, 8s) antes de desistir.
     Strategy: requests com browser UA primeiro (Substack bloqueia bots),
     feedparser direto como fallback.
-    v2.17: para hosts *.substack.com, tenta antes a API de arquivo — o /feed
-    deles é bloqueado para automação. Se falhar, segue o caminho normal.
+    v2.17b: NÃO tente a API de arquivo do Substack aqui. Ela funciona de uma
+    máquina comum, mas o runner do GitHub Actions recebe 403 (Cloudflare) tanto
+    em /feed quanto em /api/v1/archive — verificado pelo workflow de diagnóstico
+    em 2026-08-29. A tentativa só somava uma request perdida por feed.
+    A saída para *.substack.com bloqueado é usar o domínio próprio da publicação,
+    quando existir (ver sub_doomberg, sub_zvi, sub_biotech_blueprint).
     """
-    _m = _SUBSTACK_HOST_RE.match(feed_url or '')
-    if _m:
-        _arq = _fetch_substack_archive(_m.group(1))
-        if _arq is not None:
-            return _arq
-
     feed = None
     for attempt in range(max_retries):
         # Primary: requests com browser headers (evita bloqueio Substack)
