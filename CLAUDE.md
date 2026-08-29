@@ -121,12 +121,16 @@ Ver `collector.py` para lista completa.
 | Innovation News by Distrito | VC/startups Brasil (MENSAL) | PT-BR |
 | The BRIEF | Tech+business diario, tom direto | PT-BR |
 
-### Substacks Curados (42 feeds via RSS)
-**Indie/Practitioners (v2.9):** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter, Neatprompts
-**AI Engineering:** Latent Space, State of AI
-**Business/Strategy:** Capital Wars, Doomberg, CFO Dynamics
-**Verticais:** fintech, biotech, e-commerce, edtech, sustainability
-Ver `collector.py` para lista completa.
+### Substacks Curados
+**Indie/Practitioners:** Simon Willison, Lilian Weng, Chip Huyen, One Useful Thing (Ethan Mollick), AI Snake Oil, SemiAnalysis, Interconnects, Stratechery, Pragmatic Engineer, Lenny's Newsletter, Neatprompts
+**AI Engineering:** Latent Space, Zvi (espelho WordPress)
+**Business/Strategy:** Doomberg (dominio proprio), Noahpinion, Exponential View, CFO Dynamics
+**Verticais:** e-commerce, biotech (dominio proprio)
+⚠️ **v2.17b — leia a regra 73 antes de mexer aqui.** As verticais de fintech, edtech,
+sustentabilidade e health tech saíram porque só existiam em `*.substack.com`, que é
+inalcancavel do runner. Capital Wars e State of AI saíram pelo mesmo motivo (o segundo
+tambem estava parado ha 68 dias). Ao avaliar candidata nova, **olhe o host do feed**.
+Ver `collector.py` para a lista completa, com o motivo de cada remocao no lugar da linha.
 
 ### YouTube (11 canais)
 Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov, Nate Herk
@@ -313,7 +317,7 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 
 68. **O log da curadoria mentia sobre o tamanho da edicao (v2.17)** — `processor.py` imprimia `items[:5]` sob o rotulo "HOJE NO BYTE" independente da categoria real, escondia SaaS e Watch Later, e o contador mostrava `len(items[])` como "Selecionados". Numa edicao de 18 pecas ele exibia **"Selecionados: 9"**, o que levou a diagnosticar edicao curta onde nao havia. Agora agrupa pela categoria real, sinaliza categoria desconhecida, e o contador soma o digest inteiro discriminando por secao. **O log e a unica janela do operador para o que foi ao ar — se ele mente, todo diagnostico em cima dele nasce errado.**
 
-69. **API de arquivo do Substack (v2.17)** — o `/feed` do Substack e bloqueado para automacao (403, ou 200 com pagina HTML de desafio que o feedparser le como zero entries). Mas `/api/v1/archive` **no mesmo host** responde 200 com JSON dos posts. `_fetch_feed()` tenta esse caminho antes para qualquer host `*.substack.com` e so cai no `/feed` se falhar. **Foi o que manteve mudos por 39 dias feeds que estavam vivos** (Doomberg, Zvi, Capital Wars, Import AI). Custo zero, sem chave. Campos uteis: `title`, `description`/`subtitle`, `canonical_url`, `post_date`. ⚠️ Validado do sandbox, nao do runner — conferir no primeiro run.
+69. **API de arquivo do Substack (v2.17)** — ⚠️ **SUPERADA PELA REGRA 74:** nao funciona no runner (403 tambem em `/api/v1/archive`). O codigo foi removido na v2.17b. Mantida aqui pelo registro do raciocinio e porque a API segue util para DIAGNOSTICO fora do runner. — o `/feed` do Substack e bloqueado para automacao (403, ou 200 com pagina HTML de desafio que o feedparser le como zero entries). Mas `/api/v1/archive` **no mesmo host** responde 200 com JSON dos posts. `_fetch_feed()` tenta esse caminho antes para qualquer host `*.substack.com` e so cai no `/feed` se falhar. **Foi o que manteve mudos por 39 dias feeds que estavam vivos** (Doomberg, Zvi, Capital Wars, Import AI). Custo zero, sem chave. Campos uteis: `title`, `description`/`subtitle`, `canonical_url`, `post_date`. ⚠️ Validado do sandbox, nao do runner — conferir no primeiro run.
 
 70. **Camada primaria legivel por maquina (v2.17)** — categorias que o catalogo nao usava:
     - **HF Daily Papers** (`huggingface.co/api/daily_papers`, JSON sem auth) — curadoria HUMANA votada por praticantes. O arXiv despeja centenas de papers/dia sem hierarquia; aqui o sinal de "isto importa" vem de quem trabalha com o assunto. Filtro de `upvotes >= 3` corta o que nao teve tracao.

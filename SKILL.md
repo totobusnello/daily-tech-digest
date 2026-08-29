@@ -81,7 +81,7 @@ Ver `config.yaml` e `collector.py` para lista completa.
 | The BRIEF | Tech+business diário, tom direto | PT-BR |
 
 ### Substacks Curados (42 feeds via RSS)
-AI engineering (Latent Space), macro strategy (State of AI), indie/practitioners (Simon Willison, Lilian Weng, Chip Huyen, Neatprompts), business, fintech, biotech, AI prático. Ver `config.yaml`.
+AI engineering (Latent Space, Zvi), macro strategy (Noahpinion, Exponential View, Doomberg), indie/practitioners (Simon Willison, Lilian Weng, Chip Huyen, Neatprompts), enterprise AI (Gradient Flow), fintech (Tearsheet). Ver `collector.py` — as fontes que só existiam em `*.substack.com` saíram na v2.17b por serem inalcançáveis do runner.
 
 ### YouTube (11 canais)
 Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI Daily Brief, Filipe Deschamps, The AI Grid, Sabrina Ramonov, Nate Herk.
