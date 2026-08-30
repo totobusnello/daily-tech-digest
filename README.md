@@ -45,7 +45,7 @@ daily-tech-digest/
 │   └── curator.md                # Documentação do prompt de curadoria
 ├── .github/
 │   └── workflows/
-│       └── daily-digest.yml      # Workflow de automação diária (05:23 BRT)
+│       └── daily-byte.yml        # Workflow de automação diária (05:23 BRT)
 ├── SKILL.md                      # Filosofia, critérios de curadoria, layout
 ├── EVOLUTION-PLAN.md             # Histórico de versões e backlog
 └── .env                          # Chaves (ANTHROPIC_API_KEY, BUTTONDOWN_API_KEY, X_BEARER_TOKEN)
