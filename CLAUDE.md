@@ -27,7 +27,7 @@ sender.py             -> Buttondown API -> email HTML
 ```
 
 **Orquestrador:** `run.py` (ou GitHub Actions via `daily-byte.yml`)
-**Schedule:** Diario as 06:07 BRT (09:07 UTC) via GitHub Actions — com o atraso tipico da fila (~35 min) mais o pipeline (~3,5 min), a entrega cai ~06:45 BRT (faixa 06:38-06:53). O horario e derivado do ALVO DE ENTREGA, nao do minuto: ver o comentario no proprio `daily-byte.yml`.
+**Schedule:** disparo principal e um cron na **VPS KVM2** (`41 9 * * *` UTC) que chama `workflow_dispatch` — dispatch comeca em 0s, entao o email sai 09:45 UTC = **06:45 BRT** com desvio de segundos. O `schedule` do GH ficou em 10:40 UTC so como rede de seguranca, com guard anti-duplicata. Ver regras 79-81.
 
 ⚠️ **Mudanca no workflow so por push HUMANO direto na main** — PR de bot mata o schedule (regra 77)
 
@@ -352,8 +352,20 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 
 78. **Corolario: ativar workflow adormecido acorda bug adormecido (v2.17c)** — `notify-forge.yml` escutava `workflows: ["THE DAILY BYTE - Daily Digest"]` sem o 🔥 do `name:` real. O match nunca bateu e o workflow **jamais disparou desde abril**. Quando o nome foi corrigido, ele rodou pela primeira vez e falhou na hora, expondo dois defeitos que dormiam no arquivo: `if: \${{ ... }}` com a barra invertida (a expressao virava string literal truthy, entao o job rodava em TODO run concluido, inclusive nos de sucesso) e `\$`/`\\"` literais quebrando o bash. **Ao consertar o gatilho de um workflow que nunca rodou, assuma que o corpo dele nunca foi executado — revise o arquivo inteiro, nao so a linha do gatilho.**
 
-79. **O horario do cron sai do ALVO DE ENTREGA, nao do minuto (v2.17c)** — medicao de 10 runs agendados (17-26/08): fila do GH Actions com mediana de **35 min** (faixa 29-43) e pipeline com mediana de **3,5 min**. Para entregar as 06:45 BRT (09:45 UTC), o cron tem que ser `07 9 * * *` (09:07 UTC). Faixa realista: 06:38-06:53 BRT.
-    ⚠️ **A fila do GH nao e garantia:** 2 dos ultimos 12 runs agendados atrasaram **8h e 11h**. Nenhum cron corrige isso. Se o horario virar requisito duro, disparar via `workflow_dispatch` de um scheduler externo (a VPS Hostinger ja roda cron) — dispatch comeca em **0s**, medido em 5 de 5 runs — e deixar o cron daqui so como rede de seguranca.
+79. **O gatilho vive na VPS; o `schedule` do GH e so rede de seguranca (v2.17c)** — o `schedule` do GitHub nao serve para horario fixo. Medicao de 12 runs agendados (ago/2026): mediana de 35 min de fila, mas **2 deles atrasaram 8h e 11h** — a edicao de 28/08 nao saiu e a de 27/08 chegou 17h. Nenhum valor de cron corrige isso, porque a fila e best-effort.
+    `workflow_dispatch` comeca em **0s** (5 de 5 runs medidos, incluindo o disparo real da VPS). Entao o gatilho principal passou a ser um cron na VPS KVM2 (`root@100.92.12.18`, TZ **UTC**):
+    ```
+    41 9 * * * /root/.openclaw/scripts/daily-byte-dispatch.sh
+    09:41 UTC dispara → +0s fila → +3,5min pipeline → 09:45 UTC = 06:45 BRT
+    ```
+    O `schedule` deste repo ficou em `40 10 * * *` (10:40 UTC / 07:40 BRT) **so como fallback**: se a VPS estiver fora do ar, entrega 1h depois. Espelho versionado do script em `openclaw-vps/infra/scripts/daily-byte-dispatch.sh`.
+    ⚠️ **Mudou o horario da VPS? mexa nos dois lados** — o `schedule` daqui tem que continuar DEPOIS do cron de la, senao o fallback vira o disparo principal.
+
+80. **Guard de idempotencia (v2.17c)** — com dois gatilhos, um dia em que ambos rodam mandaria **dois emails** para a lista. `already_sent_today()` em `sender.py` pergunta ao Buttondown (`GET /v1/emails?ordering=-publish_date`) se ja existe email com `status` `sent`/`scheduled` publicado hoje **no fuso BRT** (o "dia" da edicao e o dia do leitor; offset fixo -3, o Brasil nao tem DST desde 2019).
+    Ativado so no fallback: o workflow passa `--skip-if-sent-today` quando `github.event_name == 'schedule'`. Dispatch da VPS e envio manual passam direto — quem dispara a mao normalmente QUER reenviar.
+    **A fonte da verdade e o Buttondown, nao um arquivo de estado**: e la que o email existe de fato, e a resposta continua certa se o cache do Actions se perder. Em caso de duvida (`None`: sem chave, API fora, resposta estranha) o guard **falha aberto** e deixa enviar — melhor arriscar email repetido que engolir a edicao do dia em silencio; e se o Buttondown estiver fora, o proprio envio falha e alerta. 12 casos no `test_byte_score.py`.
+
+81. **NAO rodar `crontab-rebuild.sh` na VPS sem conferir o canonical (v2.17c)** — descoberto ao instalar o cron do digest: o crontab real da KVM2 tem **40 entries**, o runbook `openclaw-vps/infra/runbooks/crontab-canonical.md` afirma **26**, e o canonical embedded no proprio `crontab-rebuild.sh` tem **16**. O runbook manda aplicar mudanca por esse script — fazer isso hoje **apagaria mais da metade do crontab**. A entrada do digest foi adicionada de forma cirurgica (`crontab -l` + append + `crontab -`), com backup em `/root/.openclaw/backups/`. O drift esta sinalizado no runbook e precisa de reconciliacao antes de qualquer rebuild.
 
 ---
 
@@ -448,7 +460,7 @@ Ver `EVOLUTION-PLAN.md` para historico e backlog.
 
 ## Deploy
 
-Push para `main` -> GitHub Actions pega automaticamente no proximo run (06:07 BRT / 09:07 UTC).
+Push para `main` -> GitHub Actions pega no proximo run (disparo da VPS as 06:41 BRT / 09:41 UTC).
 Nao precisa de deploy manual. O workflow faz `checkout@v4` fresh toda vez.
 
 Para rodar manualmente: GitHub Actions -> "Run workflow" -> preview_only true/false.

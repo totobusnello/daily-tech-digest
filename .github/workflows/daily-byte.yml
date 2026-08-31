@@ -1,19 +1,23 @@
 name: 🔥 THE DAILY BYTE - Daily Digest
 
 on:
-  # ALVO DE ENTREGA: 06:45 BRT (09:45 UTC). Trabalhando de tras para frente,
-  # com medicao de 10 runs agendados (17-26/08):
+  # ⚠️ ESTE CRON NAO E MAIS O DISPARO PRINCIPAL — e a rede de seguranca.
   #
-  #   cron 09:07 UTC + fila do GH (mediana 35min, faixa 29-43) + pipeline
-  #   (mediana 3,5min) = email por volta de 09:45 UTC = 06:45 BRT.
+  # O disparo de verdade vem da VPS (KVM2, root@100.92.12.18), que chama
+  # `workflow_dispatch` via API as 09:41 UTC. Motivo: a fila do `schedule` do
+  # GH nao serve para horario fixo — mediana de 35 min, mas 2 dos ultimos 12
+  # runs atrasaram 8h e 11h. `workflow_dispatch` comeca em 0s (5 de 5 runs
+  # medidos), entao 09:41 + ~3,5 min de pipeline = email as 09:45 UTC =
+  # 06:45 BRT, com desvio de segundos.
   #
-  # Faixa realista de entrega: 06:38 a 06:53 BRT.
+  # Este `schedule` roda 1h depois, as 10:40 UTC (07:40 BRT), e SO age se a
+  # VPS nao tiver disparado — o `sender.py` recebe `--skip-if-sent-today` e
+  # pergunta ao Buttondown se a edicao de hoje ja saiu (ver `already_sent_today`).
+  # Sem esse guard, um dia em que os dois rodam manda dois emails para a lista.
   #
-  # ⚠️ A fila do GH Actions NAO e confiavel: 2 dos ultimos 12 runs agendados
-  # atrasaram 8h e 11h. Nenhum cron corrige isso. Se 06:45 virar requisito
-  # duro, a saida e disparar por `workflow_dispatch` a partir de um scheduler
-  # externo (a VPS Hostinger ja tem cron) — dispatch comeca em 0s, medido em
-  # 5 de 5 runs. Ai o cron daqui vira so rede de seguranca.
+  # Se mudar o horario da VPS, mexer nos dois lados:
+  #   - la:  /root/.openclaw/scripts/daily-byte-dispatch.sh + crontab
+  #   - aqui: este cron tem que continuar DEPOIS do da VPS
   #
   # ⚠️ CRITICO — QUEM empurra este arquivo importa mais que o horario.
   #
@@ -40,7 +44,7 @@ on:
   # meses, com fila de 29-43 min. Minuto impar e inofensivo, mas nao era o
   # problema; o horario aqui e escolhido pelo alvo de entrega, nao por isso.)
   schedule:
-    - cron: '07 9 * * *'
+    - cron: '40 10 * * *'
 
   # Permite executar manualmente
   workflow_dispatch:
@@ -158,10 +162,21 @@ jobs:
       - name: 📧 Step 4 — Send digest
         id: send
         if: ${{ github.event.inputs.preview_only != 'true' }}
+        # `schedule` aqui e a rede de seguranca (10:40 UTC), nao o disparo
+        # principal — por isso pergunta ao Buttondown antes de enviar. O
+        # dispatch da VPS e o manual passam direto: quem dispara a mao quer
+        # reenviar.
+        env:
+          IS_FALLBACK: ${{ github.event_name == 'schedule' }}
         run: |
           cd scripts
-          python sender.py
-          echo "✅ Email sent!"
+          if [ "$IS_FALLBACK" = "true" ]; then
+            echo "🛟 Disparo de rede de seguranca — checando se a VPS ja entregou hoje"
+            python sender.py --skip-if-sent-today
+          else
+            python sender.py
+          fi
+          echo "✅ Send step concluido"
 
       - name: 👀 Step 4 — Preview only (no send)
         if: ${{ github.event.inputs.preview_only == 'true' }}

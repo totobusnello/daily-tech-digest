@@ -182,7 +182,7 @@ python run.py --skip-collect   # Pula coleta, usa /tmp/digest_raw.json existente
 python run.py --skip-process   # Pula curadoria, usa /tmp/digest_curated.json existente
 ```
 
-**Schedule:** Diário às 06:07 BRT (09:07 UTC) via GitHub Actions — entrega ~06:45 BRT (faixa 06:38-06:53) após o atraso típico da fila (~35 min) mais o pipeline (~3,5 min). O horário é derivado do alvo de entrega.
+**Schedule:** disparado por cron na VPS KVM2 às 09:41 UTC (06:41 BRT) via `workflow_dispatch`, que entra em 0s — email às **06:45 BRT**. O `schedule` do GitHub ficou às 10:40 UTC apenas como rede de segurança (a fila dele chegou a atrasar 8-11h).
 
 ## Anti-Patterns a Evitar
 

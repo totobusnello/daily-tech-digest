@@ -10,6 +10,7 @@ no workflow o executa. Se você adicionar função nova ao sender/processor,
 adicione o caso aqui.
 """
 import sys, os
+from datetime import datetime, timedelta, timezone
 sys.path.insert(0, os.path.dirname(__file__))
 import sender
 import processor
@@ -140,6 +141,83 @@ check("pool menor que o total volta inteiro",
 # Cenário 4 — sem duplicatas no resultado.
 _cut_dup = processor._stratified_cut(_pool_rico, total=80)
 check("corte nao duplica itens", len({id(x) for x in _cut_dup}) == len(_cut_dup))
+
+
+# ============================================================================
+# v2.17c — guard de idempotencia (already_sent_today)
+# ============================================================================
+# O disparo agora tem duas origens: o cron da VPS (workflow_dispatch, 09:41
+# UTC) e o schedule do GitHub as 10:40 UTC como rede de seguranca. Sem o guard,
+# um dia em que os dois rodam manda dois emails para a lista.
+# A API real nao e chamada aqui: injetamos a resposta em requests.get.
+
+print("\n--- guard de idempotencia (v2.17c) ---")
+
+class _FakeResp:
+    def __init__(self, payload, boom=False):
+        self._p, self._boom = payload, boom
+    def raise_for_status(self):
+        if self._boom:
+            raise RuntimeError("500 Server Error")
+    def json(self):
+        return self._p
+
+def _com_api(payload, boom=False):
+    """Roda already_sent_today com a resposta do Buttondown injetada."""
+    real_get, real_key = sender.requests.get, sender.BUTTONDOWN_API_KEY
+    sender.requests.get = lambda *a, **k: _FakeResp(payload, boom)
+    sender.BUTTONDOWN_API_KEY = "fake-key-para-teste"
+    try:
+        return sender.already_sent_today()
+    finally:
+        sender.requests.get, sender.BUTTONDOWN_API_KEY = real_get, real_key
+
+_hoje = datetime.now(sender.BRT)
+_ontem = _hoje - timedelta(days=1)
+
+def _email(dt, status="sent", subject="Edicao"):
+    return {"publish_date": dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "status": status, "subject": subject}
+
+check("detecta edicao ja enviada hoje",
+      _com_api({"results": [_email(_hoje)]}) is True)
+check("edicao de ontem nao bloqueia hoje",
+      _com_api({"results": [_email(_ontem)]}) is False)
+check("lista vazia libera o envio",
+      _com_api({"results": []}) is False)
+check("rascunho de hoje nao conta como enviado",
+      _com_api({"results": [_email(_hoje, status="draft")]}) is False)
+check("agendado de hoje conta como enviado",
+      _com_api({"results": [_email(_hoje, status="scheduled")]}) is True)
+check("acha o envio de hoje mesmo atras de outros",
+      _com_api({"results": [_email(_ontem), _email(_ontem), _email(_hoje)]}) is True)
+check("publish_date corrompido nao quebra o guard",
+      _com_api({"results": [{"publish_date": "nao-e-data", "status": "sent"},
+                            _email(_hoje)]}) is True)
+check("item sem publish_date e ignorado",
+      _com_api({"results": [{"status": "sent"}]}) is False)
+check("API fora devolve None (fail-open, nao False)",
+      _com_api({}, boom=True) is None)
+check("resposta sem 'results' nao quebra",
+      _com_api({"detail": "erro"}) is False)
+
+# Sem chave nao da para verificar -> None, e send() trata como "pode enviar".
+_k = sender.BUTTONDOWN_API_KEY
+sender.BUTTONDOWN_API_KEY = ""
+check("sem BUTTONDOWN_API_KEY devolve None", sender.already_sent_today() is None)
+sender.BUTTONDOWN_API_KEY = _k
+
+# O guard NAO pode agir no preview nem no envio manual: so o fallback o pede.
+_chamou = {"n": 0}
+_real = sender.already_sent_today
+sender.already_sent_today = lambda *a, **k: _chamou.__setitem__("n", _chamou["n"] + 1) or True
+try:
+    sender.send(preview=True, skip_if_sent_today=True)
+except Exception:
+    pass  # sem /tmp/digest_curated.json o preview morre depois do ponto que importa
+check("preview nunca consulta o guard", _chamou["n"] == 0)
+sender.already_sent_today = _real
+
 
 print()
 if check.failed:

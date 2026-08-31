@@ -45,7 +45,7 @@ daily-tech-digest/
 │   └── curator.md                # Documentação do prompt de curadoria
 ├── .github/
 │   └── workflows/
-│       └── daily-byte.yml        # Workflow de automação diária (06:07 BRT)
+│       └── daily-byte.yml        # Workflow do digest (disparo VPS 06:41 BRT · fallback 07:40)
 ├── SKILL.md                      # Filosofia, critérios de curadoria, layout
 ├── EVOLUTION-PLAN.md             # Histórico de versões e backlog
 └── .env                          # Chaves (ANTHROPIC_API_KEY, BUTTONDOWN_API_KEY, X_BEARER_TOKEN)
@@ -53,13 +53,15 @@ daily-tech-digest/
 
 ## Como Funciona
 
-1. **Coleta** (06:07 BRT) — `collector.py` busca conteúdo de 154 fontes em paralelo, normaliza URLs, remove duplicatas crudas
+1. **Coleta** (06:41 BRT) — `collector.py` busca conteúdo de 154 fontes em paralelo, normaliza URLs, remove duplicatas crudas
 2. **Feedback** (02:00 BRT) — `feedback.py` extrai métricas da última newsletter (opens, clicks, subject hooks) via Buttondown API
 3. **Curadoria** (02:30 BRT) — `processor.py` aplica heat score (relevância 30pts + recência 40pts + fonte 30pts), pré-agrupa por tema, envia melhor representante de cada cluster ao Claude
 4. **Renderização** (~06:45 BRT) — `sender.py` converte JSON curado para HTML (table-based, inline CSS) e envia via Buttondown
 5. **Distribuição** (~06:45 BRT) — Buttondown entrega email, adiciona unsubscribe automático, tracked links
 
-**Agendamento:** GitHub Actions dispara às 09:07 UTC / 06:07 BRT, mirando entrega às **06:45 BRT**. O horário sai de medição: fila do Actions com mediana de 35 min (faixa 29-43) mais ~3,5 min de pipeline. Faixa realista de entrega: 06:38-06:53 BRT. A fila do GitHub não é garantida — 2 de 12 runs agendados atrasaram horas; se 06:45 virar requisito duro, o caminho é disparar via `workflow_dispatch` de um scheduler externo, que começa em 0s.
+**Agendamento:** o gatilho é um cron na VPS (KVM2, UTC) às **09:41 UTC / 06:41 BRT**, que chama `workflow_dispatch` na API do GitHub. Dispatch entra em 0s, o pipeline leva ~3,5 min → email às **06:45 BRT**, com desvio de segundos.
+
+O `schedule` do próprio GitHub ficou às 10:40 UTC (07:40 BRT) **apenas como rede de segurança**: a fila dele é best-effort e chegou a atrasar 8h e 11h em 2 de 12 runs medidos. Quando esse fallback dispara, o `sender.py` roda com `--skip-if-sent-today` e pergunta ao Buttondown se a edição de hoje já saiu — se sim, encerra sem enviar. Falha na VPS atrasa a entrega em 1h; nunca perde a edição nem duplica email.
 
 ## Fontes (154 feeds)
 

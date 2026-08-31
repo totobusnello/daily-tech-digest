@@ -11,7 +11,7 @@ import json
 import math
 import re
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
@@ -29,6 +29,11 @@ except ImportError:
 
 BUTTONDOWN_API_KEY = os.environ.get('BUTTONDOWN_API_KEY', '').strip()
 BUTTONDOWN_API_URL = "https://api.buttondown.email/v1/emails"
+
+# v2.17c: fuso editorial. O "dia" da edição é o dia no Brasil, não em UTC.
+# O Brasil não tem horário de verão desde 2019, então o offset fixo -3 é
+# correto o ano inteiro e não depende de tzdata estar presente no runner.
+BRT = timezone(timedelta(hours=-3))
 
 # ============================================
 # v2.4: HTML EMAIL TEMPLATE
@@ -1170,6 +1175,67 @@ def send_via_buttondown(subject: str, content: str, draft: bool = False) -> Dict
         raise RuntimeError(f"Buttondown API error: {response.status_code}")
 
 
+# ============================================
+# v2.17c: GUARD DE IDEMPOTÊNCIA
+# ============================================
+
+def already_sent_today(now: Optional[datetime] = None) -> Optional[bool]:
+    """Já saiu edição hoje?
+
+    Existe porque o disparo passou a ter DUAS origens: o cron da VPS
+    (`workflow_dispatch` às 09:41 UTC, caminho principal) e o `schedule` do
+    próprio GitHub às 10:40 UTC, que é só rede de segurança para o caso de a
+    VPS estar fora do ar. Sem este guard, um dia em que ambos rodam manda dois
+    emails para a lista.
+
+    A fonte da verdade é o Buttondown, não um arquivo de estado: é lá que o
+    email de fato existe, e a resposta continua correta mesmo se o cache do
+    Actions for perdido ou se alguém disparar manualmente.
+
+    Retorna True/False, ou None quando não deu para saber (sem chave, API
+    fora, resposta inesperada). Quem chama decide o que fazer com o None —
+    `send()` trata como "pode enviar", ver a nota lá.
+    """
+    if not BUTTONDOWN_API_KEY:
+        print("⚠️ Guard: BUTTONDOWN_API_KEY ausente, não dá para verificar")
+        return None
+
+    hoje = (now or datetime.now(BRT)).astimezone(BRT).date()
+
+    try:
+        resp = requests.get(
+            BUTTONDOWN_API_URL,
+            headers={"Authorization": f"Token {BUTTONDOWN_API_KEY}"},
+            params={"ordering": "-publish_date"},
+            timeout=20,
+        )
+        resp.raise_for_status()
+        results = (resp.json() or {}).get("results") or []
+    except Exception as e:
+        print(f"⚠️ Guard: falha ao consultar o Buttondown ({e})")
+        return None
+
+    for email in results[:10]:
+        if (email.get("status") or "").lower() not in ("sent", "scheduled"):
+            continue
+        raw = email.get("publish_date")
+        if not raw:
+            continue
+        try:
+            # publish_date vem em UTC com sufixo Z, que o fromisoformat do
+            # 3.10 não aceita — normalizamos antes de converter para BRT.
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if dt.astimezone(BRT).date() == hoje:
+            print(f"🛑 Guard: já saiu edição hoje ({dt.astimezone(BRT):%d/%m %H:%M} BRT) "
+                  f"— \"{(email.get('subject') or '')[:60]}\"")
+            return True
+
+    print(f"✅ Guard: nenhuma edição publicada hoje ({hoje:%d/%m}), envio liberado")
+    return False
+
+
 def load_curated(path: str = "/tmp/digest_curated.json") -> Dict:
     """Carrega dados curados"""
     with open(path, 'r') as f:
@@ -1180,9 +1246,20 @@ def load_curated(path: str = "/tmp/digest_curated.json") -> Dict:
 # MAIN
 # ============================================
 
-def send(preview: bool = False):
+def send(preview: bool = False, skip_if_sent_today: bool = False):
     """Pipeline de envio"""
     print("🔥 THE DAILY BYTE - Preparando envio...")
+
+    # v2.17c: só o disparo de rede de segurança pede o guard. O caminho
+    # principal (dispatch da VPS) e o envio manual passam direto — quem
+    # dispara à mão normalmente QUER reenviar.
+    if skip_if_sent_today and not preview:
+        if already_sent_today() is True:
+            print("↩️  Nada a fazer: a edição de hoje já foi entregue pelo disparo principal.")
+            return {"skipped": True, "reason": "already_sent_today"}
+        # None (API fora / sem chave) cai aqui de propósito: preferimos correr
+        # o risco de um email repetido a engolir a edição do dia em silêncio.
+        # Se o Buttondown estiver fora, o próprio envio abaixo falha e alerta.
 
     # Load curated data
     curated = load_curated()
@@ -1253,5 +1330,11 @@ if __name__ == "__main__":
     import sys
 
     preview_mode = "--preview" in sys.argv or "-p" in sys.argv
+    # Passado pelo workflow quando o gatilho é o `schedule` (rede de segurança).
+    skip_if_sent = "--skip-if-sent-today" in sys.argv
 
-    send(preview=preview_mode)
+    result = send(preview=preview_mode, skip_if_sent_today=skip_if_sent)
+
+    # Sai 0 no skip: não é falha, é o fallback constatando que não precisa agir.
+    if isinstance(result, dict) and result.get("skipped"):
+        sys.exit(0)
