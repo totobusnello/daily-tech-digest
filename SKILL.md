@@ -182,7 +182,7 @@ python run.py --skip-collect   # Pula coleta, usa /tmp/digest_raw.json existente
 python run.py --skip-process   # Pula curadoria, usa /tmp/digest_curated.json existente
 ```
 
-**Schedule:** Diário às 05:23 BRT (08:23 UTC) via GitHub Actions — entrega ~06:00 BRT após atraso tipico da fila (~30-40 min). Minuto impar evita o slot ':00' congestionado.
+**Schedule:** Diário às 06:07 BRT (09:07 UTC) via GitHub Actions — entrega ~06:45 BRT (faixa 06:38-06:53) após o atraso típico da fila (~35 min) mais o pipeline (~3,5 min). O horário é derivado do alvo de entrega.
 
 ## Anti-Patterns a Evitar
 

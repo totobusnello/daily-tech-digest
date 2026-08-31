@@ -27,7 +27,9 @@ sender.py             -> Buttondown API -> email HTML
 ```
 
 **Orquestrador:** `run.py` (ou GitHub Actions via `daily-byte.yml`)
-**Schedule:** Diario as 05:23 BRT (08:23 UTC) via GitHub Actions — com o atraso tipico da fila (~30-40 min), entrega cai ~06:00 BRT. NAO usar minuto ':00' (slot congestionado, GH descarta eventos silenciosamente)
+**Schedule:** Diario as 06:07 BRT (09:07 UTC) via GitHub Actions — com o atraso tipico da fila (~35 min) mais o pipeline (~3,5 min), a entrega cai ~06:45 BRT (faixa 06:38-06:53). O horario e derivado do ALVO DE ENTREGA, nao do minuto: ver o comentario no proprio `daily-byte.yml`.
+
+⚠️ **Mudanca no workflow so por push HUMANO direto na main** — PR de bot mata o schedule (regra 77)
 
 ---
 
@@ -344,6 +346,15 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 
 76. **Fonte ativa mas inalcancavel deve SAIR do catalogo (v2.17b)** — 10 fontes publicavam normalmente e mesmo assim foram removidas por so existirem em `*.substack.com`. A tentacao e manter "ate o bloqueio afrouxar", mas fonte que nunca contribui item so gera ruido diario no health check e esconde as quebras que importam. Cada remocao ficou registrada em comentario no lugar da linha, com o motivo, para ninguem readicionar sem contexto. **Substituidas por:** Noahpinion e Exponential View (no lugar de Capital Wars), Gradient Flow (AI to ROI), Tearsheet (Fintech Business Weekly). **Sem substituto encontrado:** o angulo de produto/organizacao do A Beautiful Mess (todas as vozes fortes estao em `*.substack.com` ou publicam 2x/mes) e o ecossistema de AI brasileiro do AI Factory BR. MIT Tech Review Brasil foi avaliado e **rejeitado**: e traducao do MIT TR americano, que ja esta no catalogo — duplicaria historias em vez de trazer pauta BR.
 
+77. **Workflow agendado so muda por push HUMANO (v2.17c)** — o GitHub atribui o evento `schedule` ao ator que por ultimo empurrou o arquivo do workflow para o default branch. Se esse ator for um GitHub App (`app/claude`, `github-actions[bot]`), **o evento nao e entregue** — mesma protecao anti-recursao que impede push com `GITHUB_TOKEN` de disparar workflow. A falha e 100% silenciosa: o workflow continua `active`, `workflow_dispatch` funciona, nenhum alerta, nenhum run.
+    **O que aconteceu:** o schedule morreu em 28/08/2026 quando o PR #20 (mudanca do cron) foi autorado E mergeado por `app/claude`. Quatro dias sem edicao automatica. Os PRs #25/#26/#27 tentaram delete -> recreate -> rename para forcar o re-registro — **receita correta, ator errado**: rodaram pelo proprio App e re-registraram o cron com o mesmo problema, tres vezes seguidas. So um push humano direto na main (commit 5090e1e) trouxe o schedule de volta.
+    **Regra:** mudanca em `.github/workflows/*` vai por push humano direto na `main`, com credencial pessoal — **excecao explicita a politica de PR** do `~/Claude/CLAUDE.md`. Diagnostico em um comando: `gh pr view <n> --json author,mergedBy` — se os dois forem `app/...`, o schedule morreu naquele commit. Confirmar com `gh api "repos/:owner/:repo/actions/runs?event=schedule"` (data do ultimo agendado) e `gh api repos/:owner/:repo/commits/main --jq .author.login`.
+
+78. **Corolario: ativar workflow adormecido acorda bug adormecido (v2.17c)** — `notify-forge.yml` escutava `workflows: ["THE DAILY BYTE - Daily Digest"]` sem o 🔥 do `name:` real. O match nunca bateu e o workflow **jamais disparou desde abril**. Quando o nome foi corrigido, ele rodou pela primeira vez e falhou na hora, expondo dois defeitos que dormiam no arquivo: `if: \${{ ... }}` com a barra invertida (a expressao virava string literal truthy, entao o job rodava em TODO run concluido, inclusive nos de sucesso) e `\$`/`\\"` literais quebrando o bash. **Ao consertar o gatilho de um workflow que nunca rodou, assuma que o corpo dele nunca foi executado — revise o arquivo inteiro, nao so a linha do gatilho.**
+
+79. **O horario do cron sai do ALVO DE ENTREGA, nao do minuto (v2.17c)** — medicao de 10 runs agendados (17-26/08): fila do GH Actions com mediana de **35 min** (faixa 29-43) e pipeline com mediana de **3,5 min**. Para entregar as 06:45 BRT (09:45 UTC), o cron tem que ser `07 9 * * *` (09:07 UTC). Faixa realista: 06:38-06:53 BRT.
+    ⚠️ **A fila do GH nao e garantia:** 2 dos ultimos 12 runs agendados atrasaram **8h e 11h**. Nenhum cron corrige isso. Se o horario virar requisito duro, disparar via `workflow_dispatch` de um scheduler externo (a VPS Hostinger ja roda cron) — dispatch comeca em **0s**, medido em 5 de 5 runs — e deixar o cron daqui so como rede de seguranca.
+
 ---
 
 ## Como rodar localmente
@@ -437,7 +448,7 @@ Ver `EVOLUTION-PLAN.md` para historico e backlog.
 
 ## Deploy
 
-Push para `main` -> GitHub Actions pega automaticamente no proximo run (05:23 BRT / 08:23 UTC).
+Push para `main` -> GitHub Actions pega automaticamente no proximo run (06:07 BRT / 09:07 UTC).
 Nao precisa de deploy manual. O workflow faz `checkout@v4` fresh toda vez.
 
 Para rodar manualmente: GitHub Actions -> "Run workflow" -> preview_only true/false.
