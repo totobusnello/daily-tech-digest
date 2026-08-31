@@ -2,7 +2,9 @@ name: Notify Forge on CI Failure
 
 on:
   workflow_run:
-    workflows: ["THE DAILY BYTE - Daily Digest"]
+    # O nome tem que bater EXATO com o `name:` do daily-byte.yml, emoji incluso.
+    # Sem o 🔥 o match falhava em silencio e este workflow nunca disparou.
+    workflows: ["🔥 THE DAILY BYTE - Daily Digest"]
     types: [completed]
 
 jobs:

@@ -1,13 +1,32 @@
 name: 🔥 THE DAILY BYTE - Daily Digest
 
 on:
-  # Executa todo dia às 08:23 UTC (05:23 BRT).
+  # Executa todo dia as 08:23 UTC (05:23 BRT).
   # Com o atraso tipico da fila do GH Actions (~30-40 min), a entrega cai ~06:00 BRT.
   #
-  # IMPORTANTE — nao voltar para minuto ':00'. O slot de hora cheia e o mais
-  # congestionado do GH Actions: quando a fila satura, eventos agendados sao
-  # DESCARTADOS silenciosamente (sem run, sem alerta). Foi o que derrubou a
-  # edicao de 2026-08-28 e atrasou a de 27/08 em 11h. Minuto impar evita a contencao.
+  # ⚠️ CRITICO — QUEM empurra este arquivo importa mais que o horario.
+  #
+  # O GitHub atribui o evento `schedule` ao ator que por ultimo empurrou o
+  # arquivo do workflow para o default branch. Se esse ator for um GitHub App
+  # (`app/claude`, `github-actions[bot]`, etc), o evento NAO e entregue — e a
+  # mesma protecao anti-recursao que impede push com GITHUB_TOKEN de disparar
+  # workflow. Nao ha identidade de usuario para atribuir o run agendado.
+  #
+  # Foi exatamente isso que matou o schedule entre 28/08 e 31/08 de 2026: o
+  # PR #20 (mudanca do cron) foi autorado E mergeado por `app/claude`, e daquele
+  # dia em diante nenhum run agendado saiu. Os PRs #25/#26/#27 (delete →
+  # recreate → rename) tentaram forcar o re-registro — receita correta, ator
+  # errado: rodaram pelo proprio App e re-registraram o cron com o mesmo
+  # problema, tres vezes.
+  #
+  # REGRA: toda mudanca neste arquivo tem que ser empurrada por um HUMANO,
+  # commit direto na main, com credencial pessoal. Nunca via PR do Claude/bot.
+  # Diagnostico: `gh pr view <n> --json author,mergedBy` — se author e mergedBy
+  # forem `app/...`, o schedule morreu naquele commit.
+  #
+  # (A hipotese anterior — de que o minuto ':00' seria descartado por
+  # congestionamento — estava errada. O cron '0 6 * * *' rodou todo dia por
+  # meses. Manter '23 8' e inofensivo, mas nao era o problema.)
   schedule:
     - cron: '23 8 * * *'
 
