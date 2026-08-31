@@ -9,16 +9,29 @@ on:
 
 jobs:
   notify-forge:
-    if: \${{ github.event.workflow_run.conclusion == 'failure' }}
+    # ATENCAO: sem o `$` cru aqui a expressao vira string literal (truthy) e o
+    # job roda em TODO run concluido, inclusive nos de sucesso. Era o caso ate
+    # 31/08/2026 — passou despercebido porque o `workflows:` acima nao batia com
+    # o nome real, entao este workflow jamais disparava.
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - name: Notify Forge
+        # Dados do evento vao por `env`, nunca interpolados direto no shell:
+        # `head_branch` e `name` sao atacaveis e `${{ }}` cru no `run:` permite
+        # injecao de comando. `jq -n` monta o JSON com escaping correto.
+        env:
+          WEBHOOK_SECRET: ${{ secrets.OPENCLAW_WEBHOOK_SECRET }}
+          WF_NAME: ${{ github.event.workflow_run.name }}
+          WF_REPO: ${{ github.repository }}
+          WF_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WF_URL: ${{ github.event.workflow_run.html_url }}
         run: |
+          set -euo pipefail
+          goal="CI workflow '${WF_NAME}' failed on ${WF_REPO} (branch: ${WF_BRANCH}). Run: ${WF_URL}. Investigate and fix."
+          payload=$(jq -n --arg goal "$goal" \
+            '{action: "create_flow", goal: $goal, status: "queued"}')
           curl -sf -X POST http://187.77.234.79:18789/hooks/github \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer \${{ secrets.OPENCLAW_WEBHOOK_SECRET }}" \
-            -d "{
-              \\"action\\": \\"create_flow\\",
-              \\"goal\\": \\"CI workflow '\${{ github.event.workflow_run.name }}' failed on \${{ github.repository }} (branch: \${{ github.event.workflow_run.head_branch }}). Run: \${{ github.event.workflow_run.html_url }}. Investigate and fix.\\",
-              \\"status\\": \\"queued\\"
-            }"
+            -H "Authorization: Bearer ${WEBHOOK_SECRET}" \
+            -d "$payload"
