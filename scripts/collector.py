@@ -951,6 +951,19 @@ def collect_all() -> Dict:
 
 
 if __name__ == "__main__":
+    # v2.17d: pre-flight ANTES de coletar. Sem credito ou sem credencial, a
+    # curadoria morre 4 min depois de qualquer jeito — e com o diagnostico
+    # errado ("Curadoria falhou" em vez de "billing"). Ver preflight.py.
+    try:
+        from preflight import run as _preflight
+        if not _preflight():
+            print("🛑 Abortado no pre-flight — nada foi coletado.")
+            raise SystemExit(1)
+    except SystemExit:
+        raise
+    except ImportError:
+        pass  # preflight ausente nao pode derrubar a coleta
+
     data = collect_all()
 
     # Save to file

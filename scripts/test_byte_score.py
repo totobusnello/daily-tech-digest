@@ -219,6 +219,82 @@ check("preview nunca consulta o guard", _chamou["n"] == 0)
 sender.already_sent_today = _real
 
 
+# ── v2.17d: pre-flight de credito ──────────────────────────────────────────
+# A edicao de 2026-09-03 morreu por saldo zerado na conta Anthropic. O
+# pipeline gastou 4 min coletando antes de descobrir, e o alerta culpou o
+# processor. Estes casos travam as duas regras: o que bloqueia e o que
+# falha aberto.
+import preflight
+import alert_failure
+
+check("no_credit bloqueia", "no_credit" in preflight.BLOCKING)
+check("auth bloqueia", "auth" in preflight.BLOCKING)
+check("no_key bloqueia", "no_key" in preflight.BLOCKING)
+check("model_missing bloqueia", "model_missing" in preflight.BLOCKING)
+# Falha aberta: blip de rede ou rate limit no ping nao pode matar a edicao.
+check("unknown NAO bloqueia", "unknown" not in preflight.BLOCKING)
+check("rate_limit NAO bloqueia", "rate_limit" not in preflight.BLOCKING)
+check("ok NAO bloqueia", "ok" not in preflight.BLOCKING)
+check("todo codigo bloqueante tem diagnostico",
+      all(preflight.DIAGNOSIS.get(c) for c in preflight.BLOCKING))
+
+# A 400 de saldo tem de virar no_credit; qualquer outra 400 e "unknown"
+# (falha aberta) — mensagem literal capturada no run 33740197964.
+_real_msg = ("Your credit balance is too low to access the Anthropic API. "
+             "Please go to Plans & Billing to upgrade or purchase credits.")
+check("400 de saldo -> no_credit",
+      preflight._classify_bad_request(_real_msg) == "no_credit")
+check("no_credit e case-insensitive",
+      preflight._classify_bad_request("YOUR CREDIT BALANCE IS TOO LOW") == "no_credit")
+check("outra 400 -> unknown (falha aberta)",
+      preflight._classify_bad_request("max_tokens: must be >= 1") == "unknown")
+check("400 vazia -> unknown", preflight._classify_bad_request("") == "unknown")
+check("400 None -> unknown", preflight._classify_bad_request(None) == "unknown")
+
+# Chave ausente e detectada sem tocar a rede.
+check("chave vazia -> no_key", preflight.check_anthropic(api_key="")[0] == "no_key")
+check("chave em branco -> no_key", preflight.check_anthropic(api_key="   ")[0] == "no_key")
+
+# O modelo sai do config.yaml, nao hardcoded.
+check("modelo vem do config", preflight._configured_model() == "claude-sonnet-4-6")
+
+# read_fail_state tolera ausencia/lixo — nunca levanta.
+_orig = preflight.FAIL_STATE_PATH
+preflight.FAIL_STATE_PATH = "/tmp/digest_preflight_nao_existe_xyz.json"
+check("fail_state ausente -> {}", preflight.read_fail_state() == {})
+preflight.FAIL_STATE_PATH = "/tmp/digest_preflight_lixo.json"
+open(preflight.FAIL_STATE_PATH, "w").write("{isso nao e json")
+check("fail_state corrompido -> {}", preflight.read_fail_state() == {})
+os.remove(preflight.FAIL_STATE_PATH)
+preflight.FAIL_STATE_PATH = _orig
+
+# ── O alerta precisa NOMEAR billing, nao acusar o processor ──
+_state = "/tmp/digest_preflight_test_state.json"
+import json as _json
+with open(_state, "w") as f:
+    _json.dump({"code": "no_credit",
+                "diagnosis": preflight.DIAGNOSIS["no_credit"],
+                "detail": "Your credit balance is too low"}, f)
+preflight.FAIL_STATE_PATH = _state
+
+_t, _b, _pf = alert_failure.build_alert("42", "http://x", "🤖 Curadoria (processor.py)")
+check("titulo aponta credito", "credito" in _t.lower())
+check("titulo NAO culpa curadoria", "curadoria" not in _t.lower())
+check("corpo diz que nao ha bug", "Nao ha bug de codigo" in _b)
+check("corpo manda re-disparar", "Run workflow" in _b)
+check("corpo cita o billing", "billing" in _b.lower())
+check("build_alert devolve o state", _pf.get("code") == "no_credit")
+
+# Sem pre-flight reprovado, o alerta volta a ser o generico de sempre.
+os.remove(_state)
+preflight.FAIL_STATE_PATH = "/tmp/digest_preflight_nao_existe_xyz.json"
+_t2, _b2, _pf2 = alert_failure.build_alert("42", "http://x", "📰 Coleta (collector.py)")
+check("sem pre-flight -> titulo generico", _t2.startswith("🚨 Pipeline falhou"))
+check("sem pre-flight -> mostra o step", "Coleta (collector.py)" in _b2)
+check("sem pre-flight -> state vazio", _pf2 == {})
+preflight.FAIL_STATE_PATH = _orig
+
+
 print()
 if check.failed:
     print(f"{check.failed} teste(s) FALHARAM")

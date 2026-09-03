@@ -773,7 +773,8 @@ DEEP DIVE SEMANAL:
         feedback_section=feedback_section + workflow_section
     )
 
-    print(f"🤖 Enviando {len(items)} itens para Claude curar...")
+    print(f"🤖 Enviando {len(slim_items)} itens para Claude curar "
+          f"(de {len(items)} coletados)...")
 
     messages = [
         {"role": "user", "content": prompt + "\n\nResponda APENAS com o JSON válido. Sem texto antes ou depois."}
