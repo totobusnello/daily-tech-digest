@@ -4,6 +4,78 @@
 
 ## Changelog
 
+### v2.17d — 2026-09-03 (o pipeline aprende a dizer "é billing, não bug")
+
+Rodada reativa, não planejada: a edição de 03/09 **não saiu**. Nada quebrou no código —
+o saldo de crédito da conta Anthropic zerou e a API recusou a curadoria com
+`HTTP 400 "Your credit balance is too low"` no [run 33740197964](https://github.com/totobusnello/daily-tech-digest/actions/runs/33740197964).
+
+O incidente em si é trivial (recarregar a conta). O que valeu a rodada foram os **dois
+defeitos de diagnóstico** que ele deixou à vista.
+
+**1. O pipeline descobriu tarde e culpou o lugar errado.**
+
+A falha só apareceu no Step 3, depois de gastar ~4 min coletando 840 itens. Pior: o
+`Detect failed step` mapeou pelo `steps.*.outcome` e o alerta abriu issue dizendo
+**"🤖 Curadoria (processor.py)"** — que manda o leitor caçar bug em código quando o
+problema estava na fatura. Mesmo pecado da **regra 62**: colapsar modos de falha
+distintos numa mensagem só.
+
+`preflight.py` faz um ping de `max_tokens=1` antes da coleta (~US$ 0,00002/run):
+
+| Código | Bloqueia? | Por quê |
+|---|---|---|
+| `no_credit` | ✅ | nenhuma etapa seguinte contorna |
+| `auth` / `no_key` | ✅ | idem |
+| `model_missing` | ✅ | a curadoria vai falhar de todo jeito |
+| `rate_limit` | ❌ | o processor tem backoff |
+| erro de rede / TLS / timeout / 5xx | ❌ | **falha aberta** (regra 80) |
+
+A escolha de falhar aberto é deliberada: melhor arriscar rodar e falhar adiante que
+engolir a edição do dia por um blip de rede.
+
+**2. O log mentia sobre o tamanho do prompt.**
+
+`processor.py:776` imprimia `len(items)` — a lista **bruta** — sob o rótulo "enviando
+para curar", reportando **814** quando o corte estratificado manda **80**. Regra 68
+outra vez, e com consequência concreta: durante o próprio diagnóstico deste incidente,
+levou a estimar o custo por edição em ~10× o real.
+
+**O que o incidente esclareceu sobre a conta** (agora na regra 82): a curadoria sempre
+rodou na API paga do Console, desde o commit inicial de 02/02/2026 — `git log -S` em
+todo o histórico devolve zero ocorrências de `oauth`/`auth_token`. A subscription Claude
+Max do Claude Code é outro bolso. OAuth do Max foi avaliado e descartado (uso fora do
+previsto em CI; `claude -p` headless seria legítimo mas migra o pipeline pra VPS e troca
+um modo de falha silenciosa por outro). A US$ ~0,15/edição, o custo nunca foi o
+problema — a ausência de auto-reload era.
+
+**Refactors que a testabilidade exigiu:**
+- `alert_failure.build_alert()` — montagem da issue extraída, pura. Antes era inseparável
+  do `gh issue create`, portanto não testável sem criar issue de verdade.
+- `preflight._classify_bad_request()` — a separação entre a 400 de saldo e as outras 400
+  é o ponto que decide "billing vs bug"; extraída para ser exercitável sem zerar a conta.
+
+**Testes:** 76 → **103 casos**, 0 falhas. Validado ao vivo nos dois estados: com a conta
+zerada o collector abortou sem coletar (`exit=1`); depois da recarga, passou livre.
+
+**Decisão de posicionamento:** o gate mora no `__main__` do `collector.py`, **não** como
+step do workflow. Step novo exigiria editar `.github/workflows/`, e PR de bot ali mata o
+schedule (regra 77 — custou 4 dias em agosto).
+
+**Achado colateral, ainda aberto:** o repo **não tem CI em pull request** (regra 84). Os
+103 testes só rodam dentro do workflow diário, às 06:41 BRT. PR que quebre o suite passa
+o merge e só aparece na hora da edição.
+
+**Rastro:** PR [#30](https://github.com/totobusnello/daily-tech-digest/pull/30) → `fabe0f1`.
+Edição de 03/09 entregue às 11:40 BRT (5h atrasada); a de 04/09 saiu às **06:45:46 BRT**,
+no horário, via dispatch da VPS — ciclo normal restabelecido.
+
+**Pendente fora do repo:** ativar **auto-reload de crédito** em
+`console.anthropic.com` → Plans & Billing. O pre-flight melhora o diagnóstico; ele não
+põe dinheiro na conta.
+
+---
+
 ### v2.17b — 2026-08-28 (destrava o tier indie e abre a camada primária)
 
 Continuação direta da v2.17. A pergunta que originou: "que ferramenta incorporar para

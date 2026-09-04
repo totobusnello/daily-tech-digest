@@ -4,8 +4,8 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.17b (Heat Score recalibrado · diagnostico de feeds · API de arquivo do Substack · camada primaria · Bluesky)
-**Ultima rodada de evolucao:** 2026-08-28 — ver `EVOLUTION-PLAN.md` (changelog v2.17/v2.17b + backlog do proximo ciclo)
+**Versao atual:** v2.17d (pre-flight de crédito · diagnóstico de billing no alerta · log da curadoria honesto)
+**Ultima rodada de evolucao:** 2026-09-03 — ver `EVOLUTION-PLAN.md` (changelog v2.17d + backlog do proximo ciclo)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -46,6 +46,7 @@ sender.py             -> Buttondown API -> email HTML
 | `scripts/dedup.py` | Cache de URLs ja enviadas (5 dias), normaliza URLs, previne repeticao entre dias |
 | `scripts/run.py` | Pipeline completo (collect -> feedback -> process -> send). Flags: `--preview`, `--skip-collect`, `--skip-process` |
 | `scripts/health_check.py` | Monitora saude de 154 feeds (ThreadPool, 10s timeout, 3+ falhas consecutivas = alerta) |
+| `scripts/preflight.py` | Ping de `max_tokens=1` antes da coleta. Classifica crédito/credencial e aborta cedo com o diagnóstico certo. Falha aberta em erro de rede (v2.17d) |
 | `scripts/alert_failure.py` | Cria GitHub Issue quando pipeline falha (via gh CLI no Actions). Notifica owner por email |
 | `prompts/curator.md` | Documentacao de referencia do prompt de curadoria |
 | `SKILL.md` | Filosofia, criterios, layout, fontes |
@@ -366,6 +367,19 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
     **A fonte da verdade e o Buttondown, nao um arquivo de estado**: e la que o email existe de fato, e a resposta continua certa se o cache do Actions se perder. Em caso de duvida (`None`: sem chave, API fora, resposta estranha) o guard **falha aberto** e deixa enviar — melhor arriscar email repetido que engolir a edicao do dia em silencio; e se o Buttondown estiver fora, o proprio envio falha e alerta. 12 casos no `test_byte_score.py`.
 
 81. **NAO rodar `crontab-rebuild.sh` na VPS sem conferir o canonical (v2.17c)** — descoberto ao instalar o cron do digest: o crontab real da KVM2 tem **40 entries**, o runbook `openclaw-vps/infra/runbooks/crontab-canonical.md` afirma **26**, e o canonical embedded no proprio `crontab-rebuild.sh` tem **16**. O runbook manda aplicar mudanca por esse script — fazer isso hoje **apagaria mais da metade do crontab**. A entrada do digest foi adicionada de forma cirurgica (`crontab -l` + append + `crontab -`), com backup em `/root/.openclaw/backups/`. O drift esta sinalizado no runbook e precisa de reconciliacao antes de qualquer rebuild.
+
+82. **A conta da API é um bolso separado da subscription (v2.17d)** — a curadoria roda na **API paga do Console** (org `2a124a2a-0a92-4b61-9339-53862fbfd089`, chave `sk-ant-api03-…`), que **não** tem relação com a subscription Claude Max usada no Claude Code. Max ativo e digest morto convivem sem contradição.
+    **Isto nunca mudou:** o commit inicial `c881290` (02/02/2026) já trazia `anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)` no `processor.py:98`, e `git log -S` em todo o histórico devolve **zero** ocorrências de `oauth`, `auth_token` e `ANTHROPIC_AUTH_TOKEN`. Só o modelo mudou (`claude-sonnet-4-20250514` → `claude-sonnet-4-6`, ~maio/2026). Se a pergunta "antes não usávamos a API?" voltar, a resposta está aqui — sempre usou.
+    **Divisão de trabalho, que o modo de falha embaralha:** `ANTHROPIC_API_KEY` **escolhe e escreve** o digest; `BUTTONDOWN_API_KEY` **entrega**. Sem crédito não há conteúdo para o Buttondown mandar, e o Step 4 aparece como `skipped` (não como falha) justamente por isso.
+    ⚠️ **OAuth do Max não é rota.** Usar aquele token como chave de API em CI é uso fora do previsto na subscription. Rodar `claude -p` headless na VPS seria legítimo, mas migra o pipeline do Actions para a VPS (o runner não tem, nem deve ter, a sessão pessoal) e troca "saldo zera em silêncio" por "sessão OAuth expira em silêncio". Com auto-reload ligado, a API custa ~US$ 0,15/edição ≈ US$ 4,50/mês — o problema nunca foi o custo, foi o billing pré-pago sem recarga.
+
+83. **Pre-flight: falhe caro e cedo, com o diagnóstico certo (v2.17d)** — `preflight.py` faz um ping de `max_tokens=1` (~US$ 0,00002) **antes** da coleta. Bloqueiam: `no_credit`, `auth`, `no_key`, `model_missing`. **Não** bloqueiam: `rate_limit` (o processor tem backoff) e qualquer erro de rede/TLS/timeout/5xx.
+    **Falha aberta, por escolha** (mesma lógica da regra 80): melhor arriscar rodar e falhar adiante que engolir a edição do dia por um blip de rede. A classificação da 400 vive em `_classify_bad_request()` — extraída como função pura porque é o ponto que decide entre "billing" e "bug", e sem isso só seria testável com a conta zerada.
+    O motivo vai para `/tmp/digest_preflight_fail.json` e o `alert_failure.py` titula a issue pelo problema real (`💳 Sem credito na API Anthropic`) em vez de acusar o `processor.py`. A montagem virou `build_alert()`, pura — antes era inseparável do `gh issue create`, portanto não testável.
+    ⚠️ **O gate mora no `__main__` do `collector.py`, não como step do workflow** — de propósito. Step novo exigiria editar `.github/workflows/`, e PR de bot ali mata o schedule (**regra 77**). O Step 1 já roda o collector, então o efeito é o mesmo sem tocar YAML. Step dedicado (diagnóstico ainda mais limpo no `Detect failed step`) só por push humano.
+
+84. **Não existe CI em pull request (v2.17d)** — `gh pr checks` devolve *"no checks reported"*. Os 103 testes só rodam **dentro do workflow do digest**, às 06:41 BRT. Um PR que quebre o suite passa o merge e só aparece na hora da edição — foi exatamente essa cegueira que deixou o `test_byte_score.py` quebrado desde a v2.14 (**regra 53**).
+    **Enquanto isso não muda:** rodar `cd scripts && python test_byte_score.py` **antes e depois** de todo merge, na mão. Consertar de verdade pede um workflow de PR, que por sua vez pede push humano (regra 77).
 
 ---
 
