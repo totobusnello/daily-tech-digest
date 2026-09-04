@@ -14,8 +14,8 @@ import subprocess
 from datetime import datetime
 
 
-def send_alert(run_id: str, run_url: str, failed_step: str = ""):
-    """Cria GitHub Issue com detalhes da falha"""
+def build_alert(run_id: str, run_url: str, failed_step: str = "") -> tuple:
+    """Monta (title, body, preflight_state) da issue. Puro — nao chama gh."""
 
     now = datetime.utcnow()
     weekdays_pt = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
@@ -23,7 +23,52 @@ def send_alert(run_id: str, run_url: str, failed_step: str = ""):
 
     step_info = f"**Step que falhou:** {failed_step}\n" if failed_step else ""
 
-    title = f"🚨 Pipeline falhou — {date_str}"
+    # v2.17d: se o pre-flight reprovou, ele sabe MAIS que o `steps.*.outcome`.
+    # Sem isso, saldo zerado virava issue "Curadoria (processor.py) falhou" —
+    # diagnostico que manda cacar bug em codigo quando o problema e billing.
+    pf = {}
+    try:
+        from preflight import read_fail_state
+        pf = read_fail_state() or {}
+    except Exception:
+        pf = {}
+
+    if pf.get("code"):
+        titles = {
+            "no_credit": "💳 Sem credito na API Anthropic",
+            "auth": "🔑 Credencial da API Anthropic invalida",
+            "no_key": "🔑 ANTHROPIC_API_KEY ausente",
+            "model_missing": "🤖 Modelo do curador indisponivel",
+        }
+        label = titles.get(pf["code"], f"Pre-flight reprovou ({pf['code']})")
+        title = f"🚨 {label} — {date_str}"
+        step_info = (
+            f"**Reprovado no pre-flight:** `{pf['code']}`\n"
+            f"**O que e:** {pf.get('diagnosis', '')}\n"
+        )
+        if pf.get("detail"):
+            step_info += f"**Resposta da API:** `{pf['detail'][:200]}`\n"
+        step_info += (
+            "\n> Nada foi coletado nem curado — o pipeline abortou antes de gastar "
+            "trabalho. **Nao ha bug de codigo a procurar.**\n"
+        )
+    else:
+        title = f"🚨 Pipeline falhou — {date_str}"
+
+    if pf.get("code"):
+        next_steps = (
+            "1. Resolver o item acima (billing/credencial — fora do repo)\n"
+            "2. Re-disparar: Actions → Run workflow (a coleta usa o cache, "
+            "a edicao sai em ~1 min)\n"
+            f"3. Logs, se precisar: [run #{run_id}]({run_url})"
+        )
+    else:
+        next_steps = (
+            f"1. [Ver logs do GitHub Actions]({run_url})\n"
+            "2. Identificar a causa do erro no step acima\n"
+            "3. Rodar manualmente se necessario: Actions → Run workflow"
+        )
+
     body = f"""## 🚨 Pipeline do Daily Byte falhou
 
 **Data:** {date_str} ({now.strftime('%H:%M')} UTC)
@@ -32,18 +77,27 @@ def send_alert(run_id: str, run_url: str, failed_step: str = ""):
 O digest de hoje **não foi enviado** porque o pipeline falhou.
 
 ### Próximos passos
-1. [Ver logs do GitHub Actions]({run_url})
-2. Identificar a causa do erro no step acima
-3. Rodar manualmente se necessário: Actions → Run workflow
+{next_steps}
 
 ---
 *Alerta automático do THE DAILY BYTE pipeline*"""
+
+    return title, body, pf
+
+
+def send_alert(run_id: str, run_url: str, failed_step: str = ""):
+    """Cria GitHub Issue com detalhes da falha"""
+    from datetime import datetime as _dt
+    now = _dt.utcnow()
+    title, body, pf = build_alert(run_id, run_url, failed_step)
 
     # Sempre loga no stdout (visível nos logs do Actions)
     print("=" * 60)
     print("🚨 DAILY BYTE PIPELINE FAILED")
     print(f"   Run ID: {run_id}")
-    if failed_step:
+    if pf.get("code"):
+        print(f"   Pre-flight: {pf['code']} — {pf.get('diagnosis', '')}")
+    elif failed_step:
         print(f"   Failed: {failed_step}")
     print(f"   URL: {run_url}")
     print(f"   Time: {now.isoformat()} UTC")
