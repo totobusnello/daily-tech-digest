@@ -65,8 +65,9 @@ filters:
     # e todas retornam 400/404. Por isso filtramos por assunto no nosso lado.
     filtra_br_por_assunto: true
 
-  # Máximo de itens no digest (v2.14 cortou de 18 para 15 — rigor > quantidade)
-  max_items: 15
+  # Máximo de itens no digest (v2.14 cortou de 18 para 15; v2.18 para 14 — menos
+  # itens, mais detalhe nas 2-3 histórias principais. Benchmark The Rundown AI)
+  max_items: 14
 
   # Big Story (v2.14) — item de destaque no topo do email
   # Curador marca big_story=true em UM único item de items[] (maior byte_score, mínimo 8)
@@ -79,12 +80,13 @@ filters:
   distribution:
     big_story: 1          # Item destacado (opcional, se byte_score >= 8)
     world: 3              # Mundo Real (mundo + Brasil)
-    hoje_no_byte: 3-4     # Consolidação: breaking + ai_models + big_tech
-    saas_enterprise: 1-2  # SaaS, valuations, CapEx
+    hoje_no_byte: 3       # Consolidação: breaking + ai_models + big_tech (v2.18: era 3-4)
+    saas_enterprise: 1    # SaaS, valuations, CapEx (v2.18: era 1-2)
     radar_brasil: 0-1     # Ecossistema BR (opcional)
     tool_of_day: 1        # 1 ferramenta prática + prompt "Como Usar"
+    trending_tools: 0-3   # v2.18: "Nome — o que faz", só com URL da coleta (opcional)
     watch_later: 1        # 1 vídeo essencial
-    quick_links: 4-5      # Links rápidos no final (headline + link only)
+    quick_links: 4        # Links rápidos no final (headline + link only) (v2.18: era 4-5)
 
 # Temas prioritários (boost no score)
 themes:

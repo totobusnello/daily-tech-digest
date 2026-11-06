@@ -4,8 +4,8 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.17d (pre-flight de crédito · diagnóstico de billing no alerta · log da curadoria honesto)
-**Ultima rodada de evolucao:** 2026-09-03 — ver `EVOLUTION-PLAN.md` (changelog v2.17d + backlog do proximo ciclo)
+**Versao atual:** v2.18 (benchmark The Rundown AI: emoji temático + preheader · abertura + sumário · menos itens, mais detalhe · ferramentas em alta)
+**Ultima rodada de evolucao:** 2026-11-06 — ver `EVOLUTION-PLAN.md` (changelog v2.18)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -54,27 +54,33 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Layout v2.14 — Big Story + 6 Secoes + 2 Micro-Secoes
+## Layout v2.18 — Abertura + Big Story + 6 Secoes + 2 Micro-Secoes
 
 ```
+ABERTURA (v2.18) — lede de 2 frases com tensao + "NESTA EDICAO" (sumario derivado no codigo)
 ★ BIG STORY (v2.14) — 1 item destacado no topo (card laranja com borda 2px)
                        Extraido de items[] onde big_story=true (maior byte_score, minimo 8)
 0. NUMERO DO DIA (data point impactante — value + context)
 1. MUNDO REAL (3 itens) — mundo + Brasil
-2. HOJE NO BYTE (3-4 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
-3. SaaS & ENTERPRISE (1-2 itens)
+2. HOJE NO BYTE (3 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
+3. SaaS & ENTERPRISE (1 item)
 3b. RADAR BRASIL (0-1 item) — ecossistema tech/AI/negocios BR (opcional, array vazio se nada relevante)
 4. TOOL DO DIA (1 item) + COMO USAR HOJE + PROMPT DO DIA (copy-paste ready)
+4a2. FERRAMENTAS EM ALTA (0-3, v2.18) — "Nome — o que faz", so com URL da coleta
 5. ANALISE DO DIA (3 bullets)
 5b. DEEP DIVE (sextas) — analise profunda do tema mais quente da semana (3-5 paragrafos)
-6. QUICK LINKS (4-5 itens) — headline + link, sem analise
+6. QUICK LINKS (4 itens) — headline + link, sem analise
 + WATCH LATER (1 video no final)
 ```
 
-**Total maximo:** 15 itens (10 principais + 5 quick links). Rigor > quantidade. Heat threshold 70.
+**Total maximo:** 14 itens (10 principais + 4 quick links) + ate 3 ferramentas em alta. Teto imposto no CODIGO (`enforce_section_caps`, regra 87). Heat threshold 70.
 
 **JSON do curador:**
 - `subject_hook` — frase-gancho de 5 a 9 palavras, GRAMATICAL COMPLETA (v2.17: era max 6, o que produzia fragmento quebrado)
+- `subject_emoji` — (v2.18) UM emoji do tema; validado no sender, 🔥 se ausente/invalido
+- `lede` — (v2.18) 2 frases de abertura com tensao (opcional)
+- `trending_tools[]` — (v2.18) 0-3 {name, what_it_does, source_url, source_name}
+- `details[]` — (v2.18) na Big Story E nas 2 outras historias de maior byte_score
 - `number_of_day{}` — {value, context} — data point numerico impressionante
 - `world[]` — array de 3 itens (headline, context, source_url, source_name, byte_score int)
 - `items[]` — array com category `hoje_no_byte|saas_enterprise|watch_later`, campo `tag`, `byte_score` int e `big_story` bool (opcional, UM unico item marca true)
@@ -182,7 +188,7 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 
 6. **Newsletters tem janela de 36h** (vs 24h para RSS/X).
 
-7. **max_items = 18** em todos os arquivos (config.yaml, SKILL.md, prompts).
+7. **max_items = 14** (v2.18; era 18 até a v2.14 e 15 até a v2.17) em config.yaml e prompts — e o teto por seção é imposto no código (regra 87).
 
 8. **subject_hook** — frase-gancho de 5 a 9 palavras, FRASE GRAMATICAL COMPLETA (sujeito + verbo + objeto). Usada no subject do email. v2.17 subiu de 6 palavras porque o limite apertado amputava a sintaxe — ver regra 60.
 
@@ -379,7 +385,17 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
     ⚠️ **O gate mora no `__main__` do `collector.py`, não como step do workflow** — de propósito. Step novo exigiria editar `.github/workflows/`, e PR de bot ali mata o schedule (**regra 77**). O Step 1 já roda o collector, então o efeito é o mesmo sem tocar YAML. Step dedicado (diagnóstico ainda mais limpo no `Detect failed step`) só por push humano.
 
 84. **Não existe CI em pull request (v2.17d)** — `gh pr checks` devolve *"no checks reported"*. Os 103 testes só rodam **dentro do workflow do digest**, às 06:41 BRT. Um PR que quebre o suite passa o merge e só aparece na hora da edição — foi exatamente essa cegueira que deixou o `test_byte_score.py` quebrado desde a v2.14 (**regra 53**).
-    **Enquanto isso não muda:** rodar `cd scripts && python test_byte_score.py` **antes e depois** de todo merge, na mão. Consertar de verdade pede um workflow de PR, que por sua vez pede push humano (regra 77).
+    **Enquanto isso não muda:** rodar `cd scripts && python test_byte_score.py` **antes e depois** de todo merge, na mão.
+
+85. **Benchmark The Rundown AI — o que entrou e o que ficou de fora (v2.18)** — 20 edições lidas pelo feed público (`rss.beehiiv.com/feeds/2R3C6Bt5wj.xml`, corpo completo, sem scraping) contra as nossas 100 últimas no Buttondown. O padrão deles: **2-3 histórias por dia**, cada uma com "The Rundown" (1 frase) + "The details" (4 bullets com número) + "Why it matters" (~58 palavras), ~1.700 palavras no total — o mesmo tamanho que o nosso, distribuído em muito menos itens. Também: abertura de 2 frases com tensão + sumário de 4 linhas, emoji temático no subject, preview "PLUS: <2ª história>", colunas assinadas em dia fixo (Roundtable seg, Nate's Notebook qui, Rowan's Corner sex), entrevista patrocinada aos domingos.
+    **Ficou de fora, de propósito:** "welcome to our 4.687 new readers" (com 21 assinantes, o efeito é o contrário), workflow enviado por leitor (não há comunidade para sustentar), entrevista de domingo e imagem por história (o pipeline é automático). A coluna assinada foi proposta e **não** aprovada nesta rodada. O Rundown continua **fora como fonte** (regra 57) — o benchmark é de formato.
+    **Dado que decidiu o "menos itens, mais detalhe":** 2-3 cliques por edição para ~15 aberturas. O leitor não sai do email — o número tem de estar nele.
+
+86. **Preheader vai no campo `description` do Buttondown, não em HTML escondido (v2.18)** — o snippet do Gmail das nossas edições mostrava `"🔥 Bolsas... THE DAILY BYTE · 06/11/2026 Recebeu isso de alguém? Assine este boletim."`: é o cabeçalho que o **próprio Buttondown injeta antes do nosso body**. Um `<div style="display:none">` no nosso HTML cairia DEPOIS disso e não mudaria nada. O doc (`docs.buttondown.com/glossary-developers`) diz que o preheader sai do `description`, que ia vazio em 100 de 100 edições. `_preheader()` deriva "MAIS: <história de maior byte_score que não é a do subject>" — no código, não pedido ao curador. ⚠️ Conferir o snippet no Gmail na primeira edição pós-merge.
+
+87. **Teto por seção imposto no código, não só no prompt (v2.18)** — na edição real de 06/11/2026 o prompt pedia 3-4 itens no Hoje no Byte e o curador devolveu **7** (+2 SaaS). `enforce_section_caps()` roda depois do dedup: fica o maior byte_score, a Big Story nunca sai, a ordem do curador é preservada, e o excedente de hoje/saas **não some** — disputa as 4 vagas de quick link por byte_score. Na curadoria de teste com o prompt v2.18 o curador já respeitou 3/1/4 sozinho; o teto é a rede para o dia em que não respeitar. Mesmo princípio da regra 68: o que a edição diz que tem precisa ser o que ela tem.
+
+88. **Ferramentas em alta: seção pronta, matéria-prima fraca (v2.18)** — só entra ferramenta com `source_url` http(s) válida (`_valid_trending_tools`), no máximo 3, sem repetir o `tool_of_day` (dedup intra-edição). Em dia sem lançamento que preste a seção some. **Medido na coleta de 06/11:** o pool tinha 5 itens do Product Hunt (títulos obscuros, sem descrição), 3 do GitHub changelog e 2 do Vercel — o curador corretamente devolveu `[]`. Com o catálogo atual a seção vai aparecer **pouco**. Se o Toto quiser presença diária, o próximo passo é fonte de lançamentos de ferramenta de negócio (testada pelas regras 47 e 55, e de host fora de `*.substack.com` — regra 73), não afrouxar o prompt. Consertar de verdade pede um workflow de PR, que por sua vez pede push humano (regra 77).
 
 ---
 
