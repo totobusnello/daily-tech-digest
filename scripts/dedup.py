@@ -133,12 +133,14 @@ def register_sent(curated: Dict, cache: Dict[str, str]) -> Dict[str, str]:
     tool = curated.get('tool_of_day', {})
     if tool:
         all_items.append(tool)
+    # v2.18: ferramenta em alta também não deve voltar amanhã
+    all_items.extend(t for t in (curated.get('trending_tools') or []) if isinstance(t, dict))
 
     for item in all_items:
         url = item.get('source_url', '')
         if url:
             cache[_normalize_url(url)] = today
-        title = item.get('headline', '') or item.get('title', '')
+        title = item.get('headline', '') or item.get('title', '') or item.get('name', '')
         t_hash = _title_hash(title)
         if t_hash:
             title_cache[t_hash] = today

@@ -4,6 +4,33 @@
 
 ## Changelog
 
+### v2.18 — 2026-11-06 (benchmark The Rundown AI: menos itens, mais detalhe)
+
+Rodada de formato pedida pelo Toto: ler o The Rundown AI (caixa "Pulse Daily Digest" de
+lab@generantis) e trazer o que servir. Detalhe e números nas regras 85-88 do `CLAUDE.md`.
+
+| Mudança | Onde | Por quê |
+|---|---|---|
+| Emoji temático no subject (`subject_emoji`, 🔥 de reserva) | `sender._subject_emoji/_compose_subject` | 100 de 100 edições abriam com 🔥 |
+| Preheader "MAIS: <2ª história>" via `description` | `sender._preheader`, `send_via_buttondown` | preview mostrava o cabeçalho do Buttondown |
+| Abertura (`lede`) + "Nesta edição" | `sender.generate_email_html` | padrão das 19 edições de semana do Rundown |
+| `details[]` em 3 histórias (antes só Big Story) | prompt + `_details_html` | leitor quase não clica — dado tem de estar no email |
+| Teto 3 hoje / 1 SaaS / 4 quick, no código | `processor.enforce_section_caps` | curador mandou 7 itens onde o prompt pedia 3-4 |
+| Ferramentas em alta (0-3) | prompt + `_valid_trending_tools` + dedup | aprovado pelo Toto; só com URL da coleta |
+
+**Revisão adversarial:** Codex + Kimi (pedido do Toto, 06/11 10:48). Convergiram em 2 achados
+altos (score em string abortava o envio; `trending_tools` malformado derrubava o processor) e 6
+médios/baixos — todos corrigidos com teste de regressão (regra 87).
+
+**Validação:** 103 → 186 testes. Curadoria real com o prompt novo sobre a coleta de 06/11
+(sem envio): respeitou 3/1/4, emoji 📉, lede com tensão, details em 4 histórias, preheader
+"MAIS: Musk confirma fim da produção do Cybertruck em 2027", 1.809 palavras (vs 1.786 da
+edição real do dia). `trending_tools` veio `[]` — ver regra 88.
+
+**Aberto para o próximo ciclo:** fonte de lançamentos de ferramenta de negócio (regra 88);
+coluna semanal assinada pelo Toto (proposta, não aprovada nesta rodada); conferir o snippet
+do Gmail na primeira edição pós-merge (regra 86).
+
 ### v2.17d — 2026-09-03 (o pipeline aprende a dizer "é billing, não bug")
 
 Rodada reativa, não planejada: a edição de 03/09 **não saiu**. Nada quebrou no código —

@@ -10,6 +10,7 @@ import os
 import json
 import math
 import re
+import unicodedata
 import requests
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
@@ -111,6 +112,192 @@ def _strip_leading_fire(hook: str) -> str:
     return _LEADING_FIRE_RE.sub('', hook).strip()
 
 
+# ── v2.18: emoji temático no subject (benchmark The Rundown AI) ──
+# 100 edições seguidas abriram com 🔥 (medido no Buttondown em 06/11/2026) — o
+# sinal que se repete todo dia deixa de ser sinal. O Rundown troca o emoji pelo
+# tema da edição (📈 🕵️ 🚀 ⚖️). O curador sugere; o código valida e cai no 🔥.
+_FALLBACK_EMOJI = "\U0001F525"
+_EMOJI_JOINERS = {"‍", "️", "︎", "⃣"}  # ZWJ, VS16, VS15, keycap
+
+
+# Faixas de pictograma de emoji. Antes valia qualquer caractere da categoria
+# Unicode 'So', o que deixava passar ░ e © (revisão Codex+Kimi do PR #31).
+_EMOJI_RANGES = ((0x1F000, 0x1FAFF), (0x2600, 0x27BF), (0x2300, 0x23FF),
+                 (0x2B00, 0x2BFF), (0x3030, 0x3030), (0x303D, 0x303D),
+                 (0x3297, 0x3297), (0x3299, 0x3299))
+_KEYCAP_RE = re.compile(r'^[0-9#*]️?⃣$')
+
+
+def _is_emoji_char(ch: str) -> bool:
+    cp = ord(ch)
+    return any(lo <= cp <= hi for lo, hi in _EMOJI_RANGES)
+
+
+def _num(score) -> float:
+    """byte_score como número. O curador às vezes manda "7" em vez de 7; o
+    _byte_tier sempre tolerou, e o preheader derrubava o envio inteiro com
+    TypeError (achado alto do Codex e do Kimi no PR #31)."""
+    try:
+        v = float(score)
+    except (TypeError, ValueError):
+        return 0.0
+    return 0.0 if math.isnan(v) else v
+
+
+def _subject_emoji(raw) -> str:
+    """UM emoji vindo do curador, ou 🔥. Rejeita texto, espaço e mais de um emoji.
+
+    Conta "bases": cada pictograma conta 1, exceto o que vem colado por ZWJ (👨‍💻)
+    e pares de indicador regional (🇧🇷), que formam um emoji só. Keycap (1️⃣)
+    tem regra própria porque começa por dígito. Limite conhecido: não valida
+    contra a tabela oficial de sequências ZWJ — "📈‍📉" passa como 1 emoji.
+    É cosmético (o cliente de email mostra 2 emojis), não bloqueia o envio.
+    """
+    if not isinstance(raw, str):
+        return _FALLBACK_EMOJI
+    s = raw.strip()
+    if _KEYCAP_RE.match(s):
+        return s
+    if not s or len(s) > 8 or any(c.isspace() or c.isalnum() for c in s):
+        return _FALLBACK_EMOJI
+    if s.endswith("‍") or s.startswith("‍"):
+        return _FALLBACK_EMOJI  # ZWJ pendurado
+    bases, regional, prev_zwj = 0, 0, False
+    for ch in s:
+        if ch in _EMOJI_JOINERS:
+            prev_zwj = ch == "‍"
+            continue
+        if not _is_emoji_char(ch):
+            return _FALLBACK_EMOJI
+        if 0x1F1E6 <= ord(ch) <= 0x1F1FF:
+            regional += 1
+        elif 0x1F3FB <= ord(ch) <= 0x1F3FF:
+            pass  # modificador de tom de pele não é emoji novo
+        elif not prev_zwj:
+            bases += 1
+        prev_zwj = False
+    if regional % 2:
+        return _FALLBACK_EMOJI  # indicador regional sem par não é bandeira
+    bases += regional // 2
+    return s if bases == 1 else _FALLBACK_EMOJI
+
+
+def _strip_leading_emoji(hook) -> str:
+    """Remove QUALQUER emoji/espaço no início do hook (generaliza o strip de fogo).
+
+    Com o emoji agora variável, o curador pode repetir o próprio emoji no hook
+    ("📈 📈 Anthropic..."); só o fogo sair não basta mais. Emoji no meio fica.
+    """
+    if not hook or not isinstance(hook, str):
+        return ""
+    i = 0
+    while i < len(hook) and (hook[i].isspace() or hook[i] in _EMOJI_JOINERS
+                             or _is_emoji_char(hook[i]) or hook[i] in "❗❕⚠"):
+        i += 1
+    return hook[i:].strip()
+
+
+def _compose_subject(curated: Dict) -> str:
+    emoji = _subject_emoji((curated or {}).get('subject_emoji'))
+    hook = _strip_leading_emoji((curated or {}).get('subject_hook', ''))
+    return f"{emoji} {hook or 'Daily Byte'}"
+
+
+def _story_items(curated: Dict) -> list:
+    """Itens noticiosos de items[] (sem watch_later/tool), na ordem do curador."""
+    return [i for i in ((curated or {}).get('items') or [])
+            if isinstance(i, dict) and i.get('category') in ('hoje_no_byte', 'saas_enterprise')]
+
+
+def _big_story_of(curated: Dict):
+    return next((i for i in _story_items(curated)
+                 if i.get('big_story') is True and _num(i.get('byte_score')) >= 8), None)
+
+
+_STOP_PT = {"para", "com", "sem", "pela", "pelo", "como", "mais", "uma", "seu", "sua",
+            "dos", "das", "que", "nos", "nas", "por", "the", "and", "from"}
+
+
+def _sig_words(text: str) -> set:
+    norm = unicodedata.normalize('NFKD', str(text or '').lower())
+    norm = ''.join(c for c in norm if not unicodedata.combining(c))
+    return {w for w in re.findall(r'[a-z0-9$]+', norm) if len(w) > 3 and w not in _STOP_PT}
+
+
+def _clip(text: str, limit: int) -> str:
+    text = re.sub(r'\s+', ' ', str(text or '')).strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit - 1].rsplit(' ', 1)[0].rstrip(' ,;:—-')
+    return cut + "…"
+
+
+def _preheader(curated: Dict, limit: int = 140) -> str:
+    """Texto de preview "MAIS: <segunda história>" (v2.18, padrão "PLUS:" do Rundown).
+
+    Derivado no código, não pedido ao curador: é só escolher, entre o que ele já
+    escreveu, a história de maior byte_score que NÃO é a do subject — o preview
+    que repete o subject desperdiça a segunda linha da caixa de entrada.
+    Vai no campo `description` do Buttondown, que é quem define o preheader
+    (docs.buttondown.com/glossary-developers). Sem isso o Gmail mostrava o
+    cabeçalho que o próprio Buttondown injeta ("THE DAILY BYTE · 06/11/2026...").
+    """
+    curated = curated or {}
+    hook_words = _sig_words(curated.get('subject_hook', ''))
+    stories = [i for i in _story_items(curated) if i.get('headline')]
+    # Qual história é a do subject? A de maior sobreposição de palavras com o
+    # hook (mínimo de 2 palavras, ou metade do hook). Sem nenhuma que passe,
+    # assume-se a Big Story — o curador pede o hook sobre a notícia principal.
+    # Antes a Big Story era excluída sempre, e quando o hook era sobre a 2ª
+    # história o preview pulava a Big Story (achado do Kimi no PR #31).
+    def _overlap(i):
+        return len(_sig_words(i['headline']) & hook_words)
+    need = max(2, len(hook_words) // 2)
+    matched = [i for i in stories if hook_words and _overlap(i) >= need]
+    subject_story = (max(matched, key=_overlap) if matched else _big_story_of(curated))
+    cands = [i for i in stories if i is not subject_story]
+    cands.sort(key=lambda i: -_num(i.get('byte_score')))  # sort estável: empate mantém a ordem
+    for item in cands:
+        if hook_words and _overlap(item) >= need:
+            continue  # outra cobertura da mesma história do subject
+        return _clip("MAIS: " + item['headline'], limit)
+    n = curated.get('number_of_day') or {}
+    if n.get('value') and n.get('context'):
+        return _clip(f"MAIS: {n['value']} — {n['context']}", limit)
+    return ""
+
+
+def _toc_lines(curated: Dict) -> list:
+    """Sumário "Nesta edição": big story + 2 próximas histórias + tool (máx. 4 linhas)."""
+    big = _big_story_of(curated)
+    stories = ([big] if big else []) + [i for i in _story_items(curated) if i is not big]
+    lines = [str(i['headline']) for i in stories if i.get('headline')][:3]
+    tool = (curated or {}).get('tool_of_day') or {}
+    if isinstance(tool, dict) and tool.get('headline'):
+        lines.append(f"Tool do dia: {tool['headline']}")
+    return lines
+
+
+def _valid_trending_tools(tools) -> list:
+    """Até 3 ferramentas com nome e URL http(s) válida (v2.18).
+
+    Sem URL a ferramenta NÃO entra: mesma regra do source_url dos itens. É a
+    trava contra o curador inventar ou inflar ferramenta que não veio da coleta.
+    """
+    if not isinstance(tools, list):
+        return []
+    out = []
+    for t in tools:
+        if not isinstance(t, dict) or not str(t.get('name') or '').strip():
+            continue
+        if _safe_url(t.get('source_url', '')) == '#':
+            continue
+        out.append(t)
+        if len(out) == 3:
+            break
+    return out
+
+
 # ── Byte Score (v2.13) — classificador de impacto estratégico ──
 # (limite_inferior, label, emoji, cor_fundo, cor_texto)
 BYTE_TIERS = [
@@ -205,6 +392,34 @@ def _section_header(emoji: str, title: str, color: str, numbered: bool = True) -
 </tr>'''
 
 
+def _details_html(item: Dict, font_size: int = 14) -> str:
+    """Linha <tr> com até 3 bullets de dado duro. '' sem details[] válido.
+
+    v2.17 criou para a Big Story; v2.18 estende às 2-3 histórias principais
+    (molde "The details" do Rundown). Com 2-3 cliques por edição para ~15
+    aberturas, o leitor consome a notícia DENTRO do email — o número tem de
+    estar aqui, não no link.
+    """
+    detalhes = item.get('details') if isinstance(item, dict) else None
+    if not isinstance(detalhes, list):
+        return ''
+    detalhes = [str(d).strip() for d in detalhes if str(d or '').strip()][:3]
+    if not detalhes:
+        return ''
+    linhas = ''.join(
+        f'<tr><td style="padding:0 0 6px 0;font-family:\'Helvetica Neue\',Arial,sans-serif;'
+        f'font-size:{font_size}px;color:#3d3d3d;line-height:1.45;">'
+        f'<span style="color:{COLORS["brand"]};font-weight:800;">&bull;</span>&nbsp; {_esc(d)}'
+        f'</td></tr>'
+        for d in detalhes
+    )
+    return (
+        '<tr><td style="padding-bottom:10px;">'
+        '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
+        f'{linhas}</table></td></tr>'
+    )
+
+
 def _render_big_story_html(item: Dict) -> str:
     """Renderiza item de destaque no topo — card grande com borda laranja."""
     headline = _esc(item.get('headline', ''))
@@ -221,21 +436,7 @@ def _render_big_story_html(item: Dict) -> str:
     # A Big Story é o item que o leitor encaminha para o board — antes ela pulava
     # da manchete direto para uma frase imperativa, sem nenhum dado de apoio.
     # Campo opcional: se o curador não mandar details[], o card fica como antes.
-    detalhes = item.get('details') or []
-    detalhes_html = ''
-    if isinstance(detalhes, list) and detalhes:
-        linhas = ''.join(
-            f'<tr><td style="padding:0 0 6px 0;font-family:\'Helvetica Neue\',Arial,sans-serif;'
-            f'font-size:14px;color:#3d3d3d;line-height:1.45;">'
-            f'<span style="color:{COLORS["brand"]};font-weight:800;">&bull;</span>&nbsp; {_esc(str(d))}'
-            f'</td></tr>'
-            for d in detalhes[:3]
-        )
-        detalhes_html = (
-            '<tr><td style="padding-bottom:12px;">'
-            '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
-            f'{linhas}</table></td></tr>'
-        )
+    detalhes_html = _details_html(item, font_size=14)
 
     return f'''<tr>
   <td style="background-color:#fff8f2;border:2px solid {COLORS["brand"]};border-radius:12px;padding:20px 22px;box-shadow:0 4px 12px rgba(255,107,53,0.15);">
@@ -304,9 +505,17 @@ def _estimate_reading_time(curated: Dict) -> int:
         text_parts.append(str(wi.get('headline', '')))
         text_parts.append(str(wi.get('context', '')))
 
+    text_parts.append(str(curated.get('lede', '') or ''))  # v2.18
+    text_parts.extend(_toc_lines(curated))
+
     for item in curated.get('items', []) or []:
         text_parts.append(str(item.get('headline', '')))
         text_parts.append(str(item.get('why_it_matters', '')))
+        if isinstance(item.get('details'), list):  # v2.18: details agora em várias histórias
+            text_parts.extend(str(d) for d in item['details'][:3])
+
+    for t in _valid_trending_tools(curated.get('trending_tools')):
+        text_parts.append(f"{t.get('name', '')} {t.get('what_it_does', '')}")
 
     for rb in curated.get('radar_brasil', []) or []:
         text_parts.append(str(rb.get('headline', '')))
@@ -387,6 +596,7 @@ def _render_item_html(item: Dict) -> str:
       {why}
     </td>
   </tr>
+  {_details_html(item, font_size=13)}
   <tr>
     <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;line-height:1.4;">
       <a href="{url}" style="display:inline-block;color:#2563eb;text-decoration:none;font-weight:600;border:1px solid #2563eb;padding:4px 12px;border-radius:16px;font-size:12px;">Ver original &#x2197;</a>
@@ -427,6 +637,44 @@ def generate_email_html(curated: Dict) -> str:
 
     body_rows.append(_spacer(16))
 
+    # ── ABERTURA + NESTA EDIÇÃO (v2.18) ─────────
+    # Benchmark The Rundown AI: as 19 edições de semana lidas abrem com 2 frases
+    # que armam a TENSÃO da história principal, seguidas de um sumário de 4
+    # linhas. O lede vem do curador (campo opcional); o sumário é derivado no
+    # código a partir do que já foi selecionado. Sem lede e com <2 linhas de
+    # sumário o bloco não aparece — não vale a moldura para uma linha só.
+    _lede = str(curated.get('lede') or '').strip()
+    _toc = _toc_lines(curated)
+    if _lede or len(_toc) >= 2:
+        _lede_html = (f'''      <tr>
+        <td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#2d2d2d;line-height:1.6;padding-bottom:12px;">
+          {_esc(_lede)}
+        </td>
+      </tr>''' if _lede else '')
+        _toc_html = ''
+        if len(_toc) >= 2:
+            _toc_items = ''.join(
+                f'<tr><td style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:14px;'
+                f'color:#1a1a2e;line-height:1.45;padding:0 0 5px 0;">'
+                f'<span style="color:{COLORS["brand"]};font-weight:800;">&#x203A;</span>&nbsp; {_esc(t)}</td></tr>'
+                for t in _toc
+            )
+            _toc_html = f'''      <tr>
+        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:800;color:#6b7280;letter-spacing:1px;text-transform:uppercase;padding-bottom:8px;">
+          NESTA EDI&Ccedil;&Atilde;O
+        </td>
+      </tr>
+      <tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0">{_toc_items}</table></td></tr>'''
+        body_rows.append(f'''<tr>
+  <td class="card-bg card-border" style="background-color:#ffffff;padding:18px 20px 12px 20px;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+{_lede_html}
+{_toc_html}
+    </table>
+  </td>
+</tr>''')
+        body_rows.append(_spacer())
+
     # ── BIG STORY (v2.14) ───────────────────────
     # Escolhe UM item para o card de destaque no topo. Regras defensivas (v2.15 fixes):
     # - Só aceita boolean True (rejeita string "true"/"false" que Claude pode retornar)
@@ -440,7 +688,7 @@ def generate_email_html(curated: Dict) -> str:
         return (
             i.get('big_story') is True
             and i.get('category') in ('hoje_no_byte', 'saas_enterprise')
-            and (i.get('byte_score') or 0) >= 8
+            and _num(i.get('byte_score')) >= 8  # v2.18: "9" (str) dava TypeError aqui
         )
 
     big_story = next((i for i in items_all if _is_valid_big_story(i)), None)
@@ -648,6 +896,31 @@ def generate_email_html(curated: Dict) -> str:
         </td>
       </tr>
     </table>''')
+        body_rows.append(_card_end())
+        body_rows.append(_card_bottom())
+        body_rows.append(_spacer())
+
+    # ── 4a2. FERRAMENTAS EM ALTA (v2.18) ────────
+    # Inspirado no "Trending AI Tools" do Rundown: 3 linhas "Nome — o que faz",
+    # ~40 palavras. Só entra ferramenta com URL válida vinda da coleta; em dia
+    # sem lançamento que preste, a seção some (mesma lógica do Radar Brasil).
+    _tools = _valid_trending_tools(curated.get('trending_tools'))
+    if _tools:
+        body_rows.append(_section_header('&#x1F9F0;', 'FERRAMENTAS EM ALTA', COLORS["tool"]))
+        body_rows.append(_card_start())
+        _rows = []
+        for t in _tools:
+            _src = _esc(str(t.get('source_name') or ''))
+            _src_html = f' <span style="color:#9ca3af;font-size:11px;">&middot; {_src}</span>' if _src else ''
+            _rows.append(
+                f'<tr><td style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:14px;'
+                f'line-height:1.45;color:#2d2d2d;padding:0 0 8px 0;">'
+                f'<a href="{_safe_url(t.get("source_url", ""))}" style="color:#2563eb;text-decoration:none;font-weight:700;">'
+                f'{_esc(str(t.get("name")).strip())}</a> &#x2014; {_esc(str(t.get("what_it_does") or "").strip())}{_src_html}'
+                f'</td></tr>'
+            )
+        body_rows.append('    <table width="100%" cellpadding="0" cellspacing="0" border="0">'
+                         + ''.join(_rows) + '</table>')
         body_rows.append(_card_end())
         body_rows.append(_card_bottom())
         body_rows.append(_spacer())
@@ -1013,12 +1286,17 @@ def format_item(item: Dict) -> str:
     tag_str = f"[{tag}] " if tag else ""
     led_md = _byte_led_md(item.get('byte_score'))
     led_suffix = f"\n{led_md}" if led_md else ""
+    _det = item.get('details')
+    det_md = ''
+    if isinstance(_det, list):
+        _det = [str(d).strip() for d in _det if str(d or '').strip()][:3]
+        det_md = ''.join(f"- {d}\n" for d in _det) + ("\n" if _det else '')
 
     return f"""{tag_str}**{headline}**
 
 {why}
 
-🔗 [Ver original]({url}) | 📍 {source} | ⏰ Há {hours}h{led_suffix}
+{det_md}🔗 [Ver original]({url}) | 📍 {source} | ⏰ Há {hours}h{led_suffix}
 
 """
 
@@ -1040,6 +1318,14 @@ def generate_email_content(curated: Dict) -> str:
     """Gera o conteúdo do email em markdown — Layout consolidado v2.2 (legacy)"""
 
     sections = []
+
+    _lede = str(curated.get('lede') or '').strip()
+    _toc = _toc_lines(curated)
+    if _lede or len(_toc) >= 2:
+        _parts = [_lede] if _lede else []
+        if len(_toc) >= 2:
+            _parts.append("**Nesta edição:**\n" + "\n".join(f"› {t}" for t in _toc))
+        sections.append("\n\n".join(_parts))
 
     number = curated.get('number_of_day', {})
     if number and number.get('value'):
@@ -1102,6 +1388,11 @@ def generate_email_content(curated: Dict) -> str:
             tool_text += f"\n\n---\n\n🧠 **PROMPT DO DIA** *(copy-paste ready)*\n\n> {prompt}"
         sections.append(f"# 🛠️ TOOL DO DIA\n\n{tool_text}")
 
+    _tools = _valid_trending_tools(curated.get('trending_tools'))
+    if _tools:
+        sections.append("# 🧰 FERRAMENTAS EM ALTA\n\n" + "\n".join(
+            f"→ [{t.get('name')}]({t.get('source_url')}) — {t.get('what_it_does', '')}" for t in _tools))
+
     analysis = curated.get('daily_analysis', '')
     if analysis:
         if isinstance(analysis, list):
@@ -1142,8 +1433,15 @@ def generate_email_content(curated: Dict) -> str:
     return "\n\n***\n\n".join(sections) + EMAIL_FOOTER
 
 
-def send_via_buttondown(subject: str, content: str, draft: bool = False) -> Dict:
-    """Envia email via Buttondown API"""
+def send_via_buttondown(subject: str, content: str, draft: bool = False,
+                        description: str = "") -> Dict:
+    """Envia email via Buttondown API.
+
+    v2.18: `description` é o preheader (texto de preview na caixa de entrada).
+    Sem ele o Buttondown gera o preview das primeiras linhas, que hoje são o
+    cabeçalho injetado por ele mesmo ("THE DAILY BYTE · 06/11/2026 Recebeu
+    isso de alguém?...") — medido no snippet do Gmail em 06/11/2026.
+    """
 
     headers = {
         "Authorization": f"Token {BUTTONDOWN_API_KEY}",
@@ -1155,6 +1453,8 @@ def send_via_buttondown(subject: str, content: str, draft: bool = False) -> Dict
         "body": content,
         "status": "draft" if draft else "about_to_send"
     }
+    if description:
+        payload["description"] = description
 
     print(f"📤 Enviando via Buttondown (draft={draft})...")
 
@@ -1277,12 +1577,10 @@ def send(preview: bool = False, skip_if_sent_today: bool = False):
     # Dynamic subject with hook from curated data
     # v2.16: o curador às vezes já devolve o hook prefixado com 🔥, e o prefixo
     # fixo daqui empilhava em cima — saíram subjects como "🔥 🔥 🔥 TSMC investe".
-    # Removemos qualquer fogo/espaço no início antes de prefixar uma única vez.
-    hook = _strip_leading_fire(curated.get('subject_hook', ''))
-    if hook:
-        subject = f"\U0001F525 {hook}"
-    else:
-        subject = f"\U0001F525 Daily Byte"
+    # v2.18: o emoji passou a ser temático (subject_emoji, validado, 🔥 de
+    # reserva) e o strip remove qualquer emoji inicial, não só o fogo.
+    subject = _compose_subject(curated)
+    preheader = _preheader(curated)
 
     # Generate content — HTML for sending, markdown for terminal preview
     html_content = generate_email_html(curated)
@@ -1293,6 +1591,7 @@ def send(preview: bool = False, skip_if_sent_today: bool = False):
         print("📧 PREVIEW DO EMAIL")
         print("="*50)
         print(f"Subject: {subject}")
+        print(f"Preview: {preheader or '(vazio — Buttondown gera das primeiras linhas)'}")
         print("-"*50)
         print(md_content)
         print("="*50)
@@ -1312,7 +1611,7 @@ def send(preview: bool = False, skip_if_sent_today: bool = False):
         return {"preview": True, "subject": subject, "content": md_content, "html": html_content}
 
     # Send HTML version
-    result = send_via_buttondown(subject, html_content)
+    result = send_via_buttondown(subject, html_content, description=preheader)
 
     # v2.3: Registra itens enviados no cache para dedup
     if result.get('success') and register_sent and load_cache and save_cache:
