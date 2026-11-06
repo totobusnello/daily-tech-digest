@@ -12,6 +12,7 @@ import anthropic
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 # v2.3: Dedup entre dias
 try:
@@ -1033,6 +1034,20 @@ def _titles_overlap(headline_a: str, headline_b: str) -> bool:
     return False
 
 
+def _valid_tool(t) -> bool:
+    """Ferramenta em alta dentro do contrato: dict, nome não vazio, URL http(s)."""
+    if not isinstance(t, dict):
+        return False
+    name, url = t.get('name'), t.get('source_url')
+    if not isinstance(name, str) or not name.strip() or not isinstance(url, str):
+        return False
+    try:
+        p = urlparse(url.strip())
+    except ValueError:
+        return False
+    return p.scheme in ('http', 'https') and bool(p.netloc)
+
+
 def dedup_across_sections(curated: dict) -> dict:
     """
     Remove notícias duplicadas entre seções do digest.
@@ -1044,6 +1059,10 @@ def dedup_across_sections(curated: dict) -> dict:
     removed_count = 0
 
     def _is_dup(url: str, headline: str) -> bool:
+        # v2.18: campo fora do contrato (URL em lista, headline numérico) virava
+        # AttributeError e derrubava o processor antes de salvar (revisão PR #31)
+        url = url if isinstance(url, str) else ''
+        headline = headline if isinstance(headline, str) else ''
         u = _normalize_for_dedup(url)
         if u and u in seen_urls:
             return True
@@ -1053,6 +1072,8 @@ def dedup_across_sections(curated: dict) -> dict:
         return False
 
     def _mark(url: str, headline: str):
+        url = url if isinstance(url, str) else ''
+        headline = headline if isinstance(headline, str) else ''
         u = _normalize_for_dedup(url)
         if u:
             seen_urls.add(u)
@@ -1100,18 +1121,22 @@ def dedup_across_sections(curated: dict) -> dict:
     # 3.5. trending_tools (v2.18) — depois do tool_of_day: se a ferramenta do dia
     # também veio na lista, ela fica no card grande e sai da lista curta.
     # Campo opcional: só é escrito de volta quando o curador o mandou.
+    # Valida ANTES do dedup: ferramenta inválida não pode marcar URL como vista
+    # (apagava o quick link de mesma URL) nem ocupar vaga do teto de 3
+    # (achados do Codex e do Kimi no PR #31). Campo de tipo errado vira [].
     if 'trending_tools' in curated:
+        raw_tools = curated.get('trending_tools')
         new_tools = []
-        for t in curated.get('trending_tools') or []:
-            if not isinstance(t, dict):
+        for t in raw_tools if isinstance(raw_tools, list) else []:
+            if not _valid_tool(t):
                 continue
-            name = t.get('name', '') or t.get('headline', '')
-            if _is_dup(t.get('source_url', ''), name):
+            if _is_dup(t['source_url'], t['name']):
                 removed_count += 1
                 continue
-            _mark(t.get('source_url', ''), name)
-            new_tools.append(t)
-        curated['trending_tools'] = new_tools[:3]
+            if len(new_tools) < 3:
+                _mark(t['source_url'], t['name'])
+                new_tools.append(t)
+        curated['trending_tools'] = new_tools
 
     # 4. quick_links
     new_quick = []
@@ -1129,7 +1154,7 @@ def dedup_across_sections(curated: dict) -> dict:
     return curated
 
 
-SECTION_CAPS = {'hoje_no_byte': 3, 'saas_enterprise': 1, 'world': 3,
+SECTION_CAPS = {'hoje_no_byte': 3, 'saas_enterprise': 1, 'watch_later': 1, 'world': 3,
                 'radar_brasil': 1, 'quick_links': 4, 'trending_tools': 3}
 
 
@@ -1140,10 +1165,15 @@ def enforce_section_caps(curated: dict) -> dict:
     curador devolveu 7, mais 2 de SaaS. Instrução de prompt sozinha não segura o
     limite — e a v2.18 cortou itens justamente para aprofundar as histórias
     principais. Regras:
-    - fica o maior byte_score; a Big Story nunca sai; empate mantém a ordem do curador;
-    - a ordem de exibição continua a do curador (só filtramos);
+    - fica o maior byte_score; empate mantém a ordem do curador;
+    - a Big Story nunca sai — mas só a ELEGÍVEL, pela mesma regra do sender
+      (primeira com big_story=True e byte_score >= 8). Fixar qualquer item
+      marcado deixava uma "Big Story" de score 7 derrubar a de 9 (revisão PR #31);
+    - a ordem de exibição continua a do curador (só filtramos), inclusive nos
+      quick links: a seleção é por byte_score, a exibição não;
     - o que sai de hoje_no_byte/saas não some: disputa as vagas de quick_links
-      junto com os quick links originais, por byte_score (vira headline + link).
+      junto com os quick links originais, por byte_score (vira headline + link);
+    - watch_later tem teto 1 (o excedente sai; vídeo não vira quick link).
     """
     def _score(i):
         try:
@@ -1160,18 +1190,23 @@ def enforce_section_caps(curated: dict) -> dict:
                 [x for k, x in enumerate(lst) if k not in keep])
 
     items = curated.get('items') or []
-    demoted = []
-    for cat in ('hoje_no_byte', 'saas_enterprise'):
+    if not isinstance(items, list):
+        items = []
+    big = next((i for i in items if isinstance(i, dict)
+                and i.get('category') in ('hoje_no_byte', 'saas_enterprise')
+                and i.get('big_story') is True and _score(i) >= 8), None)
+    demoted, dropped = [], []
+    for cat in ('hoje_no_byte', 'saas_enterprise', 'watch_later'):
         group = [i for i in items if isinstance(i, dict) and i.get('category') == cat]
-        big = next((i for i in group if i.get('big_story') is True), None)
         _, cut = _keep_top(group, SECTION_CAPS[cat], pinned=big)
         if cut:
             print(f"✂️  Teto {cat}: {len(group)} → {SECTION_CAPS[cat]} "
                   f"(rebaixados: {', '.join(str(c.get('headline', '?'))[:40] for c in cut)})")
-        demoted.extend(cut)
-    if demoted:
-        cut_ids = {id(c) for c in demoted}
+        (dropped if cat == 'watch_later' else demoted).extend(cut)
+    if demoted or dropped:
+        cut_ids = {id(c) for c in demoted + dropped}
         curated['items'] = [i for i in items if id(i) not in cut_ids]
+    if demoted:
         quick = list(curated.get('quick_links') or [])
         for c in demoted:
             quick.append({k: c[k] for k in ('headline', 'source_url', 'source_name',
@@ -1181,10 +1216,7 @@ def enforce_section_caps(curated: dict) -> dict:
     for sec in ('world', 'radar_brasil', 'quick_links', 'trending_tools'):
         lst = curated.get(sec)
         if isinstance(lst, list) and len(lst) > SECTION_CAPS[sec]:
-            if sec == 'quick_links':
-                kept = sorted(lst, key=lambda q: -_score(q))[:SECTION_CAPS[sec]]
-            else:
-                kept, _ = _keep_top(lst, SECTION_CAPS[sec])
+            kept, _ = _keep_top(lst, SECTION_CAPS[sec])  # seleção por score, ordem preservada
             curated[sec] = kept
     return curated
 

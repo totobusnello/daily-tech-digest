@@ -18,7 +18,11 @@ lab@generantis) e trazer o que servir. Detalhe e números nas regras 85-88 do `C
 | Teto 3 hoje / 1 SaaS / 4 quick, no código | `processor.enforce_section_caps` | curador mandou 7 itens onde o prompt pedia 3-4 |
 | Ferramentas em alta (0-3) | prompt + `_valid_trending_tools` + dedup | aprovado pelo Toto; só com URL da coleta |
 
-**Validação:** 103 → 164 testes. Curadoria real com o prompt novo sobre a coleta de 06/11
+**Revisão adversarial:** Codex + Kimi (pedido do Toto, 06/11 10:48). Convergiram em 2 achados
+altos (score em string abortava o envio; `trending_tools` malformado derrubava o processor) e 6
+médios/baixos — todos corrigidos com teste de regressão (regra 87).
+
+**Validação:** 103 → 186 testes. Curadoria real com o prompt novo sobre a coleta de 06/11
 (sem envio): respeitou 3/1/4, emoji 📉, lede com tensão, details em 4 histórias, preheader
 "MAIS: Musk confirma fim da produção do Cybertruck em 2027", 1.809 palavras (vs 1.786 da
 edição real do dia). `trending_tools` veio `[]` — ver regra 88.

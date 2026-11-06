@@ -457,6 +457,86 @@ check("teto: quick rebaixado sem why", all("why_it_matters" not in q for q in _c
 check("teto: dentro do limite nao mexe",
       len(processor.enforce_section_caps({"items": [_ci("a", 7), _ci("b", 6)]})["items"]) == 2)
 
+print("\n--- v2.18: regressoes da revisao adversarial (Codex + Kimi, PR #31) ---")
+# 1 (alta): byte_score textual nao pode derrubar o envio
+try:
+    _p = sender._preheader({"subject_hook": "x", "items": [
+        {"headline": "Alfa beta gama", "byte_score": "7", "category": "hoje_no_byte"},
+        {"headline": "Delta epsilon zeta", "byte_score": "9", "category": "hoje_no_byte"}]})
+    check("rev1: preheader com byte_score str", _p == "MAIS: Delta epsilon zeta")
+    check("rev1: big story com byte_score str",
+          sender._big_story_of({"items": [{"headline": "B", "byte_score": "9", "big_story": True,
+                                           "category": "hoje_no_byte"}]}) is not None)
+except Exception as e:
+    check(f"rev1: preheader com byte_score str ({e!r})", False)
+
+# 2 (alta): trending_tools malformado nao pode derrubar o processor
+for _lbl, _tt_bad in [("int", 7), ("str", "x"), ("url em lista", [{"name": "X", "source_url": ["https://a.com"]}]),
+                      ("item nao-dict", [3, None])]:
+    try:
+        _o = processor.dedup_across_sections({"items": [], "world": [], "quick_links": [], "trending_tools": _tt_bad})
+        check(f"rev2: trending_tools {_lbl} -> lista vazia", _o["trending_tools"] == [])
+    except Exception as e:
+        check(f"rev2: trending_tools {_lbl} ({e!r})", False)
+try:
+    processor.dedup_across_sections({"items": [{"headline": "h", "source_url": ["x"]}], "world": [], "quick_links": []})
+    check("rev2: source_url nao-string em item nao quebra o dedup", True)
+except Exception as e:
+    check(f"rev2: source_url nao-string em item ({e!r})", False)
+
+# 3 (media): so Big Story ELEGIVEL (>=8) e fixada; a mesma que o sender escolheria
+_c3 = processor.enforce_section_caps({"items": [
+    _ci("s7", 7, "saas_enterprise", big=True), _ci("s9", 9, "saas_enterprise", big=True)]})
+check("rev3: big story 7 marcada nao derruba a 9", [i["headline"] for i in _c3["items"]] == ["s9"])
+_c3b = processor.enforce_section_caps({"items": [
+    {"headline": "semscore", "category": "hoje_no_byte", "big_story": True},
+    _ci("n9", 9), _ci("n8", 8), _ci("n7", 7)]})
+check("rev3: big story sem score nao e fixada", "semscore" not in [i["headline"] for i in _c3b["items"]])
+_c3c = processor.enforce_section_caps({"items": [_ci("baixa", 8, big=True), _ci("a", 9), _ci("b", 9), _ci("c", 9)]})
+check("rev3: big story valida fica mesmo sem o maior score", "baixa" in [i["headline"] for i in _c3c["items"]])
+
+# 4 (media): ferramenta invalida nao consome URL nem vaga
+_c4 = processor.dedup_across_sections({"items": [], "world": [],
+    "trending_tools": [{"name": "", "source_url": "https://q.com/1"}],
+    "quick_links": [{"headline": "Noticia boa", "source_url": "https://q.com/1"}]})
+check("rev4: tool sem nome nao apaga quick link", len(_c4["quick_links"]) == 1)
+_c4b = processor.dedup_across_sections({"items": [], "world": [], "quick_links": [], "trending_tools": [
+    {"name": "A"}, {"name": "B", "source_url": "javascript:x"}, {"name": "", "source_url": "https://c.com"},
+    {"name": "Valida", "source_url": "https://ok.com"}]})
+check("rev4: invalidas nao ocupam o teto", [t["name"] for t in _c4b["trending_tools"]] == ["Valida"])
+
+# 5 (media): watch_later tem teto 1
+_c5 = processor.enforce_section_caps({"items": [_ci("v1", None, "watch_later"), _ci("v2", None, "watch_later")]})
+check("rev5: watch_later = 1", [i["headline"] for i in _c5["items"]] == ["v1"])
+
+# 6 (media): preheader so exclui a Big Story quando o subject E sobre ela
+_c6 = {"subject_hook": "Google corta preco do video",
+       "items": [_it("Anthropic dobra ritmo de pesquisa", 9, big=True),
+                 _it("Google corta preco do video em 30%", 8), _it("Terceira historia aqui", 7)]}
+check("rev6: subject sobre a 2a -> preheader e a big story", sender._preheader(_c6) == "MAIS: Anthropic dobra ritmo de pesquisa")
+_c6b = {"subject_hook": "Mercado entra em panico total",
+        "items": [_it("Anthropic dobra ritmo de pesquisa", 9, big=True), _it("Google corta preco do video", 8)]}
+check("rev6: subject sem match -> assume big story", sender._preheader(_c6b) == "MAIS: Google corta preco do video")
+
+# 7 (baixa): quick links mantem a ordem do curador (selecao por score, exibicao na ordem)
+_c7 = processor.enforce_section_caps({"items": [], "quick_links": [
+    {"headline": n, "byte_score": s, "source_url": f"https://q/{n}"}
+    for n, s in [("baixa", 1), ("alta", 9), ("media", 5), ("sete", 7), ("seis", 6)]]})
+check("rev7: quick na ordem do curador", [q["headline"] for q in _c7["quick_links"]] == ["alta", "media", "sete", "seis"])
+
+# 8 (baixa): emoji
+check("rev8: keycap aceito", sender._subject_emoji("1️⃣") == "1️⃣")
+check("rev8: bloco grafico rejeitado", sender._subject_emoji("░") == "\U0001F525")
+check("rev8: copyright rejeitado", sender._subject_emoji("©") == "\U0001F525")
+check("rev8: ZWJ pendurado rejeitado", sender._subject_emoji("\U0001F4C8‍") == "\U0001F525")
+check("rev8: indicador regional sozinho rejeitado", sender._subject_emoji("\U0001F1E7") == "\U0001F525")
+
+# testes frouxos apontados pelo Codex: rebaixado com why nao leva o why para o quick
+_c9 = processor.enforce_section_caps({"items": [dict(_ci(f"x{k}", k), why_it_matters="Teste: x.", details=["d"])
+                                                for k in range(1, 6)]})
+check("rev9: quick rebaixado nao herda why nem details",
+      all("why_it_matters" not in q and "details" not in q for q in _c9["quick_links"]))
+
 print("\n--- v2.18: template do curador formata sem KeyError ---")
 try:
     _p = processor.CURATOR_USER_TEMPLATE.format(total=1, items="[]", feedback_section="")

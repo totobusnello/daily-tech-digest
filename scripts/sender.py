@@ -120,23 +120,48 @@ _FALLBACK_EMOJI = "\U0001F525"
 _EMOJI_JOINERS = {"‍", "️", "︎", "⃣"}  # ZWJ, VS16, VS15, keycap
 
 
+# Faixas de pictograma de emoji. Antes valia qualquer caractere da categoria
+# Unicode 'So', o que deixava passar ░ e © (revisão Codex+Kimi do PR #31).
+_EMOJI_RANGES = ((0x1F000, 0x1FAFF), (0x2600, 0x27BF), (0x2300, 0x23FF),
+                 (0x2B00, 0x2BFF), (0x3030, 0x3030), (0x303D, 0x303D),
+                 (0x3297, 0x3297), (0x3299, 0x3299))
+_KEYCAP_RE = re.compile(r'^[0-9#*]️?⃣$')
+
+
 def _is_emoji_char(ch: str) -> bool:
     cp = ord(ch)
-    return (unicodedata.category(ch) == 'So' or 0x1F000 <= cp <= 0x1FAFF
-            or 0x2600 <= cp <= 0x27BF or 0x1F3FB <= cp <= 0x1F3FF)
+    return any(lo <= cp <= hi for lo, hi in _EMOJI_RANGES)
+
+
+def _num(score) -> float:
+    """byte_score como número. O curador às vezes manda "7" em vez de 7; o
+    _byte_tier sempre tolerou, e o preheader derrubava o envio inteiro com
+    TypeError (achado alto do Codex e do Kimi no PR #31)."""
+    try:
+        v = float(score)
+    except (TypeError, ValueError):
+        return 0.0
+    return 0.0 if math.isnan(v) else v
 
 
 def _subject_emoji(raw) -> str:
     """UM emoji vindo do curador, ou 🔥. Rejeita texto, espaço e mais de um emoji.
 
-    Conta "bases": cada símbolo conta 1, exceto o que vem colado por ZWJ (👨‍💻)
-    e pares de indicador regional (🇧🇷), que formam um emoji só.
+    Conta "bases": cada pictograma conta 1, exceto o que vem colado por ZWJ (👨‍💻)
+    e pares de indicador regional (🇧🇷), que formam um emoji só. Keycap (1️⃣)
+    tem regra própria porque começa por dígito. Limite conhecido: não valida
+    contra a tabela oficial de sequências ZWJ — "📈‍📉" passa como 1 emoji.
+    É cosmético (o cliente de email mostra 2 emojis), não bloqueia o envio.
     """
     if not isinstance(raw, str):
         return _FALLBACK_EMOJI
     s = raw.strip()
+    if _KEYCAP_RE.match(s):
+        return s
     if not s or len(s) > 8 or any(c.isspace() or c.isalnum() for c in s):
         return _FALLBACK_EMOJI
+    if s.endswith("‍") or s.startswith("‍"):
+        return _FALLBACK_EMOJI  # ZWJ pendurado
     bases, regional, prev_zwj = 0, 0, False
     for ch in s:
         if ch in _EMOJI_JOINERS:
@@ -151,7 +176,9 @@ def _subject_emoji(raw) -> str:
         elif not prev_zwj:
             bases += 1
         prev_zwj = False
-    bases += (regional + 1) // 2
+    if regional % 2:
+        return _FALLBACK_EMOJI  # indicador regional sem par não é bandeira
+    bases += regional // 2
     return s if bases == 1 else _FALLBACK_EMOJI
 
 
@@ -184,7 +211,7 @@ def _story_items(curated: Dict) -> list:
 
 def _big_story_of(curated: Dict):
     return next((i for i in _story_items(curated)
-                 if i.get('big_story') is True and (i.get('byte_score') or 0) >= 8), None)
+                 if i.get('big_story') is True and _num(i.get('byte_score')) >= 8), None)
 
 
 _STOP_PT = {"para", "com", "sem", "pela", "pelo", "como", "mais", "uma", "seu", "sua",
@@ -217,13 +244,22 @@ def _preheader(curated: Dict, limit: int = 140) -> str:
     """
     curated = curated or {}
     hook_words = _sig_words(curated.get('subject_hook', ''))
-    big = _big_story_of(curated)
-    cands = [i for i in _story_items(curated) if i is not big and i.get('headline')]
-    cands.sort(key=lambda i: -(i.get('byte_score') or 0))
+    stories = [i for i in _story_items(curated) if i.get('headline')]
+    # Qual história é a do subject? A de maior sobreposição de palavras com o
+    # hook (mínimo de 2 palavras, ou metade do hook). Sem nenhuma que passe,
+    # assume-se a Big Story — o curador pede o hook sobre a notícia principal.
+    # Antes a Big Story era excluída sempre, e quando o hook era sobre a 2ª
+    # história o preview pulava a Big Story (achado do Kimi no PR #31).
+    def _overlap(i):
+        return len(_sig_words(i['headline']) & hook_words)
+    need = max(2, len(hook_words) // 2)
+    matched = [i for i in stories if hook_words and _overlap(i) >= need]
+    subject_story = (max(matched, key=_overlap) if matched else _big_story_of(curated))
+    cands = [i for i in stories if i is not subject_story]
+    cands.sort(key=lambda i: -_num(i.get('byte_score')))  # sort estável: empate mantém a ordem
     for item in cands:
-        words = _sig_words(item['headline'])
-        if hook_words and len(words & hook_words) >= max(2, len(hook_words) // 2):
-            continue  # é a mesma história do subject com outras palavras
+        if hook_words and _overlap(item) >= need:
+            continue  # outra cobertura da mesma história do subject
         return _clip("MAIS: " + item['headline'], limit)
     n = curated.get('number_of_day') or {}
     if n.get('value') and n.get('context'):
@@ -652,7 +688,7 @@ def generate_email_html(curated: Dict) -> str:
         return (
             i.get('big_story') is True
             and i.get('category') in ('hoje_no_byte', 'saas_enterprise')
-            and (i.get('byte_score') or 0) >= 8
+            and _num(i.get('byte_score')) >= 8  # v2.18: "9" (str) dava TypeError aqui
         )
 
     big_story = next((i for i in items_all if _is_valid_big_story(i)), None)
