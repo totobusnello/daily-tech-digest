@@ -91,50 +91,32 @@ Fireship, Two Minute Papers, AI Explained, Matt Wolfe, Lex Fridman, Karpathy, AI
 - Cross-referência: preferir newsletter se trouxer análise > RSS bruto
 - Dedup: newsletter repetindo RSS sem agregar = descartar
 
-## Estrutura do Email (Layout v2.2 + Engagement v2.6)
+## Estrutura do Email (Layout v2.20 — sempre claro, um card por seção)
 
 ```
-THE DAILY BYTE                    Leitura: 3 min
-News, insights & trends
-[Data]
+THE DAILY BYTE
+Sábado, 21 de Novembro de 2026 · 4 min de leitura
 
-📊 NUMERO DO DIA (sem badge Byte Score)
-[Data point impactante — value + context]
+★ BIG STORY — abre o email (sem lede nem sumário desde a v2.19)
+  Manchete-link · why · até 3 details · Fonte · há Nh · LED · [Ler agora ↗]
 
-🌍 MUNDO REAL (3 notícias — mundo + Brasil)
-[ 8.4 💿 MEGABYTE ]  Headline + análise (1-2 frases)
+HOJE NO BYTE (3)       [TAG] Manchete-link · why · details · Fonte ↗ · há Nh · LED
+SaaS & ENTERPRISE (1)  mesma anatomia
+MUNDO REAL (3) + RADAR BRASIL (0-1)   num card só
+│ NÚMERO DO DIA        faixa sem card
+ANÁLISE DO DIA (3 bullets)
+DEEP DIVE (sextas)
+TOOL DO DIA + COMO USAR HOJE + PROMPT DO DIA + FERRAMENTAS EM ALTA (0-3)   num card só
+WORKFLOW DA SEMANA (sextas)
+QUICK LINKS (4)        1 coluna · Manchete-link · Fonte · há Nh · LED
+WATCH LATER (1 vídeo)
 
-🔥 HOJE NO BYTE (4-5 itens com tags)
-[ 9.1 📦 GIGABYTE ]  [BREAKING] Headline + análise
-[ 7.2 💿 MEGABYTE ]  [AI] Headline + análise
-[ 6.0 💾 KILOBYTE ]  [BIG TECH] Headline + análise
-[ 3.5 📄 byte     ]  [ENTERPRISE] Headline + análise
-
-💰 SaaS & ENTERPRISE (2 itens)
-[ 5.8 💾 KILOBYTE ]  Headline + análise
-
-🛠️ TOOL DO DIA + 💡 COMO USAR HOJE + 🧠 PROMPT DO DIA
-[1 ferramenta + prompt copy-paste ready]
-(sem badge Byte Score)
-
-🔮 ANÁLISE DO DIA
-[3 bullets conectando os pontos]
-
-⚡ QUICK LINKS (5-6 links rápidos)
-[ 4.0 📄 byte ]  Headline + link
-
-📺 WATCH LATER (1 vídeo essencial)
-(sem badge Byte Score)
-
-🗓️ Legenda: 📦 GIGABYTE = redefine o mercado · 💿 MEGABYTE = muda o jogo · 💾 KILOBYTE = relevante · 📄 byte = nota de rodapé
-
-👍 Esta edição foi útil? [Sim] [Mais ou menos] [Não]
-📨 Encaminhe para um colega
-
-Curated by Totó Busnello AI
+Rodapé único: enquete (sextas) · Útil? 👍 👋 👎 · Encaminhe · Curated by Totó Busnello AI
 ```
 
-**Total máximo:** 18 itens (12 principais + 6 quick links)
+**Total máximo:** 14 itens (10 principais + 4 quick links) + até 3 ferramentas em alta.
+O LED (VU meter do Byte Score) aparece em todo item pontuado; o nome do tier nunca é exibido.
+Detalhe e motivo de cada escolha: regras 89-92 do `CLAUDE.md`.
 
 ### Byte Score — Classificador de Impacto Estratégico (v2.13)
 

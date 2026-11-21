@@ -4,7 +4,7 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.20 (redesenho: um card por seção, metadados enxutos, dark mode por classe, nova ordem de leitura)
+**Versao atual:** v2.20b (sem bloco de abertura · redesenho: um card por seção, metadados enxutos, sempre claro, nova ordem de leitura · robustez de entrada pós-revisão Kimi)
 **Ultima rodada de evolucao:** 2026-11-21 — ver `EVOLUTION-PLAN.md` (changelog v2.19 e v2.20)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
