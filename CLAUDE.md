@@ -4,8 +4,8 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.18 (benchmark The Rundown AI: emoji temático + preheader · abertura + sumário · menos itens, mais detalhe · ferramentas em alta)
-**Ultima rodada de evolucao:** 2026-11-06 — ver `EVOLUTION-PLAN.md` (changelog v2.18)
+**Versao atual:** v2.19 (sai o bloco de abertura da v2.18: o email abre direto na Big Story)
+**Ultima rodada de evolucao:** 2026-11-21 — ver `EVOLUTION-PLAN.md` (changelog v2.19)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -54,10 +54,9 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Layout v2.18 — Abertura + Big Story + 6 Secoes + 2 Micro-Secoes
+## Layout v2.19 — Big Story + 6 Secoes + 2 Micro-Secoes
 
 ```
-ABERTURA (v2.18) — lede de 2 frases com tensao + "NESTA EDICAO" (sumario derivado no codigo)
 ★ BIG STORY (v2.14) — 1 item destacado no topo (card laranja com borda 2px)
                        Extraido de items[] onde big_story=true (maior byte_score, minimo 8)
 0. NUMERO DO DIA (data point impactante — value + context)
@@ -78,7 +77,6 @@ ABERTURA (v2.18) — lede de 2 frases com tensao + "NESTA EDICAO" (sumario deriv
 **JSON do curador:**
 - `subject_hook` — frase-gancho de 5 a 9 palavras, GRAMATICAL COMPLETA (v2.17: era max 6, o que produzia fragmento quebrado)
 - `subject_emoji` — (v2.18) UM emoji do tema; validado no sender, 🔥 se ausente/invalido
-- `lede` — (v2.18) 2 frases de abertura com tensao (opcional)
 - `trending_tools[]` — (v2.18) 0-3 {name, what_it_does, source_url, source_name}
 - `details[]` — (v2.18) na Big Story E nas 2 outras historias de maior byte_score
 - `number_of_day{}` — {value, context} — data point numerico impressionante
@@ -397,6 +395,10 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
     **Revisão adversarial (Codex + Kimi, 06/11/2026, a pedido do Toto) pegou 2 bugs altos antes do merge**, os dois do tipo "JSON válido mas fora do contrato": `byte_score` vindo como string (`"7"`) derrubava o `_preheader` e **abortava o envio**; `trending_tools` com tipo errado derrubava o processor antes de salvar. Também: o teto fixava qualquer item marcado `big_story` (um 7 marcado derrubava o 9), ferramenta sem nome "gastava" a URL e apagava um quick link, `watch_later` não tinha teto, e o preheader pulava a Big Story mesmo quando o subject era sobre outra história. **Regra que fica:** todo campo novo que vem do curador passa por coerção de tipo (`_num`, `_valid_tool`, `isinstance`) no ponto em que é usado — o `_byte_tier` sempre tolerou string, e foi justamente o código novo que esqueceu. 22 testes de regressão, `rev1`-`rev9` no suite.
 
 88. **Ferramentas em alta: seção pronta, matéria-prima fraca (v2.18)** — só entra ferramenta com `source_url` http(s) válida (`_valid_trending_tools`), no máximo 3, sem repetir o `tool_of_day` (dedup intra-edição). Em dia sem lançamento que preste a seção some. **Medido na coleta de 06/11:** o pool tinha 5 itens do Product Hunt (títulos obscuros, sem descrição), 3 do GitHub changelog e 2 do Vercel — o curador corretamente devolveu `[]`. Com o catálogo atual a seção vai aparecer **pouco**. Se o Toto quiser presença diária, o próximo passo é fonte de lançamentos de ferramenta de negócio (testada pelas regras 47 e 55, e de host fora de `*.substack.com` — regra 73), não afrouxar o prompt. Consertar de verdade pede um workflow de PR, que por sua vez pede push humano (regra 77).
+
+89. **Sem bloco de abertura — a Big Story é a abertura (v2.19)** — a v2.18 trouxe do Rundown o lede de 2 frases + "Nesta edição". Na edição de 21/11/2026 o subject, o lede, a 1ª linha do sumário e o card da Big Story eram **a mesma história** ("Trump taxa data centers"): 4 vezes antes de o leitor ver algo novo, e o card branco ocupava ~40% da primeira tela. O Toto vetou ("enche linguiça e o layout é feio") e escolheu cortar o bloco inteiro, não reformatar. **Por que o benchmark não transferiu:** o Rundown tem 2-3 histórias e nenhum card de destaque, então o lede é o único lugar onde a tensão aparece; aqui a Big Story já cumpre esse papel. O campo `lede` saiu do prompt (menos tokens) e, se um curador antigo ou cache ainda o mandar, o sender **ignora** (teste `v2.19`). **Antes de reintroduzir sumário ou abertura:** ele não pode repetir a Big Story, e precisa caber em 2-3 linhas.
+
+90. **`analytics.clicks` do Buttondown já exclui robô — o bruto está em `/v1/events` (v2.19)** — o agregado zerado parecia tracking quebrado. Não estava: os links saem embrulhados em `buttondown-0005.com/c/…`, o redirect funciona, e um clique de teste apareceu em `GET /v1/events?event_type=clicked&email_id=<id>` no mesmo minuto, ainda que o agregado continuasse 0. O bruto tem **2.550 eventos**, a maioria rajada de scanner de segurança corporativo: todos os links da edição, inclusive os `?tag=` da enquete, no mesmo minuto. **Heurística usada:** um assinante clicando em ≥5 links distintos em <2 min = robô. Com ela, o clique humano caiu de ~20 pares edição×leitor/mês (mai-out) para 2 em novembro. **Antes de concluir algo sobre clique, puxe `/v1/events` e separe as rajadas** — o agregado sozinho não diz se é tracking, robô ou gente.
 
 ---
 

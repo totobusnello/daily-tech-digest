@@ -4,6 +4,29 @@
 
 ## Changelog
 
+### v2.19 — 2026-11-21 (sai o bloco de abertura)
+
+Rotina de evolução de sábado. O Toto vetou a abertura da v2.18 ("enche linguiça e o layout
+ainda é feio") e escolheu, entre faixa compacta, cortar tudo ou lede dentro da Big Story,
+**cortar tudo**. Detalhe na regra 89 do `CLAUDE.md`.
+
+| Mudança | Onde | Por quê |
+|---|---|---|
+| Sai lede + "Nesta edição" do HTML e do markdown | `sender.generate_email_html/_content`, `_toc_lines` removida | subject, lede, sumário e Big Story repetiam a mesma história |
+| `lede` sai do prompt e do log | `processor.CURATOR_SYSTEM/USER_TEMPLATE` | campo sem uso = token pago à toa |
+| 7 testes de regressão (lede legado é ignorado) | `test_byte_score.py` | suite 184/184 |
+
+**Fase 0 (log de 21/11):** 567 itens coletados, 2 feeds unhealthy, corte com 44 primárias ·
+12 BR · 24 mainstream, 13 peças na edição. Pipeline saudável.
+
+**Aberto — cliques zerados:** 0 em 9 das 10 últimas edições (julho: 0-5, média ~2), com
+aberturas estáveis (11-16 de 21). **Não é defeito de medição** (regra 90): tracking ligado,
+redirect ok, e um clique de teste apareceu em `/v1/events` na hora. Separando robô de gente
+nos 2.550 eventos: pares edição×leitor com clique humano foram 26 (mai), 21 (jun), 9-14
+(jul-set), 19 (out) e **2 em novembro**. A queda começa no fim de outubro, antes da v2.18.
+Consequência que importa: 👍/👎 e enquete também não recebem clique, então o feedback por
+`?tag=` está cego. Pendente decidir se trocamos por "responda este email" (reply).
+
 ### v2.18 — 2026-11-06 (benchmark The Rundown AI: menos itens, mais detalhe)
 
 Rodada de formato pedida pelo Toto: ler o The Rundown AI (caixa "Pulse Daily Digest" de
