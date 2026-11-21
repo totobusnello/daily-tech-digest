@@ -416,6 +416,8 @@ check("v2.20: texto com classe de dark mode", _h20.count("text-dark") >= 20)
 check("v2.20: sem box-shadow", "box-shadow" not in _h20)
 check("v2.20: divisoria nunca depois do ultimo bloco",
       sender._stack(["a", "b"]).count("border-bottom") == 1 and "border-bottom" not in sender._stack(["so"]))
+check("v2.20: sempre claro (sem dark mode automatico)",
+      "prefers-color-scheme" not in _h20 and 'content="light only"' in _h20)
 _led_wrap = sender._meta_html({"source_name": "S", "source_url": "https://s.com", "hours_ago": 2, "byte_score": 7})
 check("v2.20: LED preso ao seu '·' num grupo nowrap", '<span style="white-space:nowrap;">&middot;&nbsp;<span' in _led_wrap)
 check("v2.20: sem hours_ago nao imprime 'há ?h'", "h&aacute;" not in sender._meta_html({"source_name": "S", "byte_score": 5}))

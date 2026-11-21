@@ -16,10 +16,10 @@ fundir) e decidiu **manter o LED em todos os itens**. Detalhe na regra 91 do `CL
 | Um card por seção, divisória só entre blocos | `_section`, `_stack` |
 | Metadados `Fonte ↗ · há Nh · LED`, manchete-link, sem ⏰/"N min"/"Ver original" | `_meta_html`, `_headline_html` |
 | Um botão bulletproof (Big Story e Tool) | `_button_html` |
-| Dark mode por classe + `a.btn` + `.vu-off` | CSS do wrapper |
+| **Sempre claro** (`color-scheme: light only`, sem bloco de tema escuro) — decisão do Toto | CSS do wrapper |
 | Fonte mínima 12px, rótulos em tom escuro | `_LABEL`, `_details_html` |
 | Nova ordem; Mundo+Radar num card; Número do Dia em faixa; Tool+Prompt+Ferramentas num card; Quick Links 1 coluna; rodapé único | `generate_email_html` |
-| 14 testes de regressão do layout | `test_byte_score.py` (202/202) |
+| 15 testes de regressão do layout | `test_byte_score.py` (203/203) |
 
 Edição de 21/11 re-renderizada: 4.704px → 3.859px no desktop (−18%).
 

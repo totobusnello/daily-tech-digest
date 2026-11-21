@@ -797,16 +797,16 @@ def generate_email_html(curated: Dict) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
 <title>The Daily Byte</title>
 <!--[if mso]>
 <style>table,td {{font-family:Arial,sans-serif !important;}}</style>
 <![endif]-->
 <style type="text/css">
 :root {{
-  color-scheme: light dark;
-  supported-color-schemes: light dark;
+  color-scheme: light only;
+  supported-color-schemes: light;
 }}
 @media only screen and (max-width: 620px) {{
   .email-container {{
@@ -823,21 +823,10 @@ def generate_email_html(curated: Dict) -> str:
     padding-bottom: 8px !important;
   }}
 }}
-@media (prefers-color-scheme: dark) {{
-  body, .email-bg {{ background-color: #161616 !important; }}
-  .card-bg {{ background-color: #242424 !important; }}
-  .card-border {{ border-color: #3a3a3a !important; }}
-  .tint-bg {{ background-color: #2b2420 !important; }}
-  .dark-header {{ background-color: #111111 !important; }}
-  .text-dark {{ color: #f0f0f0 !important; }}
-  .text-muted {{ color: #a3a3a3 !important; }}
-  .sep {{ border-color: #3a3a3a !important; }}
-  .tag {{ color: #a3a3a3 !important; border-color: #555555 !important; }}
-  a {{ color: #6cb6ff !important; }}
-  a.text-dark {{ color: #f0f0f0 !important; }}
-  a.btn {{ color: #ffffff !important; }}
-  .vu-off {{ background-color: #444444 !important; }}
-}}
+/* v2.20: SEMPRE CLARO, por decisão do Toto (21/11/2026). Sem bloco
+   media query de tema escuro; "light only" pede ao Apple Mail/Outlook.com que não
+   invertam. O app do Gmail ainda pode inverter por conta própria — não há como
+   impedir. As classes .text-dark/.tint-bg ficam no HTML, inertes. */
 body {{
   margin: 0;
   padding: 0;
