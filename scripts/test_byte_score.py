@@ -375,6 +375,16 @@ _md = sender.generate_email_content(dict(_cur_ab, lede="Abertura que repete a bi
 check("lede legado ignorado no markdown", "Abertura que repete" not in _md and "Nesta edi" not in _md)
 check("_toc_lines removida", not hasattr(sender, "_toc_lines"))
 
+print("\n--- v2.19: analise do dia com **negrito** ---")
+_an = {"daily_analysis": ["**Soberania de infraestrutura** — Taxar data center fora dos EUA.",
+                          "- **Com bullet** — texto", "* **Bullet asterisco** — texto"]}
+_ha = sender.generate_email_html(_an)
+check("analise: titulo sem asterisco literal", "*Soberania" not in _ha and "Soberania de infraestrutura" in _ha)
+check("analise: titulo vira negrito", ">Soberania de infraestrutura<" in _ha.replace("</strong>", "<").replace("<strong>", ">") or "<strong>Soberania de infraestrutura</strong>" in _ha or "Soberania de infraestrutura</b>" in _ha)
+check("analise: bullet - e * removidos", "*Com bullet" not in _ha and "*Bullet asterisco" not in _ha and "**" not in _ha)
+_ma = sender.generate_email_content(_an)
+check("analise md: sem *Titulo** quebrado", "*Soberania de infraestrutura**" not in _ma.replace("**Soberania de infraestrutura**", ""))
+
 print("\n--- v2.18: details nas historias principais ---")
 _ih = sender._render_item_html(_it("Com detalhes", 7, details=["Preco cai de US$15 para US$6", "<script>x</script>"]))
 check("details renderizados no item", "Preco cai de US$15 para US$6" in _ih)

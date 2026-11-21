@@ -914,7 +914,7 @@ def generate_email_html(curated: Dict) -> str:
         if isinstance(analysis, list):
             for a_item in analysis:
                 a_item = re.sub(r'^#{1,6}\s*', '', a_item.strip())
-                a_item = re.sub(r'^[•\-\*]\s*', '', a_item.strip())
+                a_item = re.sub(r'^(?:[•\-]|\*(?!\*))\s*', '', a_item.strip())  # v2.19: nunca come o 1º * de **Título**
                 # Extract bold title if format is "**Title** — Text"
                 bold_match = re.match(r'\*\*(.+?)\*\*\s*[—–\-]\s*(.*)', a_item)
                 if bold_match:
@@ -1346,7 +1346,7 @@ def generate_email_content(curated: Dict) -> str:
             sanitized = []
             for a_item in analysis:
                 a_item = re.sub(r'^#{1,6}\s*', '', a_item.strip())
-                a_item = re.sub(r'^[•\-\*]\s*', '', a_item.strip())
+                a_item = re.sub(r'^(?:[•\-]|\*(?!\*))\s*', '', a_item.strip())  # v2.19: nunca come o 1º * de **Título**
                 sanitized.append(f"• {a_item}")
             analysis_text = "\n\n".join(sanitized)
         else:
