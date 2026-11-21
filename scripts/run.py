@@ -123,4 +123,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # v2.20b: antes saía 0 mesmo com {"success": False} (revisão Kimi)
+    _r = main()
+    sys.exit(0 if (not isinstance(_r, dict) or _r.get("success", True)) else 1)

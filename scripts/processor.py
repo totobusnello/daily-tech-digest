@@ -1039,6 +1039,47 @@ def _valid_tool(t) -> bool:
     return p.scheme in ('http', 'https') and bool(p.netloc)
 
 
+_LEGACY_HOJE = ('breaking', 'ai_models', 'big_tech')
+
+
+def normalize_curated(curated: dict) -> dict:
+    """Coage o JSON do curador ao contrato antes de qualquer pós-processamento (v2.20b).
+
+    Achado da revisão do Kimi (21/11/2026): dedup e tetos chamam .get() em cada
+    elemento de items/world/radar_brasil/quick_links; uma seção vinda como dict
+    ou string (JSON válido, fora do contrato) derrubava a curadoria inteira.
+    Mesma regra da 87: campo do curador passa por coerção no ponto de entrada.
+    Também traz categorias legadas (breaking/ai_models/big_tech) para
+    hoje_no_byte — o sender só as mostrava se NÃO houvesse nenhuma atual, e
+    misturadas elas sumiam em silêncio (e escapavam do teto por seção).
+    """
+    if not isinstance(curated, dict):
+        return curated
+    for key in ('items', 'world', 'radar_brasil', 'quick_links'):
+        sec = curated.get(key)
+        if sec is None:
+            continue
+        if not isinstance(sec, list):
+            print(f"   ⚠️  {key} veio como {type(sec).__name__} — descartado")
+            curated[key] = []
+            continue
+        ok = [i for i in sec if isinstance(i, dict)]
+        if len(ok) != len(sec):
+            print(f"   ⚠️  {key}: {len(sec) - len(ok)} elemento(s) não-objeto descartado(s)")
+        curated[key] = ok
+    for i in curated.get('items') or []:
+        if i.get('category') in _LEGACY_HOJE:
+            i['category'] = 'hoje_no_byte'
+    for key in ('tool_of_day', 'number_of_day', 'deep_dive', 'weekly_workflow'):
+        if key in curated and curated[key] is not None and not isinstance(curated[key], dict):
+            print(f"   ⚠️  {key} veio como {type(curated[key]).__name__} — descartado")
+            curated[key] = {}
+    da = curated.get('daily_analysis')
+    if isinstance(da, list):
+        curated['daily_analysis'] = [a for a in da if isinstance(a, str) and a.strip()]
+    return curated
+
+
 def dedup_across_sections(curated: dict) -> dict:
     """
     Remove notícias duplicadas entre seções do digest.
@@ -1243,6 +1284,9 @@ def process():
 
     # Curate with Claude
     curated = curate_with_claude(raw_data)
+
+    # v2.20b: coage ao contrato antes de tudo (revisão Kimi)
+    curated = normalize_curated(curated)
 
     # Post-process: remove duplicatas entre seções (rede de segurança)
     curated = dedup_across_sections(curated)

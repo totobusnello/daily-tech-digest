@@ -413,6 +413,13 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
     - **Resultado medido** na edição de 21/11: 4.704px → 3.859px de altura no desktop (−18%), zero `box-shadow`.
     - ⚠️ **Não testado em cliente real**: Outlook desktop não desenha o LED (`inline-block` em `<span>`) e o app do Gmail pode inverter para escuro apesar do `light only`. Conferir na 1ª edição.
 
+92. **Revisão Kimi da v2.20 (21/11/2026, a pedido do Toto) — robustez de entrada (v2.20b)** — nenhuma regressão nova grave; 4 defeitos antigos + 1 teste fraco, todos reproduzidos antes de corrigir:
+    - `daily_analysis` com `None` dava `AttributeError` no **markdown**, que o `send()` gera também no envio real → a edição abortava antes do Buttondown. No HTML, virava o texto "None".
+    - `items`/`world`/`quick_links` vindos como dict/string derrubavam dedup e tetos (`.get()` em string). Agora `normalize_curated()` roda ANTES de todo o pós-processamento: seção não-lista vira `[]`, elemento não-dict sai, objeto não-dict vira `{}`. Mesma lição da regra 87, agora num ponto de entrada só.
+    - Categoria legada (`breaking`/`ai_models`/`big_tech`) misturada com `hoje_no_byte` sumia do email e escapava do teto — agora vira `hoje_no_byte` na entrada.
+    - `run.py` saía com código 0 mesmo com `{"success": False}`. O workflow diário não usa o `run.py`, mas quem roda à mão via falha como sucesso.
+    - O teste "LED mantido" contava `vertical-align:bottom` (passava com 3 de 7 LEDs); agora exige um LED por item pontuado.
+
 ---
 
 ## Como rodar localmente
