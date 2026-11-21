@@ -676,7 +676,9 @@ def generate_email_html(curated: Dict) -> str:
         blocks = []
         if isinstance(analysis, list):
             for a_item in analysis:
-                a_item = re.sub(r'^#{1,6}\s*', '', str(a_item).strip())
+                if not isinstance(a_item, str) or not a_item.strip():
+                    continue  # v2.20b: None/número não vira "None" no email
+                a_item = re.sub(r'^#{1,6}\s*', '', a_item.strip())
                 a_item = re.sub(r'^(?:[•\-]|\*(?!\*))\s*', '', a_item.strip())  # v2.19: nunca come o 1º * de **Título**
                 bold_match = re.match(r'\*\*(.+?)\*\*\s*[—–\-]\s*(.*)', a_item)
                 if bold_match:
@@ -989,6 +991,8 @@ def generate_email_content(curated: Dict) -> str:
         if isinstance(analysis, list):
             sanitized = []
             for a_item in analysis:
+                if not isinstance(a_item, str) or not a_item.strip():
+                    continue  # v2.20b: None aqui dava AttributeError e abortava o ENVIO (Kimi)
                 a_item = re.sub(r'^#{1,6}\s*', '', a_item.strip())
                 a_item = re.sub(r'^(?:[•\-]|\*(?!\*))\s*', '', a_item.strip())  # v2.19: nunca come o 1º * de **Título**
                 sanitized.append(f"• {a_item}")

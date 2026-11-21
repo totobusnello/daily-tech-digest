@@ -4,6 +4,13 @@
 
 ## Changelog
 
+### v2.20b — 2026-11-21 (revisão Kimi: robustez de entrada)
+
+Kimi (k3.1-pro, recibo `exit: 0`, 537 s) revisou v2.19+v2.20 a pedido do Toto. Sem regressão
+nova grave; 2 altos + 2 médios pré-existentes e 1 teste fraco, todos reproduzidos e
+corrigidos. Regra 92. `normalize_curated()` no processor, análise tolerante no sender,
+exit code no `run.py`, 11 testes (213/213).
+
 ### v2.20 — 2026-11-21 (redesenho do layout)
 
 Pedido do Toto na mesma rodada: "use alguma skill ou agente para analisar o layout geral".

@@ -404,7 +404,7 @@ check("v2.20: sem circulo numerado nem pilula com emoji", "border-radius:50%" no
 check("v2.20: sem relogio nem 'N min' por item", "&#x23F0;" not in _h20 and " min</span>" not in _h20)
 check("v2.20: sem botao 'Ver original'", "Ver original" not in _h20)
 check("v2.20: manchete e o link", 'href="https://w.com/a" class="text-dark"' in _h20)
-check("v2.20: LED mantido nos itens", _h20.count("vertical-align:bottom;") >= 30)
+check("v2.20: LED mantido em CADA item pontuado (7 de 7)", _h20.count("line-height:12px;height:12px;") == 7)
 check("v2.20: ordem Big > Hoje > SaaS > Mundo > Numero > Analise > Tool > Quick > Video",
       0 < _pos("Big") < _pos("Hoje A") < _pos("Saas A") < _pos("Mundo A") < _pos("Brasil A")
       < _pos("17,4 mi") < _pos("Tema") < _pos("Tool Z") < _pos("Aja como CFO") < _pos("Granola")
@@ -421,6 +421,34 @@ check("v2.20: sempre claro (sem dark mode automatico)",
 _led_wrap = sender._meta_html({"source_name": "S", "source_url": "https://s.com", "hours_ago": 2, "byte_score": 7})
 check("v2.20: LED preso ao seu '·' num grupo nowrap", '<span style="white-space:nowrap;">&middot;&nbsp;<span' in _led_wrap)
 check("v2.20: sem hours_ago nao imprime 'há ?h'", "h&aacute;" not in sender._meta_html({"source_name": "S", "byte_score": 5}))
+
+print("\n--- v2.20b: robustez (revisao Kimi) ---")
+_cn = processor.normalize_curated({
+    "items": ["str solta", {"category": "breaking", "headline": "Leg", "byte_score": 7},
+              {"category": "hoje_no_byte", "headline": "Atual", "byte_score": 7}],
+    "world": "texto", "quick_links": {"headline": "q"}, "radar_brasil": [None, {"headline": "BR"}],
+    "tool_of_day": "Granola", "daily_analysis": ["**ok** — t", None, 3, "  "],
+})
+check("kimi: item nao-dict descartado", len(_cn["items"]) == 2)
+check("kimi: world string vira []", _cn["world"] == [])
+check("kimi: quick_links dict vira []", _cn["quick_links"] == [])
+check("kimi: radar com None filtrado", _cn["radar_brasil"] == [{"headline": "BR"}])
+check("kimi: tool_of_day string vira {}", _cn["tool_of_day"] == {})
+check("kimi: analise so com textos", _cn["daily_analysis"] == ["**ok** — t"])
+check("kimi: categoria legada vira hoje_no_byte", [i["category"] for i in _cn["items"]] == ["hoje_no_byte"] * 2)
+try:
+    processor.dedup_across_sections(_cn); processor.enforce_section_caps(_cn)
+    check("kimi: dedup + tetos rodam apos normalizar", True)
+except Exception as e:
+    check(f"kimi: dedup + tetos rodam apos normalizar ({e!r})", False)
+_hl = sender.generate_email_html(_cn)
+check("kimi: legado misturado aparece no email", "Leg" in _hl and "Atual" in _hl)
+_bad = {"daily_analysis": ["**ok** — texto", None]}
+try:
+    _mdb = sender.generate_email_content(_bad); _hb = sender.generate_email_html(_bad)
+    check("kimi: analise com None nao aborta o envio", ">None<" not in _hb and "None" not in _mdb)
+except Exception as e:
+    check(f"kimi: analise com None nao aborta o envio ({e!r})", False)
 
 print("\n--- v2.18: details nas historias principais ---")
 _ih = sender._render_item_html(_it("Com detalhes", 7, details=["Preco cai de US$15 para US$6", "<script>x</script>"]))
