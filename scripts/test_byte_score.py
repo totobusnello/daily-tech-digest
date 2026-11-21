@@ -356,29 +356,24 @@ _longo = {"subject_hook": "z", "items": [_it("palavra " * 40, 7)]}
 _pl = sender._preheader(_longo)
 check("preheader truncado <= 140", len(_pl) <= 140 and _pl.endswith("…"))
 
-print("\n--- v2.18: abertura + sumario ---")
-_cur_toc = {
+print("\n--- v2.19: sem bloco de abertura ---")
+_cur_ab = {
     "items": [
         _it("Big story aqui", 9, big=True),
         _it("Segunda historia", 7),
         _it("Terceira historia", 6, cat="saas_enterprise"),
-        _it("Quarta historia", 5),
-        _it("Video", 0, cat="watch_later"),
     ],
     "tool_of_day": {"headline": "Granola — notas de reuniao"},
 }
-_toc = sender._toc_lines(_cur_toc)
-check("sumario tem 4 linhas", len(_toc) == 4)
-check("sumario abre pela big story", _toc[0] == "Big story aqui")
-check("sumario fecha com a tool", _toc[-1] == "Tool do dia: Granola — notas de reuniao")
-check("sumario sem watch_later", all("Video" != t for t in _toc))
-check("sumario sem tool -> 3 historias", len(sender._toc_lines({"items": _cur_toc["items"]})) == 3)
-
-_html = sender.generate_email_html(dict(_cur_toc, lede="Abertura <b>arma</b> a tensao."))
-check("lede renderizado e escapado", "Abertura &lt;b&gt;arma&lt;/b&gt; a tensao." in _html)
-check("bloco Nesta edicao presente", "NESTA EDI" in _html)
-_html_sem = sender.generate_email_html({"items": [_it("So uma", 7)]})
-check("sem lede e 1 historia -> sem bloco", "NESTA EDI" not in _html_sem)
+# lede legado (curador antigo ou cache) NAO pode reaparecer no email
+_html = sender.generate_email_html(dict(_cur_ab, lede="Abertura que repete a big story."))
+check("sem bloco Nesta edicao", "NESTA EDI" not in _html)
+check("lede legado ignorado no HTML", "Abertura que repete" not in _html)
+check("big story continua no email", "Big story aqui" in _html)
+check("big story aparece 1 vez so", _html.count("Big story aqui") == 1)
+_md = sender.generate_email_content(dict(_cur_ab, lede="Abertura que repete a big story."))
+check("lede legado ignorado no markdown", "Abertura que repete" not in _md and "Nesta edi" not in _md)
+check("_toc_lines removida", not hasattr(sender, "_toc_lines"))
 
 print("\n--- v2.18: details nas historias principais ---")
 _ih = sender._render_item_html(_it("Com detalhes", 7, details=["Preco cai de US$15 para US$6", "<script>x</script>"]))
@@ -542,7 +537,7 @@ try:
     _p = processor.CURATOR_USER_TEMPLATE.format(total=1, items="[]", feedback_section="")
     check("template formata", True)
     check("template pede subject_emoji", '"subject_emoji"' in _p)
-    check("template pede lede", '"lede"' in _p)
+    check("template NAO pede lede (v2.19)", '"lede"' not in _p and "ABERTURA" not in processor.CURATOR_SYSTEM)
     check("template pede trending_tools", '"trending_tools"' in _p)
 except (KeyError, IndexError, ValueError) as e:
     check(f"template formata ({e!r})", False)

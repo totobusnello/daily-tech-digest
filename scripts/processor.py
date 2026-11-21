@@ -132,14 +132,6 @@ LAYOUT CONSOLIDADO v2.14 — BIG STORY + 6 SEÇÕES + 2 MICRO-SEÇÕES:
    São notícias que não cabem nas seções principais mas merecem menção.
 6. "watch_later" (1 item): UM vídeo essencial. Vai no array "items" com category "watch_later".
 
-ABERTURA — "lede" (v2.18):
-- 2 frases, 25 a 45 palavras no total, no topo do email. Arma a TENSÃO da notícia principal:
-  o que se dizia/esperava × o que aconteceu. Não é resumo nem manchete repetida.
-- ✅ "A Anthropic vende prudência como estratégia. Por dentro, o ritmo de pesquisa dobrou —
-     e a própria IA da empresa responde pela maior parte do salto."
-- ❌ "Hoje temos notícias importantes sobre IA e mercado." (genérico, sem tensão)
-- Sem verbo no imperativo aqui: o imperativo é do why_it_matters.
-
 EMOJI DO ASSUNTO — "subject_emoji" (v2.18):
 - UM único emoji que represente o TEMA do subject_hook (📈 mercado/alta, 📉 queda, ⚖️ justiça/regulação,
   🕵️ espionagem/segurança, 🚀 lançamento, 🤖 modelo/agente, 💰 funding/M&A, 🇨🇳 China, 🔐 cibersegurança).
@@ -255,7 +247,6 @@ RETORNE JSON com esta estrutura (layout consolidado v2.2):
   "date": "YYYY-MM-DD",
   "subject_hook": "Frase-gancho de 5 a 9 palavras sobre a notícia mais impactante. DEVE ser frase gramatical completa (sujeito + verbo + objeto), nunca fragmento telegráfico. Ex: 'OpenAI mira US$600B em compute até 2030' ou 'Juiz barra Pentágono de vetar a Anthropic'",
   "subject_emoji": "UM emoji do tema do subject_hook (ex: 📈). Nunca 🔥.",
-  "lede": "2 frases (25-45 palavras) que armam a TENSÃO da notícia principal: o que se esperava × o que aconteceu.",
   "number_of_day": {{
     "value": "$600B",
     "context": "Meta de compute da OpenAI até 2030 — o maior CapEx da história da tecnologia"
@@ -338,7 +329,7 @@ LEMBRE-SE:
 - NO máximo 14 itens selecionados (10 principais + 4 quick links), mais até 3 "trending_tools". Rigor > quantidade.
 - A seção "items" usa category "hoje_no_byte" para a maioria (3 itens). Cada item DEVE ter "tag" (BREAKING, AI, BIG TECH, ou ENTERPRISE)
 - "saas_enterprise" é categoria separada (1 item)
-- "lede": 2 frases de abertura com TENSÃO (ver regra ABERTURA). "subject_emoji": UM emoji do tema, nunca 🔥.
+- "subject_emoji": UM emoji do tema, nunca 🔥.
 - "trending_tools": 0-3 ferramentas de negócio LANÇADAS no material de entrada, com URL. Lista vazia se não houver.
 - "tool_of_day" é um OBJETO separado (não vai no array items) — DEVE ter "how_to_use" E "prompt_of_day"
 - "quick_links" são APENAS headline + URL + fonte. SEM why_it_matters.
@@ -1283,8 +1274,7 @@ def process():
         print(f"   ✨ Selecionados: {_total} peças "
               f"(items {_n_itens} · world {_n_world} · brasil {_n_brasil} · tool {_n_tool} · quick {_n_quick})"
               f" + {_n_tt} ferramenta(s) em alta · {_n_det} item(ns) com details")
-        print(f"   ✉️  Emoji: {curated.get('subject_emoji') or '(sem — cai no 🔥)'} · "
-              f"Lede: {'sim' if curated.get('lede') else 'NÃO'}")
+        print(f"   ✉️  Emoji: {curated.get('subject_emoji') or '(sem — cai no 🔥)'}")
 
         print(f"\n🌍 MUNDO REAL:")
         for item in curated.get('world', []):

@@ -267,17 +267,6 @@ def _preheader(curated: Dict, limit: int = 140) -> str:
     return ""
 
 
-def _toc_lines(curated: Dict) -> list:
-    """Sumário "Nesta edição": big story + 2 próximas histórias + tool (máx. 4 linhas)."""
-    big = _big_story_of(curated)
-    stories = ([big] if big else []) + [i for i in _story_items(curated) if i is not big]
-    lines = [str(i['headline']) for i in stories if i.get('headline')][:3]
-    tool = (curated or {}).get('tool_of_day') or {}
-    if isinstance(tool, dict) and tool.get('headline'):
-        lines.append(f"Tool do dia: {tool['headline']}")
-    return lines
-
-
 def _valid_trending_tools(tools) -> list:
     """Até 3 ferramentas com nome e URL http(s) válida (v2.18).
 
@@ -505,9 +494,6 @@ def _estimate_reading_time(curated: Dict) -> int:
         text_parts.append(str(wi.get('headline', '')))
         text_parts.append(str(wi.get('context', '')))
 
-    text_parts.append(str(curated.get('lede', '') or ''))  # v2.18
-    text_parts.extend(_toc_lines(curated))
-
     for item in curated.get('items', []) or []:
         text_parts.append(str(item.get('headline', '')))
         text_parts.append(str(item.get('why_it_matters', '')))
@@ -637,43 +623,12 @@ def generate_email_html(curated: Dict) -> str:
 
     body_rows.append(_spacer(16))
 
-    # ── ABERTURA + NESTA EDIÇÃO (v2.18) ─────────
-    # Benchmark The Rundown AI: as 19 edições de semana lidas abrem com 2 frases
-    # que armam a TENSÃO da história principal, seguidas de um sumário de 4
-    # linhas. O lede vem do curador (campo opcional); o sumário é derivado no
-    # código a partir do que já foi selecionado. Sem lede e com <2 linhas de
-    # sumário o bloco não aparece — não vale a moldura para uma linha só.
-    _lede = str(curated.get('lede') or '').strip()
-    _toc = _toc_lines(curated)
-    if _lede or len(_toc) >= 2:
-        _lede_html = (f'''      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#2d2d2d;line-height:1.6;padding-bottom:12px;">
-          {_esc(_lede)}
-        </td>
-      </tr>''' if _lede else '')
-        _toc_html = ''
-        if len(_toc) >= 2:
-            _toc_items = ''.join(
-                f'<tr><td style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:14px;'
-                f'color:#1a1a2e;line-height:1.45;padding:0 0 5px 0;">'
-                f'<span style="color:{COLORS["brand"]};font-weight:800;">&#x203A;</span>&nbsp; {_esc(t)}</td></tr>'
-                for t in _toc
-            )
-            _toc_html = f'''      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:800;color:#6b7280;letter-spacing:1px;text-transform:uppercase;padding-bottom:8px;">
-          NESTA EDI&Ccedil;&Atilde;O
-        </td>
-      </tr>
-      <tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0">{_toc_items}</table></td></tr>'''
-        body_rows.append(f'''<tr>
-  <td class="card-bg card-border" style="background-color:#ffffff;padding:18px 20px 12px 20px;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-{_lede_html}
-{_toc_html}
-    </table>
-  </td>
-</tr>''')
-        body_rows.append(_spacer())
+    # ── SEM BLOCO DE ABERTURA (v2.19) ───────────
+    # A v2.18 abria com lede + "Nesta edição" (benchmark Rundown). Na prática o
+    # lede, a 1ª linha do sumário e o card logo abaixo eram a MESMA história —
+    # somada ao subject, 4 vezes antes de o leitor ver algo novo. O Rundown tem
+    # 2-3 histórias e nenhum card de destaque; nós temos a Big Story, que já faz
+    # o papel de abertura. Cortado a pedido do Toto em 21/11/2026 (regra 89).
 
     # ── BIG STORY (v2.14) ───────────────────────
     # Escolhe UM item para o card de destaque no topo. Regras defensivas (v2.15 fixes):
@@ -1318,14 +1273,6 @@ def generate_email_content(curated: Dict) -> str:
     """Gera o conteúdo do email em markdown — Layout consolidado v2.2 (legacy)"""
 
     sections = []
-
-    _lede = str(curated.get('lede') or '').strip()
-    _toc = _toc_lines(curated)
-    if _lede or len(_toc) >= 2:
-        _parts = [_lede] if _lede else []
-        if len(_toc) >= 2:
-            _parts.append("**Nesta edição:**\n" + "\n".join(f"› {t}" for t in _toc))
-        sections.append("\n\n".join(_parts))
 
     number = curated.get('number_of_day', {})
     if number and number.get('value'):
