@@ -334,8 +334,9 @@ def _byte_led_html(score):
     cells = []
     for i in range(10):
         color = _VU_COLORS[i] if i < filled else _VU_EMPTY
+        off = '' if i < filled else ' class="vu-off"'
         cells.append(
-            f'<span style="display:inline-block;width:4px;height:{_VU_HEIGHTS[i]}px;'
+            f'<span{off} style="display:inline-block;width:4px;height:{_VU_HEIGHTS[i]}px;'
             f'background-color:{color};margin-right:1px;border-radius:1px;'
             f'vertical-align:bottom;"></span>'
         )
@@ -343,7 +344,7 @@ def _byte_led_html(score):
     return (
         '<span style="display:inline-block;white-space:nowrap;line-height:12px;height:12px;vertical-align:2px;">'
         + "".join(cells)
-        + f'<span style="font-size:10px;font-weight:700;color:{peak_color};margin-left:4px;vertical-align:bottom;">{s}</span>'
+        + f'<span style="font-size:12px;font-weight:700;color:{peak_color};margin-left:4px;vertical-align:bottom;">{s}</span>'
         + '</span>'
     )
 
@@ -359,35 +360,129 @@ def _byte_led_md(score):
     return f"{bar} {s}"
 
 
-_section_counter = 0
+# ── Camada de apresentação v2.20 ────────────────────────────────────────────
+# Redesenho a partir da análise de layout de 21/11/2026 (regra 91). Em resumo:
+# - UM card por seção (rótulo + conteúdo na mesma célula). Antes eram 3 <tr>
+#   com 3 sombras, círculo numerado e pílula com emoji: ~90px de moldura por seção.
+# - Metadados = "Fonte ↗ · há Nh · LED". Saíram ⏰, "N min" e o botão-pílula
+#   "Ver original"; o link vai na própria manchete. O LED fica em todos os
+#   itens (decisão do Toto), mas num grupo nowrap junto do "·" — antes ele
+#   quebrava sozinho numa linha no celular, com um "·" pendurado.
+# - Um só estilo de botão (laranja, bulletproof), só na Big Story e na Tool.
+# - Dark mode por CLASSE em todo texto (.text-dark/.text-muted/.tint-bg):
+#   antes nenhum texto tinha classe e o Apple Mail escuro punha #2d2d2d sobre
+#   #2d2d2d. Botão tem .btn para o `a{color}` do dark não pintá-lo de azul.
+# - Nada abaixo de 12px.
 
-def _section_header(emoji: str, title: str, color: str, numbered: bool = True) -> str:
-    """Generates a section header row — v2.12 pill badge + numbered circle"""
-    global _section_counter
-    num_html = ""
-    if numbered:
-        _section_counter += 1
-        num_html = f'<span style="display:inline-block;width:22px;height:22px;background-color:#ffffff;color:{color};border-radius:50%;font-size:11px;font-weight:800;text-align:center;line-height:22px;margin-right:8px;border:2px solid {color};">{_section_counter}</span>'
+_SANS = "'Helvetica Neue',Arial,sans-serif"
+_SERIF = "Georgia,'Times New Roman',serif"
+
+# Cor do RÓTULO de seção: versão escura de cada acento. Âmbar/laranja/azul-céu
+# puros sobre branco ficam abaixo de 3:1 em texto de 12px.
+_LABEL = {
+    "byte": "#c2410c", "saas": "#047857", "world": "#0369a1", "brasil": "#15803d",
+    "number": "#6d28d9", "analysis": "#6d28d9", "deep_dive": "#1e40af",
+    "tool": "#b45309", "quick": "#475569", "video": "#b91c1c",
+}
+
+_TBL = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">'
+
+
+def _spacer(height: int = 14) -> str:
+    return f'<tr><td style="padding:0;height:{height}px;line-height:{height}px;font-size:1px;">&nbsp;</td></tr>'
+
+
+def _label_html(title: str, key: str, pad_top: int = 0) -> str:
+    """Rótulo de seção/sub-seção: texto caixa-alta, 12px, sem pílula nem emoji."""
+    return (f'<div style="font-family:{_SANS};font-size:12px;font-weight:800;color:{_LABEL[key]};'
+            f'letter-spacing:1px;text-transform:uppercase;padding:{pad_top}px 0 10px 0;">{_esc(title)}</div>')
+
+
+def _section(title: str, key: str, inner: str) -> str:
+    """Um card por seção (v2.20)."""
     return f'''<tr>
-  <td style="padding:0;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px 10px 20px;border:1px solid #e5e7eb;border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-          {num_html}<span style="display:inline-block;background-color:{color};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">{emoji}&nbsp; {_esc(title)}</span>
-        </td>
-      </tr>
-    </table>
+  <td class="card-bg card-border" style="background-color:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px 4px 20px;">
+    {_label_html(title, key)}
+    {inner}
   </td>
 </tr>'''
 
 
+def _stack(blocks: list, gap: int = 14) -> str:
+    """Empilha blocos com divisória ENTRE eles — nunca depois do último (v2.20).
+
+    Antes cada item levava border-bottom + margin próprios, e o último deixava
+    uma linha e ~40px vazios antes do fim do card.
+    """
+    n = len(blocks)
+    rows = []
+    for i, b in enumerate(blocks):
+        top = 0 if i == 0 else gap
+        sep = 'border-bottom:1px solid #eeeeee;' if i < n - 1 else ''
+        rows.append(f'<tr><td class="sep" style="padding:{top}px 0 {gap}px 0;{sep}">{b}</td></tr>')
+    return _TBL + ''.join(rows) + '</table>'
+
+
+def _tag_html(tag) -> str:
+    if not tag:
+        return ''
+    return (f'<span class="tag" style="display:inline-block;border:1px solid #d1d5db;color:#6b7280;'
+            f'font-family:{_SANS};font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;'
+            f'margin-right:6px;vertical-align:2px;letter-spacing:0.5px;text-transform:uppercase;">{_esc(tag)}</span>')
+
+
+def _headline_html(item: Dict, size: int = 17, prefix: str = '', tag: str = '') -> str:
+    """Manchete É o link (v2.20) — substitui o botão "Ver original"."""
+    hl = _esc(item.get('headline', '') or 'Sem título')
+    url = _safe_url(item.get('source_url', ''))
+    if url != '#':
+        hl = f'<a href="{url}" class="text-dark" style="color:#1a1a2e;text-decoration:none;">{hl}</a>'
+    return (f'<div class="text-dark" style="font-family:{_SANS};font-size:{size}px;font-weight:700;'
+            f'color:#1a1a2e;line-height:1.35;padding-bottom:6px;">{_tag_html(tag)}{prefix}{hl}</div>')
+
+
+def _body_html(text: str, size: int = 15, pad: int = 8) -> str:
+    if not text:
+        return ''
+    return (f'<div class="text-dark" style="font-family:{_SERIF};font-size:{size}px;color:#2d2d2d;'
+            f'line-height:1.55;padding-bottom:{pad}px;">{text}</div>')
+
+
+def _meta_html(item: Dict, link_source: bool = True) -> str:
+    """"Fonte ↗ · há Nh · LED" em 12px. Cada parte em nowrap; o LED vai num grupo
+    nowrap JUNTO do seu "·" — assim, se a linha quebrar, quebra inteira."""
+    source = _esc(item.get('source_name', '') or 'Fonte')
+    url = _safe_url(item.get('source_url', ''))
+    if link_source and url != '#':
+        source = (f'<a href="{url}" style="color:{COLORS["link"]};text-decoration:none;font-weight:600;">'
+                  f'{source}&nbsp;&#x2197;</a>')
+    parts = [source]
+    h = item.get('hours_ago')
+    if h not in (None, '', '?'):
+        parts.append(f'h&aacute;&nbsp;{_esc(str(h))}h')
+    meta = ' &middot; '.join(f'<span style="white-space:nowrap;">{p}</span>' for p in parts)
+    led = _byte_led_html(item.get('byte_score'))
+    if led:
+        meta += f' <span style="white-space:nowrap;">&middot;&nbsp;{led}</span>'
+    return (f'<div class="text-muted" style="font-family:{_SANS};font-size:12px;color:#6b7280;'
+            f'line-height:1.7;">{meta}</div>')
+
+
+def _button_html(url: str, label: str) -> str:
+    """Botão bulletproof (cor no <td>, área clicável preservada no Outlook). Um só estilo."""
+    return (f'<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td bgcolor="{COLORS["brand"]}" style="background-color:{COLORS["brand"]};border-radius:20px;">'
+            f'<a class="btn" href="{_safe_url(url)}" style="display:inline-block;padding:9px 18px;'
+            f'font-family:{_SANS};font-size:13px;font-weight:700;color:#ffffff;text-decoration:none;white-space:nowrap;">'
+            f'{label}</a></td></tr></table>')
+
+
 def _details_html(item: Dict, font_size: int = 14) -> str:
-    """Linha <tr> com até 3 bullets de dado duro. '' sem details[] válido.
+    """Até 3 bullets de dado duro. '' sem details[] válido.
 
     v2.17 criou para a Big Story; v2.18 estende às 2-3 histórias principais
-    (molde "The details" do Rundown). Com 2-3 cliques por edição para ~15
-    aberturas, o leitor consome a notícia DENTRO do email — o número tem de
-    estar aqui, não no link.
+    (molde "The details" do Rundown). O leitor consome a notícia DENTRO do email
+    — o número tem de estar aqui, não no link. v2.20: traço neutro, mínimo 14px.
     """
     detalhes = item.get('details') if isinstance(item, dict) else None
     if not isinstance(detalhes, list):
@@ -396,90 +491,42 @@ def _details_html(item: Dict, font_size: int = 14) -> str:
     if not detalhes:
         return ''
     linhas = ''.join(
-        f'<tr><td style="padding:0 0 6px 0;font-family:\'Helvetica Neue\',Arial,sans-serif;'
-        f'font-size:{font_size}px;color:#3d3d3d;line-height:1.45;">'
-        f'<span style="color:{COLORS["brand"]};font-weight:800;">&bull;</span>&nbsp; {_esc(d)}'
+        f'<tr><td class="text-dark det" style="padding:0 0 5px 0;font-family:{_SANS};'
+        f'font-size:{max(14, font_size)}px;color:#3d3d3d;line-height:1.45;">'
+        f'<span class="text-muted" style="color:#9ca3af;">&ndash;</span>&nbsp; {_esc(d)}'
         f'</td></tr>'
         for d in detalhes
     )
-    return (
-        '<tr><td style="padding-bottom:10px;">'
-        '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
-        f'{linhas}</table></td></tr>'
-    )
+    return f'<div style="padding-bottom:8px;">{_TBL}{linhas}</table></div>'
 
 
 def _render_big_story_html(item: Dict) -> str:
-    """Renderiza item de destaque no topo — card grande com borda laranja."""
-    headline = _esc(item.get('headline', ''))
-    why = _esc(item.get('why_it_matters', ''))
-    url = _safe_url(item.get('source_url', ''))
-    source = _esc(item.get('source_name', ''))
-    hours = _esc(str(item.get('hours_ago', '?')))
-    led = _byte_led_html(item.get('byte_score'))
-    led_inline = f'&nbsp;&middot;&nbsp; {led}' if led else ''
-    _rm = _read_min_html(item)
-    read_inline = f'&nbsp;&middot;&nbsp; {_rm}' if _rm else ''
-
-    # v2.17: bullets de especificidade dura (números, preços, prazos, benchmarks).
-    # A Big Story é o item que o leitor encaminha para o board — antes ela pulava
-    # da manchete direto para uma frase imperativa, sem nenhum dado de apoio.
-    # Campo opcional: se o curador não mandar details[], o card fica como antes.
-    detalhes_html = _details_html(item, font_size=14)
-
+    """Card de destaque no topo — é a abertura do email desde a v2.19 (regra 89)."""
     return f'''<tr>
-  <td style="background-color:#fff8f2;border:2px solid {COLORS["brand"]};border-radius:12px;padding:20px 22px;box-shadow:0 4px 12px rgba(255,107,53,0.15);">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="padding-bottom:8px;">
-          <span style="display:inline-block;background-color:{COLORS["brand"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">&#x2605; BIG STORY</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:22px;font-weight:800;color:#1a1a2e;line-height:1.25;padding-bottom:10px;">
-          {headline}
-        </td>
-      </tr>
-      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#2d2d2d;line-height:1.55;padding-bottom:12px;">
-          {why}
-        </td>
-      </tr>
-      {detalhes_html}
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;">
-          <a href="{url}" style="display:inline-block;color:#ffffff;background-color:{COLORS["brand"]};text-decoration:none;font-weight:700;padding:8px 18px;border-radius:20px;font-size:13px;">Ler agora &#x2197;</a>
-          &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{read_inline}{led_inline}
-        </td>
-      </tr>
-    </table>
+  <td class="tint-bg" style="background-color:#fff8f2;border:2px solid {COLORS["brand"]};border-radius:12px;padding:20px 22px;">
+    <div style="padding-bottom:10px;"><span style="display:inline-block;background-color:{COLORS["brand"]};color:#ffffff;font-family:{_SANS};font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">&#x2605; Big Story</span></div>
+    {_headline_html(item, size=22)}
+    {_body_html(_esc(item.get('why_it_matters', '')), size=16, pad=10)}
+    {_details_html(item, font_size=14)}
+    <div style="padding-bottom:12px;">{_meta_html(item, link_source=False)}</div>
+    {_button_html(item.get('source_url', ''), 'Ler agora &#x2197;')}
   </td>
 </tr>'''
 
 
-def _item_read_min(item: Dict) -> int:
-    """Minutos de leitura do ARTIGO no destino, estimado a partir do resumo (v2.17).
-
-    Deliberadamente derivado no código, não pedido ao curador: o modelo não abre
-    o link e chutaria o número. Usa o tamanho do que ELE escreveu sobre a notícia
-    como proxy — matéria que rendeu análise longa tende a ser leitura mais longa.
-    Fator 25x sobre o resumo, faixa 1-9 min para não prometer precisão que não existe.
-    """
-    texto = " ".join(str(item.get(c, '') or '') for c in
-                     ('headline', 'why_it_matters', 'context'))
-    palavras = len(texto.split())
-    if not palavras:
-        return 0
-    return max(1, min(9, round(palavras * 25 / 220)))
+def _render_item_html(item: Dict) -> str:
+    """Item de Hoje no Byte / SaaS: manchete-link, why, details, metadados."""
+    return (_headline_html(item, size=17, tag=item.get('tag', ''))
+            + _body_html(_esc(item.get('why_it_matters', '')))
+            + _details_html(item, font_size=14)
+            + _meta_html(item))
 
 
-def _read_min_html(item: Dict) -> str:
-    """Selo discreto de tempo de leitura. '' quando não há texto para estimar."""
-    m = _item_read_min(item)
-    if not m:
-        return ""
-    return (f'<span style="font-family:\'Helvetica Neue\',Arial,sans-serif;'
-            f'font-size:11px;color:#9ca3af;">{m} min</span>')
+def _render_compact_html(item: Dict, text_key: str) -> str:
+    """Item de Mundo Real / Radar Brasil: mesma anatomia, sem tag e sem details."""
+    return (_headline_html(item, size=16)
+            + _body_html(_esc(item.get(text_key, '')), pad=6)
+            + _meta_html(item))
 
 
 def _estimate_reading_time(curated: Dict) -> int:
@@ -535,108 +582,30 @@ def _estimate_reading_time(curated: Dict) -> int:
     return minutes
 
 
-def _card_start() -> str:
-    return '''<tr>
-  <td class="card-bg card-border" style="background-color:#ffffff;padding:16px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.06);">'''
-
-
-def _card_end() -> str:
-    return '''  </td>
-</tr>'''
-
-
-def _card_bottom() -> str:
-    return '''<tr>
-  <td class="card-bg card-border" style="background-color:#ffffff;padding:0 20px 12px 20px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;border-radius:0 0 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-  </td>
-</tr>'''
-
-
-def _spacer(height: int = 20) -> str:
-    return f'<tr><td style="padding:0;height:{height}px;line-height:{height}px;font-size:1px;">&nbsp;</td></tr>'
-
-
-def _render_item_html(item: Dict) -> str:
-    """Renders a single news item as HTML table row content"""
-    headline = _esc(item.get('headline', 'Sem título'))
-    tag = item.get('tag', '')
-    why = _esc(item.get('why_it_matters', ''))
-    url = _safe_url(item.get('source_url', ''))
-    source = _esc(item.get('source_name', 'Fonte'))
-    hours = _esc(str(item.get('hours_ago', '?')))
-    led_html = _byte_led_html(item.get('byte_score'))
-    led_inline = f'&nbsp;&middot;&nbsp; {led_html}' if led_html else ''
-    _rm = _read_min_html(item)
-    read_inline = f'&nbsp;&middot;&nbsp; {_rm}' if _rm else ''
-
-    tag_html = f'<span style="display:inline-block;background-color:#FF6B35;color:#ffffff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:6px;vertical-align:middle;text-transform:uppercase;">{_esc(tag)}</span>' if tag else ''
-
-    return f'''<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;border-bottom:1px solid #f0f0f0;padding-bottom:14px;">
-  <tr>
-    <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:6px;">
-      {tag_html}{headline}
-    </td>
-  </tr>
-  <tr>
-    <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;padding-bottom:8px;">
-      {why}
-    </td>
-  </tr>
-  {_details_html(item, font_size=13)}
-  <tr>
-    <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6b7280;line-height:1.4;">
-      <a href="{url}" style="display:inline-block;color:#2563eb;text-decoration:none;font-weight:600;border:1px solid #2563eb;padding:4px 12px;border-radius:16px;font-size:12px;">Ver original &#x2197;</a>
-      &nbsp;&middot;&nbsp; {source} &nbsp;&middot;&nbsp; &#x23F0; {hours}h{read_inline}{led_inline}
-    </td>
-  </tr>
-</table>'''
-
-
 def generate_email_html(curated: Dict) -> str:
-    """Gera o conteúdo HTML do email — Template v2.12 mobile-first"""
-    global _section_counter
-    _section_counter = 0
-
+    """Gera o HTML do email — layout v2.20 (um card por seção, ordem por prioridade de leitura)."""
     body_rows = []
 
-    # ── HEADER ──────────────────────────────────
-    body_rows.append(f'''<tr>
-  <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:18px 20px;text-align:center;border-radius:12px 12px 0 0;">
-    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;">THE DAILY BYTE</span>
-  </td>
-</tr>''')
-
-    # Date subheader
+    # ── HEADER (uma célula; antes eram 2 gradientes com emenda) ──
     today = datetime.now()
     weekdays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
     months = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
               'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     date_str = f"{weekdays[today.weekday()]}, {today.day} de {months[today.month]} de {today.year}"
     read_min = _estimate_reading_time(curated)
-
     body_rows.append(f'''<tr>
-  <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:0 20px 14px 20px;text-align:center;border-radius:0 0 12px 12px;">
-    <span class="text-muted" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#94a3b8;">{date_str}</span>
-    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#64748b;padding-left:8px;">&#x23F1; Leitura: {read_min} min</span>
+  <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:18px 20px 14px 20px;text-align:center;border-radius:12px;">
+    <div style="font-family:{_SANS};font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;padding-bottom:4px;">THE DAILY BYTE</div>
+    <div style="font-family:{_SANS};font-size:12px;color:#94a3b8;">{date_str} &middot; {read_min} min de leitura</div>
   </td>
 </tr>''')
+    body_rows.append(_spacer())
 
-    body_rows.append(_spacer(16))
-
-    # ── SEM BLOCO DE ABERTURA (v2.19) ───────────
-    # A v2.18 abria com lede + "Nesta edição" (benchmark Rundown). Na prática o
-    # lede, a 1ª linha do sumário e o card logo abaixo eram a MESMA história —
-    # somada ao subject, 4 vezes antes de o leitor ver algo novo. O Rundown tem
-    # 2-3 histórias e nenhum card de destaque; nós temos a Big Story, que já faz
-    # o papel de abertura. Cortado a pedido do Toto em 21/11/2026 (regra 89).
+    # Sem bloco de abertura desde a v2.19 (regra 89): a Big Story abre o email.
 
     # ── BIG STORY (v2.14) ───────────────────────
-    # Escolhe UM item para o card de destaque no topo. Regras defensivas (v2.15 fixes):
-    # - Só aceita boolean True (rejeita string "true"/"false" que Claude pode retornar)
-    # - Só categorias hoje_no_byte/saas_enterprise (nunca watch_later — ficaria sem why/led)
-    # - Byte score >= 8 (redundante com prompt mas defensivo)
-    # - Filtra por IDENTIDADE (só o item escolhido), não pela flag (evita perder se Claude marcar 2)
-    # - Filtragem local, sem mutar curated (preserva items[] para dedup cache + markdown preview)
+    # Regras defensivas (v2.15): só boolean True; só hoje_no_byte/saas_enterprise;
+    # byte_score >= 8; filtra por IDENTIDADE; não muta curated (dedup + preview).
     items_all = curated.get('items', []) or []
 
     def _is_valid_big_story(i):
@@ -650,480 +619,172 @@ def generate_email_html(curated: Dict) -> str:
     if big_story:
         body_rows.append(_render_big_story_html(big_story))
         body_rows.append(_spacer())
+    items = [i for i in items_all if i is not big_story] if big_story else items_all
 
-    # Snapshot dos itens para renderização (sem mutar curated original)
-    items_for_render = [i for i in items_all if i is not big_story] if big_story else items_all
+    # ORDEM v2.20 (regra 91): o miolo do produto e a análise vêm antes do que é
+    # contexto (mundo) e do que é ferramenta. Quem para no meio da leitura de
+    # manhã já leu as notícias principais e a análise.
 
-    # ── 0. NÚMERO DO DIA ────────────────────────
-    number = curated.get('number_of_day', {})
-    if number and number.get('value'):
-        body_rows.append(_section_header('&#x1F4CA;', 'NÚMERO DO DIA', COLORS["number"]))
-        body_rows.append(f'''{_card_start()}
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="text-align:center;padding:12px 0;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:36px;font-weight:800;color:{COLORS["number"]};line-height:1.2;">{_esc(str(number.get('value', '')))}</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:center;padding-bottom:8px;">
-          <span style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.5;">{_esc(number.get('context', ''))}</span>
-        </td>
-      </tr>
-    </table>
-{_card_end()}''')
-        body_rows.append(_card_bottom())
-        body_rows.append(_spacer())
-
-    # ── 1. MUNDO REAL ───────────────────────────
-    world_items = curated.get('world', [])
-    if world_items:
-        body_rows.append(_section_header('&#x1F30D;', 'MUNDO REAL', COLORS["world"]))
-        body_rows.append(_card_start())
-        for i, wi in enumerate(world_items):
-            headline = _esc(wi.get('headline', ''))
-            context = _esc(wi.get('context', ''))
-            url = _safe_url(wi.get('source_url', ''))
-            source = _esc(wi.get('source_name', ''))
-            wi_hours = wi.get('hours_ago')
-            wi_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(wi_hours))}h' if wi_hours is not None else ''
-            wi_led_html = _byte_led_html(wi.get('byte_score'))
-            wi_led_inline = f' &nbsp;&middot;&nbsp; {wi_led_html}' if wi_led_html else ''
-            _wrm = _read_min_html(wi)
-            wi_read_inline = f' &nbsp;&middot;&nbsp; {_wrm}' if _wrm else ''
-            border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(world_items) - 1 else ''
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:4px;">
-          &#x2192; {headline}
-        </td>
-      </tr>
-      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#2d2d2d;line-height:1.5;padding-bottom:4px;">
-          {context}
-        </td>
-      </tr>
-      <tr>
-        <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{wi_hours_inline}{wi_read_inline}{wi_led_inline}
-        </td>
-      </tr>
-    </table>''')
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
-        body_rows.append(_spacer())
-
-    # ── 2. HOJE NO BYTE ─────────────────────────
-    items = items_for_render
+    # ── HOJE NO BYTE ────────────────────────────
     hoje = [i for i in items if i.get('category') == 'hoje_no_byte']
     if not hoje:
         hoje = [i for i in items if i.get('category') in ('breaking', 'ai_models', 'big_tech')]
     if hoje:
-        body_rows.append(_section_header('&#x1F525;', 'HOJE NO BYTE', COLORS["byte"]))
-        body_rows.append(_card_start())
-        for item in hoje:
-            body_rows.append(_render_item_html(item))
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
+        body_rows.append(_section('Hoje no Byte', 'byte', _stack([_render_item_html(i) for i in hoje])))
         body_rows.append(_spacer())
 
-    # ── 3. SaaS & ENTERPRISE ────────────────────
+    # ── SaaS & ENTERPRISE ───────────────────────
     saas = [i for i in items if i.get('category') == 'saas_enterprise']
     if saas:
-        body_rows.append(_section_header('&#x1F4B0;', 'SaaS & ENTERPRISE', COLORS["saas"]))
-        body_rows.append(_card_start())
-        for item in saas:
-            body_rows.append(_render_item_html(item))
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
+        body_rows.append(_section('SaaS & Enterprise', 'saas', _stack([_render_item_html(i) for i in saas])))
         body_rows.append(_spacer())
 
-    # ── 3b. RADAR BRASIL ───────────────────────
-    radar_brasil = curated.get('radar_brasil', [])
-    if radar_brasil:
-        body_rows.append(_section_header('&#x1F1E7;&#x1F1F7;', 'RADAR BRASIL', COLORS["brasil"]))
-        body_rows.append(_card_start())
-        for i, rb in enumerate(radar_brasil):
-            headline = _esc(rb.get('headline', ''))
-            why = _esc(rb.get('why_it_matters', ''))
-            url = _safe_url(rb.get('source_url', ''))
-            source = _esc(rb.get('source_name', ''))
-            rb_hours = rb.get('hours_ago')
-            rb_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(rb_hours))}h' if rb_hours is not None else ''
-            rb_led_html = _byte_led_html(rb.get('byte_score'))
-            rb_led_inline = f' &nbsp;&middot;&nbsp; {rb_led_html}' if rb_led_html else ''
-            _rrm = _read_min_html(rb)
-            rb_read_inline = f' &nbsp;&middot;&nbsp; {_rrm}' if _rrm else ''
-            border = 'border-bottom:1px solid #f0f0f0;margin-bottom:12px;padding-bottom:12px;' if i < len(radar_brasil) - 1 else ''
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="{border}">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:4px;">
-          &#x2192; {headline}
-        </td>
-      </tr>
-      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#2d2d2d;line-height:1.5;padding-bottom:4px;">
-          {why}
-        </td>
-      </tr>
-      <tr>
-        <td style="font-size:12px;color:#6b7280;">
-          <a href="{url}" style="color:#2563eb;text-decoration:none;">{source} &#x2197;</a>{rb_hours_inline}{rb_read_inline}{rb_led_inline}
-        </td>
-      </tr>
-    </table>''')
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
+    # ── MUNDO REAL + RADAR BRASIL (um card) ─────
+    world_items = curated.get('world', []) or []
+    radar_brasil = curated.get('radar_brasil', []) or []
+    if world_items or radar_brasil:
+        world_html = _stack([_render_compact_html(w, 'context') for w in world_items]) if world_items else ''
+        radar_html = _stack([_render_compact_html(r, 'why_it_matters') for r in radar_brasil]) if radar_brasil else ''
+        if world_items and radar_brasil:
+            inner = (world_html
+                     + f'<div class="sep" style="border-top:1px solid #eeeeee;">{_label_html("Radar Brasil", "brasil", pad_top=14)}</div>'
+                     + radar_html)
+            body_rows.append(_section('Mundo Real', 'world', inner))
+        elif world_items:
+            body_rows.append(_section('Mundo Real', 'world', world_html))
+        else:
+            body_rows.append(_section('Radar Brasil', 'brasil', radar_html))
         body_rows.append(_spacer())
 
-    # ── 4. TOOL DO DIA ──────────────────────────
-    tool = curated.get('tool_of_day', {})
+    # ── NÚMERO DO DIA (faixa, sem card) ─────────
+    number = curated.get('number_of_day', {}) or {}
+    if number.get('value'):
+        body_rows.append(f'''<tr>
+  <td style="padding:2px 4px;">
+    {_TBL}<tr><td style="border-left:4px solid {COLORS["number"]};padding:2px 0 2px 14px;">
+      {_label_html("Número do dia", "number")}
+      <div style="font-family:{_SANS};font-size:30px;font-weight:800;color:{COLORS["number"]};line-height:1.15;padding-bottom:4px;">{_esc(str(number.get('value', '')))}</div>
+      {_body_html(_esc(number.get('context', '')), size=15, pad=0)}
+    </td></tr></table>
+  </td>
+</tr>''')
+        body_rows.append(_spacer(18))
+
+    # ── ANÁLISE DO DIA ──────────────────────────
+    analysis = curated.get('daily_analysis', '')
+    if analysis:
+        blocks = []
+        if isinstance(analysis, list):
+            for a_item in analysis:
+                a_item = re.sub(r'^#{1,6}\s*', '', str(a_item).strip())
+                a_item = re.sub(r'^(?:[•\-]|\*(?!\*))\s*', '', a_item.strip())  # v2.19: nunca come o 1º * de **Título**
+                bold_match = re.match(r'\*\*(.+?)\*\*\s*[—–\-]\s*(.*)', a_item)
+                if bold_match:
+                    txt = f'<strong>{_esc(bold_match.group(1))}</strong> &#x2014; {_esc(bold_match.group(2))}'
+                else:
+                    txt = _esc(a_item)
+                blocks.append(f'<div class="text-dark" style="font-family:{_SANS};font-size:15px;line-height:1.55;color:#2d2d2d;padding-bottom:12px;">'
+                              f'<span style="color:{COLORS["analysis"]};">&#x25CF;</span>&nbsp; {txt}</div>')
+        else:
+            blocks.append(_body_html(_esc(str(analysis)), pad=12))
+        body_rows.append(_section('Análise do Dia', 'analysis', ''.join(blocks)))
+        body_rows.append(_spacer())
+
+    # ── DEEP DIVE (sextas) ──────────────────────
+    deep_dive = curated.get('deep_dive', {}) or {}
+    if deep_dive.get('title') and deep_dive.get('body'):
+        paras = [p.strip() for p in str(deep_dive.get('body', '')).split('\n\n') if p.strip()]
+        inner = (f'<div class="text-dark" style="font-family:{_SANS};font-size:18px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:10px;">{_esc(deep_dive.get("title", ""))}</div>'
+                 + ''.join(_body_html(_esc(p), pad=12) for p in paras))
+        body_rows.append(_section('Deep Dive', 'deep_dive', inner))
+        body_rows.append(_spacer())
+
+    # ── PARA USAR HOJE: Tool + Como usar + Prompt + Ferramentas em alta ──
+    # Eram 3 cards seguidos de "use ferramenta" (v2.17/v2.18); para um C-level é
+    # o bloco de menor urgência, então vem depois da análise e num card só.
+    tool = curated.get('tool_of_day', {}) or {}
     if not tool:
         tool_items = [i for i in items if i.get('category') == 'tool_of_day']
         if tool_items:
             tool = tool_items[0]
-
+    parts = []
     if tool and tool.get('headline'):
-        body_rows.append(_section_header('&#x1F6E0;', 'TOOL DO DIA', COLORS["tool"]))
-        tool_headline = _esc(tool.get('headline', ''))
-        tool_why = _esc(tool.get('why_it_matters', ''))
-        tool_url = _safe_url(tool.get('source_url', ''))
-        tool_source = _esc(tool.get('source_name', ''))
-        how_to = _esc(tool.get('how_to_use', ''))
-        # prompt_of_day não é lido aqui: virou seção própria logo abaixo (v2.17)
-
-        body_rows.append(f'''{_card_start()}
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:8px;">
-          {tool_headline}
-        </td>
-      </tr>
-      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;padding-bottom:10px;">
-          {tool_why}
-        </td>
-      </tr>
-      <tr>
-        <td style="padding-bottom:12px;">
-          <a href="{tool_url}" style="display:inline-block;background-color:{COLORS["tool"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:24px;text-decoration:none;box-shadow:0 2px 8px rgba(245,158,11,0.35);">&#x1F680; Experimentar</a>
-          <span style="font-size:13px;color:#6b7280;padding-left:8px;">{tool_source}</span>
-        </td>
-      </tr>
-    </table>''')
-
+        parts.append(_headline_html(tool, size=18))
+        parts.append(_body_html(_esc(tool.get('why_it_matters', '')), pad=10))
+        src = _esc(tool.get('source_name', '') or '')
+        parts.append(f'{_TBL}<tr><td style="padding-bottom:12px;width:1%;white-space:nowrap;">'
+                     f'{_button_html(tool.get("source_url", ""), "Experimentar &#x2197;")}</td>'
+                     f'<td class="text-muted" style="padding:0 0 12px 10px;font-family:{_SANS};font-size:12px;color:#6b7280;">{src}</td></tr></table>')
+        how_to = _esc(tool.get('how_to_use', '') or '')
         if how_to:
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:4px;">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;color:{COLORS["tool"]};text-transform:uppercase;letter-spacing:0.5px;padding-bottom:6px;">
-          &#x1F4A1; COMO USAR HOJE
-        </td>
-      </tr>
-      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;">
-          {how_to}
-        </td>
-      </tr>
-    </table>''')
-
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
-        body_rows.append(_spacer())
-
-    # ── 4a. PROMPT DO DIA (v2.17) ───────────────
-    # Promovido a seção própria. Estava enterrado dentro do card do Tool do Dia,
-    # onde competia com a ferramenta pela atenção. Nos concorrentes que rodam
-    # prompt em bloco separado (Superhuman, The Neuron) é o elemento mais
-    # copiado e encaminhado do email — merece a própria moldura.
-    _prompt_do_dia = (tool or {}).get('prompt_of_day', '') if tool else ''
-    if _prompt_do_dia:
-        body_rows.append(_section_header('&#x1F9E0;', 'PROMPT DO DIA', COLORS["analysis"]))
-        body_rows.append(_card_start())
-        body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#6b7280;padding-bottom:8px;">
-          Copie e cole no ChatGPT, Claude ou Gemini &#x2014; funciona como está.
-        </td>
-      </tr>
-      <tr>
-        <td style="background-color:#f8f4ff;border:1px solid #ddd6fe;border-left:4px solid {COLORS["analysis"]};padding:14px 16px;font-family:'Courier New',Courier,monospace;font-size:14px;color:#1a1a2e;line-height:1.55;border-radius:0 6px 6px 0;">
-          {_esc(_prompt_do_dia)}
-        </td>
-      </tr>
-    </table>''')
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
-        body_rows.append(_spacer())
-
-    # ── 4a2. FERRAMENTAS EM ALTA (v2.18) ────────
-    # Inspirado no "Trending AI Tools" do Rundown: 3 linhas "Nome — o que faz",
-    # ~40 palavras. Só entra ferramenta com URL válida vinda da coleta; em dia
-    # sem lançamento que preste, a seção some (mesma lógica do Radar Brasil).
+            parts.append(f'<div class="sep" style="border-top:1px solid #eeeeee;">{_label_html("Como usar hoje", "tool", pad_top=12)}</div>')
+            parts.append(_body_html(how_to, pad=12))
+    # PROMPT DO DIA (v2.17): continua com caixa própria — é o elemento mais copiado
+    _prompt = tool.get('prompt_of_day', '') if tool else ''
+    if _prompt:
+        parts.append(f'<div class="sep" style="border-top:1px solid #eeeeee;">{_label_html("Prompt do dia", "tool", pad_top=12)}</div>')
+        parts.append(f'<div class="text-muted" style="font-family:{_SANS};font-size:12px;color:#6b7280;padding-bottom:8px;">Copie e cole no ChatGPT, Claude ou Gemini &#x2014; funciona como est&aacute;.</div>')
+        parts.append(f'<div style="padding-bottom:14px;">{_TBL}<tr><td class="tint-bg text-dark" style="background-color:#f8f4ff;border-left:4px solid {COLORS["analysis"]};padding:12px 14px;font-family:\'Courier New\',Courier,monospace;font-size:14px;color:#1a1a2e;line-height:1.55;">{_esc(_prompt)}</td></tr></table></div>')
+    # FERRAMENTAS EM ALTA (v2.18): só com URL válida vinda da coleta
     _tools = _valid_trending_tools(curated.get('trending_tools'))
     if _tools:
-        body_rows.append(_section_header('&#x1F9F0;', 'FERRAMENTAS EM ALTA', COLORS["tool"]))
-        body_rows.append(_card_start())
-        _rows = []
+        parts.append(f'<div class="sep" style="border-top:1px solid #eeeeee;">{_label_html("Ferramentas em alta", "tool", pad_top=12)}</div>')
         for t in _tools:
             _src = _esc(str(t.get('source_name') or ''))
-            _src_html = f' <span style="color:#9ca3af;font-size:11px;">&middot; {_src}</span>' if _src else ''
-            _rows.append(
-                f'<tr><td style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:14px;'
-                f'line-height:1.45;color:#2d2d2d;padding:0 0 8px 0;">'
-                f'<a href="{_safe_url(t.get("source_url", ""))}" style="color:#2563eb;text-decoration:none;font-weight:700;">'
-                f'{_esc(str(t.get("name")).strip())}</a> &#x2014; {_esc(str(t.get("what_it_does") or "").strip())}{_src_html}'
-                f'</td></tr>'
-            )
-        body_rows.append('    <table width="100%" cellpadding="0" cellspacing="0" border="0">'
-                         + ''.join(_rows) + '</table>')
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
+            _src_html = f' <span class="text-muted" style="color:#6b7280;font-size:12px;">&middot; {_src}</span>' if _src else ''
+            parts.append(f'<div class="text-dark" style="font-family:{_SANS};font-size:15px;line-height:1.45;color:#2d2d2d;padding-bottom:10px;">'
+                         f'<a href="{_safe_url(t.get("source_url", ""))}" style="color:{COLORS["link"]};text-decoration:none;font-weight:700;">'
+                         f'{_esc(str(t.get("name")).strip())}</a> &#x2014; {_esc(str(t.get("what_it_does") or "").strip())}{_src_html}</div>')
+    if parts:
+        title = 'Tool do Dia' if (tool and tool.get('headline')) else 'Para usar hoje'
+        body_rows.append(_section(title, 'tool', ''.join(parts)))
         body_rows.append(_spacer())
 
-    # ── 4b. WORKFLOW DA SEMANA (sextas) ────────
-    workflow = curated.get('weekly_workflow', {})
-    if workflow and workflow.get('title'):
-        wf_title = _esc(workflow.get('title', ''))
-        wf_steps = workflow.get('steps', [])
-        if wf_steps:
-            body_rows.append(_section_header('&#x1F4CB;', 'WORKFLOW DA SEMANA', COLORS["tool"]))
-            body_rows.append(_card_start())
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:12px;">
-          {wf_title}
-        </td>
-      </tr>''')
-            for step in wf_steps:
-                body_rows.append(f'''      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;padding-bottom:8px;padding-left:8px;border-left:3px solid {COLORS["tool"]};">
-          {_esc(str(step))}
-        </td>
-      </tr>''')
-            body_rows.append('''    </table>''')
-            body_rows.append(_card_end())
-            body_rows.append(_card_bottom())
-            body_rows.append(_spacer())
-
-    # ── 5. ANÁLISE DO DIA ───────────────────────
-    analysis = curated.get('daily_analysis', '')
-    if analysis:
-        body_rows.append(_section_header('&#x1F52E;', 'ANÁLISE DO DIA', COLORS["analysis"]))
-        body_rows.append(_card_start())
-
-        if isinstance(analysis, list):
-            for a_item in analysis:
-                a_item = re.sub(r'^#{1,6}\s*', '', a_item.strip())
-                a_item = re.sub(r'^(?:[•\-]|\*(?!\*))\s*', '', a_item.strip())  # v2.19: nunca come o 1º * de **Título**
-                # Extract bold title if format is "**Title** — Text"
-                bold_match = re.match(r'\*\*(.+?)\*\*\s*[—–\-]\s*(.*)', a_item)
-                if bold_match:
-                    a_title = _esc(bold_match.group(1))
-                    a_text = _esc(bold_match.group(2))
-                    body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.55;color:#2d2d2d;">
-          <span style="font-weight:700;color:{COLORS["analysis"]};">&#x25CF;</span>
-          <span style="font-weight:700;">{a_title}</span> &#x2014; {a_text}
-        </td>
-      </tr>
-    </table>''')
-                else:
-                    body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.55;color:#2d2d2d;">
-          <span style="font-weight:700;color:{COLORS["analysis"]};">&#x25CF;</span> {_esc(a_item)}
-        </td>
-      </tr>
-    </table>''')
-        else:
-            body_rows.append(f'''    <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.55;">{_esc(str(analysis))}</p>''')
-
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
+    # ── WORKFLOW DA SEMANA (sextas) ─────────────
+    workflow = curated.get('weekly_workflow', {}) or {}
+    wf_steps = workflow.get('steps', []) or []
+    if workflow.get('title') and wf_steps:
+        inner = (f'<div class="text-dark" style="font-family:{_SANS};font-size:17px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:10px;">{_esc(workflow.get("title", ""))}</div>'
+                 + ''.join(f'<div class="text-dark" style="font-family:{_SERIF};font-size:15px;color:#2d2d2d;line-height:1.55;padding:0 0 8px 10px;border-left:3px solid {COLORS["tool"]};margin-bottom:6px;">{_esc(str(s))}</div>' for s in wf_steps))
+        body_rows.append(_section('Workflow da Semana', 'tool', inner))
         body_rows.append(_spacer())
 
-    # ── 5b. DEEP DIVE SEMANAL (sextas) ─────────
-    deep_dive = curated.get('deep_dive', {})
-    if deep_dive and deep_dive.get('title') and deep_dive.get('body'):
-        dd_title = _esc(deep_dive.get('title', ''))
-        dd_body = deep_dive.get('body', '')
-        dd_paragraphs = [p.strip() for p in dd_body.split('\n\n') if p.strip()]
-        body_rows.append(_section_header('&#x1F52C;', 'DEEP DIVE', COLORS["deep_dive"]))
-        body_rows.append(_card_start())
-        body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;color:#1a1a2e;line-height:1.35;padding-bottom:12px;">
-          {dd_title}
-        </td>
-      </tr>''')
-        for para in dd_paragraphs:
-            body_rows.append(f'''      <tr>
-        <td style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;line-height:1.6;padding-bottom:12px;">
-          {_esc(para)}
-        </td>
-      </tr>''')
-        body_rows.append('''    </table>''')
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
-        body_rows.append(_spacer())
-
-    # ── 6. QUICK LINKS ──────────────────────────
-    quick_links = curated.get('quick_links', [])
+    # ── QUICK LINKS (1 coluna sempre: 2 colunas dependiam de @media, que o app do Gmail ignora) ──
+    quick_links = curated.get('quick_links', []) or []
     if quick_links:
-        body_rows.append(_section_header('&#x26A1;', 'QUICK LINKS', COLORS["quick"]))
-        body_rows.append(_card_start())
-        # 2-column grid layout (single column on mobile via width:100% class)
-        pairs = []
-        for i in range(0, len(quick_links), 2):
-            pairs.append(quick_links[i:i+2])
-        for pair in pairs:
-            cols = []
-            for ql in pair:
-                headline = _esc(ql.get('headline', ''))
-                url = _safe_url(ql.get('source_url', ''))
-                source = _esc(ql.get('source_name', ''))
-                ql_hours = ql.get('hours_ago')
-                ql_hours_inline = f' &nbsp;&middot;&nbsp; &#x23F0; {_esc(str(ql_hours))}h' if ql_hours is not None else ''
-                ql_led = _byte_led_html(ql.get('byte_score'))
-                ql_led_inline = f' &nbsp;&middot;&nbsp; {ql_led}' if ql_led else ''
-                cols.append(f'''<td class="ql-col" style="width:50%;vertical-align:top;padding:6px 8px;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid {COLORS["quick"]};padding-left:10px;">
-              <tr>
-                <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.4;">
-                  <a href="{url}" style="color:#2563eb;text-decoration:none;font-weight:600;">{headline}</a>
-                  <br/><span style="color:#6b7280;font-size:11px;">{source}{ql_hours_inline}{ql_led_inline}</span>
-                </td>
-              </tr>
-            </table>
-          </td>''')
-            if len(cols) == 1:
-                cols.append(f'<td class="ql-col" style="width:50%;"></td>')
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
-      <tr>
-          {cols[0]}
-          {cols[1]}
-      </tr>
-    </table>''')
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
+        blocks = [_headline_html(q, size=15) + _meta_html(q, link_source=False) for q in quick_links]
+        body_rows.append(_section('Quick Links', 'quick', _stack(blocks, gap=10)))
         body_rows.append(_spacer())
 
     # ── WATCH LATER ─────────────────────────────
     videos = [i for i in items if i.get('category') == 'watch_later']
     if videos:
-        body_rows.append(_section_header('&#x1F4FA;', 'WATCH LATER', COLORS["video"]))
-        body_rows.append(_card_start())
-        for vid in videos:
-            title = _esc(vid.get('headline', 'Vídeo'))
-            url = _safe_url(vid.get('source_url', ''))
-            source = _esc(vid.get('source_name', 'Canal'))
-            body_rows.append(f'''    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:700;color:#1a1a2e;padding-bottom:4px;">
-          &#x1F3AC; {title}
-        </td>
-      </tr>
-      <tr>
-        <td style="font-size:13px;color:#6b7280;padding-bottom:8px;">
-          {source}
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <a href="{url}" style="display:inline-block;background-color:{COLORS["video"]};color:#ffffff;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:24px;text-decoration:none;box-shadow:0 2px 8px rgba(239,68,68,0.35);">&#x25B6;&#xFE0F; Assistir</a>
-        </td>
-      </tr>
-    </table>''')
-        body_rows.append(_card_end())
-        body_rows.append(_card_bottom())
+        blocks = [_headline_html(v, size=16, prefix='&#x25B6; ')
+                  + f'<div class="text-muted" style="font-family:{_SANS};font-size:12px;color:#6b7280;">{_esc(v.get("source_name", "") or "Canal")}</div>'
+                  for v in videos]
+        body_rows.append(_section('Watch Later', 'video', _stack(blocks)))
         body_rows.append(_spacer())
 
-    # ── v2.7: ENQUETE SEMANAL (sextas) ──────────
-    if datetime.utcnow().weekday() == 4:  # Friday
-        body_rows.append(f'''<tr>
-  <td style="background-color:#fffbeb;padding:20px;text-align:center;border:1px solid {COLORS["tool"]};border-radius:12px;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="text-align:center;padding-bottom:10px;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#1a1a2e;">&#x1F4CA; Enquete da Semana</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:center;padding-bottom:12px;">
-          <span style="font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2d2d2d;">Qual tema voc&ecirc; quer ver mais no Daily Byte?</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:center;">
-          <a href="https://buttondown.com/totobusnello?tag=tema-ai-tools" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["tool"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">AI Tools</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-estrategia" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["analysis"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Estrat&eacute;gia</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-brasil" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["saas"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Brasil</a>
-          <a href="https://buttondown.com/totobusnello?tag=tema-deep-dive" style="display:inline-block;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;background-color:{COLORS["world"]};color:#ffffff;padding:10px 18px;border-radius:24px;text-decoration:none;margin:4px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Deep Dive</a>
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>''')
-        body_rows.append(_spacer(12))
-
-    # ── v2.6: 1-CLICK FEEDBACK ─────────────────
+    # ── RODAPÉ ÚNICO: enquete (sextas) + feedback + indicação + assinatura ──
+    _lnk = f'color:{COLORS["link"]};text-decoration:none;font-weight:600;'
+    poll = ''
+    if datetime.utcnow().weekday() == 4:  # v2.7: enquete semanal às sextas
+        _opts = [('tema-ai-tools', 'AI Tools'), ('tema-estrategia', 'Estrat&eacute;gia'),
+                 ('tema-brasil', 'Brasil'), ('tema-deep-dive', 'Deep Dive')]
+        poll = (f'<div class="text-dark" style="font-family:{_SANS};font-size:14px;color:#2d2d2d;padding-bottom:12px;">'
+                f'<strong>Enquete da semana:</strong> qual tema voc&ecirc; quer ver mais?<br/>'
+                + ' &middot; '.join(f'<a href="https://buttondown.com/totobusnello?tag={t}" style="{_lnk}">{n}</a>' for t, n in _opts)
+                + '</div>')
     body_rows.append(f'''<tr>
-  <td style="background-color:#ffffff;padding:20px;text-align:center;border:1px solid #e5e7eb;border-radius:12px;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="text-align:center;padding-bottom:10px;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:#1a1a2e;">Esta edi&ccedil;&atilde;o foi &uacute;til?</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:center;">
-          <a href="https://buttondown.com/totobusnello?tag=feedback-positivo" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44D;</a>
-          <a href="https://buttondown.com/totobusnello?tag=feedback-neutro" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44B;</a>
-          <a href="https://buttondown.com/totobusnello?tag=feedback-negativo" style="display:inline-block;font-size:28px;text-decoration:none;padding:8px 16px;">&#x1F44E;</a>
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>''')
-
-    body_rows.append(_spacer(12))
-
-    # ── v2.6: REFERRAL CTA ─────────────────────
-    body_rows.append(f'''<tr>
-  <td style="background-color:#f8f4ff;padding:16px 20px;text-align:center;border:1px dashed {COLORS["analysis"]};border-radius:12px;">
-    <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;color:#2d2d2d;">
-      &#x1F4E8; Conhece algu&eacute;m que precisa saber disso?
-    </span>
-    <br/>
-    <a href="https://buttondown.com/totobusnello" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;color:{COLORS["analysis"]};text-decoration:none;">Encaminhe esta edi&ccedil;&atilde;o &#x2197;</a>
-  </td>
-</tr>''')
-
-    body_rows.append(_spacer(12))
-
-    # ── FOOTER ──────────────────────────────────
-    body_rows.append(f'''<tr>
-  <td class="dark-header" style="background-color:{COLORS["dark"]};background:linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);padding:20px;text-align:center;border-radius:12px;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="text-align:center;padding-bottom:8px;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;font-style:italic;">Curated by Tot&oacute; Busnello AI</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:center;padding-bottom:12px;">
-          <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#94a3b8;">
-            &#x270D;&#xFE0F; <span style="color:#94a3b8;">Artigos sobre tech, AI e neg&oacute;cios</span>
-          </span>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:center;">
-          <a href="https://www.linkedin.com/in/luiz-antonio-busnello/" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#64748b;text-decoration:none;">LinkedIn &#x2197;</a>
-        </td>
-      </tr>
-    </table>
+  <td style="padding:6px 12px 8px 12px;text-align:center;">
+    {poll}
+    <div class="text-dark" style="font-family:{_SANS};font-size:14px;color:#2d2d2d;padding-bottom:6px;">Esta edi&ccedil;&atilde;o foi &uacute;til?
+      <a href="https://buttondown.com/totobusnello?tag=feedback-positivo" style="font-size:22px;text-decoration:none;padding:0 6px;">&#x1F44D;</a>
+      <a href="https://buttondown.com/totobusnello?tag=feedback-neutro" style="font-size:22px;text-decoration:none;padding:0 6px;">&#x1F44B;</a>
+      <a href="https://buttondown.com/totobusnello?tag=feedback-negativo" style="font-size:22px;text-decoration:none;padding:0 6px;">&#x1F44E;</a>
+    </div>
+    <div style="font-family:{_SANS};font-size:14px;padding-bottom:14px;"><a href="https://buttondown.com/totobusnello" style="{_lnk}">Encaminhe esta edi&ccedil;&atilde;o &#x2197;</a></div>
+    <div class="text-muted" style="font-family:{_SANS};font-size:12px;color:#6b7280;">Curated by Tot&oacute; Busnello AI &middot; <a href="https://www.linkedin.com/in/luiz-antonio-busnello/" style="color:#6b7280;text-decoration:none;">LinkedIn &#x2197;</a></div>
   </td>
 </tr>''')
 
@@ -1163,25 +824,19 @@ def generate_email_html(curated: Dict) -> str:
   }}
 }}
 @media (prefers-color-scheme: dark) {{
-  body, .email-bg {{
-    background-color: #1a1a1a !important;
-  }}
-  .card-bg, .card-border {{
-    background-color: #2d2d2d !important;
-    border-color: #404040 !important;
-  }}
-  .dark-header {{
-    background-color: #111111 !important;
-  }}
-  .text-dark {{
-    color: #f5f5f5 !important;
-  }}
-  .text-muted {{
-    color: #a0a0a0 !important;
-  }}
-  a {{
-    color: #4da6ff !important;
-  }}
+  body, .email-bg {{ background-color: #161616 !important; }}
+  .card-bg {{ background-color: #242424 !important; }}
+  .card-border {{ border-color: #3a3a3a !important; }}
+  .tint-bg {{ background-color: #2b2420 !important; }}
+  .dark-header {{ background-color: #111111 !important; }}
+  .text-dark {{ color: #f0f0f0 !important; }}
+  .text-muted {{ color: #a3a3a3 !important; }}
+  .sep {{ border-color: #3a3a3a !important; }}
+  .tag {{ color: #a3a3a3 !important; border-color: #555555 !important; }}
+  a {{ color: #6cb6ff !important; }}
+  a.text-dark {{ color: #f0f0f0 !important; }}
+  a.btn {{ color: #ffffff !important; }}
+  .vu-off {{ background-color: #444444 !important; }}
 }}
 body {{
   margin: 0;

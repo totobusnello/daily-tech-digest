@@ -4,8 +4,8 @@
 
 Newsletter diaria automatizada de Tech & AI para C-levels brasileiros (CEOs, CFOs, CMOs, CPOs). Pipeline: coletar noticias -> curar com Claude -> enviar via Buttondown.
 
-**Versao atual:** v2.19 (sai o bloco de abertura da v2.18: o email abre direto na Big Story)
-**Ultima rodada de evolucao:** 2026-11-21 — ver `EVOLUTION-PLAN.md` (changelog v2.19)
+**Versao atual:** v2.20 (redesenho: um card por seção, metadados enxutos, dark mode por classe, nova ordem de leitura)
+**Ultima rodada de evolucao:** 2026-11-21 — ver `EVOLUTION-PLAN.md` (changelog v2.19 e v2.20)
 **Autor:** Toto Busnello (lab@nuvini.ai)
 
 ---
@@ -54,23 +54,26 @@ sender.py             -> Buttondown API -> email HTML
 
 ---
 
-## Layout v2.19 — Big Story + 6 Secoes + 2 Micro-Secoes
+## Layout v2.20 — Big Story + secoes em ordem de leitura (um card por secao)
 
 ```
-★ BIG STORY (v2.14) — 1 item destacado no topo (card laranja com borda 2px)
-                       Extraido de items[] onde big_story=true (maior byte_score, minimo 8)
-0. NUMERO DO DIA (data point impactante — value + context)
-1. MUNDO REAL (3 itens) — mundo + Brasil
-2. HOJE NO BYTE (3 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
-3. SaaS & ENTERPRISE (1 item)
-3b. RADAR BRASIL (0-1 item) — ecossistema tech/AI/negocios BR (opcional, array vazio se nada relevante)
-4. TOOL DO DIA (1 item) + COMO USAR HOJE + PROMPT DO DIA (copy-paste ready)
-4a2. FERRAMENTAS EM ALTA (0-3, v2.18) — "Nome — o que faz", so com URL da coleta
+HEADER (1 celula: nome + data · N min de leitura)
+★ BIG STORY (v2.14) — abre o email (regra 89); unico card com borda laranja e botao "Ler agora"
+1. HOJE NO BYTE (3 itens) — tags: [BREAKING], [AI], [BIG TECH], [ENTERPRISE]
+2. SaaS & ENTERPRISE (1 item)
+3. MUNDO REAL (3) + RADAR BRASIL (0-1) — um card so, Radar como sub-rotulo
+4. NUMERO DO DIA — faixa sem card (borda roxa a esquerda)
 5. ANALISE DO DIA (3 bullets)
-5b. DEEP DIVE (sextas) — analise profunda do tema mais quente da semana (3-5 paragrafos)
-6. QUICK LINKS (4 itens) — headline + link, sem analise
-+ WATCH LATER (1 video no final)
+5b. DEEP DIVE (sextas)
+6. TOOL DO DIA + COMO USAR HOJE + PROMPT DO DIA + FERRAMENTAS EM ALTA (0-3) — um card so
+6b. WORKFLOW DA SEMANA (sextas)
+7. QUICK LINKS (4) — 1 coluna sempre
+8. WATCH LATER (1 video)
+RODAPE UNICO — enquete (sextas) + util? 👍👋👎 + encaminhe + assinatura
 ```
+
+Anatomia de item (v2.20): `[TAG] Manchete-que-é-link` → why (Georgia 15) → details (– , 14px) → `Fonte ↗ · há Nh · LED`.
+Regra 91 explica cada corte.
 
 **Total maximo:** 14 itens (10 principais + 4 quick links) + ate 3 ferramentas em alta. Teto imposto no CODIGO (`enforce_section_caps`, regra 87). Heat threshold 70.
 
@@ -320,7 +323,7 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 
 66. **PROMPT DO DIA e secao propria (v2.17)** — saiu de dentro do card do Tool do Dia, onde competia com a ferramenta pela atencao, e virou secao numerada com caixa monoespacada. Nos concorrentes que o isolam (Superhuman, The Neuron) e o elemento mais copiado e encaminhado do email. Le `tool_of_day.prompt_of_day` — o JSON nao mudou.
 
-67. **Tempo de leitura por item e derivado no codigo (v2.17)** — `_item_read_min()` estima a partir do tamanho do resumo que o curador escreveu (fator 25x, faixa 1-9 min), renderizado ao lado da barra LED. **Deliberadamente nao e campo do JSON:** o modelo nao abre o link e chutaria o numero. Mesmo principio do `byte_score`, cujo tier tambem e derivado no sender e nunca enviado pelo curador.
+67. ~~**Tempo de leitura por item e derivado no codigo (v2.17)**~~ — **removido na v2.20 (regra 91)**. — `_item_read_min()` estima a partir do tamanho do resumo que o curador escreveu (fator 25x, faixa 1-9 min), renderizado ao lado da barra LED. **Deliberadamente nao e campo do JSON:** o modelo nao abre o link e chutaria o numero. Mesmo principio do `byte_score`, cujo tier tambem e derivado no sender e nunca enviado pelo curador.
 
 68. **O log da curadoria mentia sobre o tamanho da edicao (v2.17)** — `processor.py` imprimia `items[:5]` sob o rotulo "HOJE NO BYTE" independente da categoria real, escondia SaaS e Watch Later, e o contador mostrava `len(items[])` como "Selecionados". Numa edicao de 18 pecas ele exibia **"Selecionados: 9"**, o que levou a diagnosticar edicao curta onde nao havia. Agora agrupa pela categoria real, sinaliza categoria desconhecida, e o contador soma o digest inteiro discriminando por secao. **O log e a unica janela do operador para o que foi ao ar — se ele mente, todo diagnostico em cima dele nasce errado.**
 
@@ -399,6 +402,16 @@ fresca. Com a regua nova o mesmo par fica 70 vs 80. Recencia virou desempate.
 89. **Sem bloco de abertura — a Big Story é a abertura (v2.19)** — a v2.18 trouxe do Rundown o lede de 2 frases + "Nesta edição". Na edição de 21/11/2026 o subject, o lede, a 1ª linha do sumário e o card da Big Story eram **a mesma história** ("Trump taxa data centers"): 4 vezes antes de o leitor ver algo novo, e o card branco ocupava ~40% da primeira tela. O Toto vetou ("enche linguiça e o layout é feio") e escolheu cortar o bloco inteiro, não reformatar. **Por que o benchmark não transferiu:** o Rundown tem 2-3 histórias e nenhum card de destaque, então o lede é o único lugar onde a tensão aparece; aqui a Big Story já cumpre esse papel. O campo `lede` saiu do prompt (menos tokens) e, se um curador antigo ou cache ainda o mandar, o sender **ignora** (teste `v2.19`). **Antes de reintroduzir sumário ou abertura:** ele não pode repetir a Big Story, e precisa caber em 2-3 linhas.
 
 90. **`analytics.clicks` do Buttondown já exclui robô — o bruto está em `/v1/events` (v2.19)** — o agregado zerado parecia tracking quebrado. Não estava: os links saem embrulhados em `buttondown-0005.com/c/…`, o redirect funciona, e um clique de teste apareceu em `GET /v1/events?event_type=clicked&email_id=<id>` no mesmo minuto, ainda que o agregado continuasse 0. O bruto tem **2.550 eventos**, a maioria rajada de scanner de segurança corporativo: todos os links da edição, inclusive os `?tag=` da enquete, no mesmo minuto. **Heurística usada:** um assinante clicando em ≥5 links distintos em <2 min = robô. Com ela, o clique humano caiu de ~20 pares edição×leitor/mês (mai-out) para 2 em novembro. **Antes de concluir algo sobre clique, puxe `/v1/events` e separe as rajadas** — o agregado sozinho não diz se é tracking, robô ou gente.
+
+91. **Redesenho v2.20 — feito a partir de parecer de designer, conferido no render** — o Toto pediu uma análise do layout inteiro; um agente de design leu screenshots desktop/mobile + o `sender.py` e separou DEVEMOS de PODEMOS. O que mudou e por quê:
+    - **Um card por seção** (`_section`): antes cada seção eram 3 `<tr>` com 3 sombras, círculo numerado e pílula com emoji — ~90px de moldura × 10 seções. A divisória agora fica só ENTRE blocos (`_stack`); o último item deixava linha + ~40px vazios.
+    - **Metadados `Fonte ↗ · há Nh · LED`** (`_meta_html`): saíram ⏰, o "N min" por item (**supera a regra 67**: o fator 25x era chute e ninguém clica) e o botão-pílula "Ver original" — a manchete virou o link. **O LED fica em todos os itens, por decisão do Toto** (a recomendação era só na Big Story), mas preso ao seu "·" num grupo `nowrap`: no celular ele caía sozinho numa linha com um "·" pendurado.
+    - **Um só botão** (`_button_html`, bulletproof com cor no `<td>`), só na Big Story e na Tool. Havia 4 estilos para a mesma ação; "Experimentar"/"Assistir" eram os maiores objetos do email.
+    - **Dark mode por classe**: nenhum texto tinha `.text-dark`, então o Apple Mail escuro punha `#2d2d2d` sobre `#2d2d2d`. E o `a{color:#4da6ff!important}` pintava de azul o texto branco dos botões — por isso `a.btn` e `a.text-dark`. Barrinhas apagadas do LED têm `.vu-off`.
+    - **Nada abaixo de 12px** no texto (tag/selo em caixa-alta: 11px). Rótulo de seção em tom escuro de cada acento (`_LABEL`): âmbar/laranja puros sobre branco ficam abaixo de 3:1.
+    - **Ordem por prioridade de leitura**: Hoje no Byte e Análise sobem; Número do Dia vira faixa; Tool + Prompt + Ferramentas num card só, depois da análise. Quick Links em 1 coluna (2 colunas dependiam de `@media`, que o app do Gmail ignora em conta não-Google).
+    - **Resultado medido** na edição de 21/11: 4.704px → 3.859px de altura no desktop (−18%), zero `box-shadow`.
+    - ⚠️ **Não testado em cliente real**: o dark mode foi simulado forçando o `@media` no Chrome. Gmail faz inversão própria e ignora o bloco; Outlook desktop não desenha o LED (`inline-block` em `<span>`). Conferir na 1ª edição.
 
 ---
 
