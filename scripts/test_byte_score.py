@@ -385,14 +385,51 @@ check("analise: bullet - e * removidos", "*Com bullet" not in _ha and "*Bullet a
 _ma = sender.generate_email_content(_an)
 check("analise md: sem *Titulo** quebrado", "*Soberania de infraestrutura**" not in _ma.replace("**Soberania de infraestrutura**", ""))
 
+print("\n--- v2.20: layout ---")
+_c20 = {
+    "items": [_it("Big", 9, big=True), _it("Hoje A", 7), _it("Hoje B", 6),
+              _it("Saas A", 6, cat="saas_enterprise"), _it("Video X", 0, cat="watch_later")],
+    "world": [{"headline": "Mundo A", "context": "ctx", "source_url": "https://w.com/a", "source_name": "W", "byte_score": 6, "hours_ago": 3}],
+    "radar_brasil": [{"headline": "Brasil A", "why_it_matters": "Monitore: x", "source_url": "https://b.com/a", "source_name": "B", "byte_score": 5}],
+    "number_of_day": {"value": "17,4 mi", "context": "linhas"},
+    "daily_analysis": ["**Tema** — insight"],
+    "tool_of_day": {"headline": "Tool Z", "why_it_matters": "Teste: y", "source_url": "https://t.com", "source_name": "T",
+                    "how_to_use": "use assim", "prompt_of_day": "Aja como CFO"},
+    "trending_tools": [{"name": "Granola", "what_it_does": "notas", "source_url": "https://granola.ai"}],
+    "quick_links": [{"headline": "Quick A", "source_url": "https://q.com", "source_name": "Q", "byte_score": 5}],
+}
+_h20 = sender.generate_email_html(_c20)
+_pos = lambda s_: _h20.find(s_)
+check("v2.20: sem circulo numerado nem pilula com emoji", "border-radius:50%" not in _h20 and "&#x1F525;" not in _h20)
+check("v2.20: sem relogio nem 'N min' por item", "&#x23F0;" not in _h20 and " min</span>" not in _h20)
+check("v2.20: sem botao 'Ver original'", "Ver original" not in _h20)
+check("v2.20: manchete e o link", 'href="https://w.com/a" class="text-dark"' in _h20)
+check("v2.20: LED mantido nos itens", _h20.count("vertical-align:bottom;") >= 30)
+check("v2.20: ordem Big > Hoje > SaaS > Mundo > Numero > Analise > Tool > Quick > Video",
+      0 < _pos("Big") < _pos("Hoje A") < _pos("Saas A") < _pos("Mundo A") < _pos("Brasil A")
+      < _pos("17,4 mi") < _pos("Tema") < _pos("Tool Z") < _pos("Aja como CFO") < _pos("Granola")
+      < _pos("Quick A") < _pos("Video X"))
+check("v2.20: tool+prompt+ferramentas num card so", _h20.count("card-bg card-border") == 7)
+check("v2.20: texto corrido >= 12px (so tag/selo em caixa-alta tem 11px)", "font-size:10px" not in _h20 and "font-size:9px" not in _h20)
+check("v2.20: botao com classe btn (dark mode nao pinta de azul)", _h20.count('class="btn"') == 2)
+check("v2.20: texto com classe de dark mode", _h20.count("text-dark") >= 20)
+check("v2.20: sem box-shadow", "box-shadow" not in _h20)
+check("v2.20: divisoria nunca depois do ultimo bloco",
+      sender._stack(["a", "b"]).count("border-bottom") == 1 and "border-bottom" not in sender._stack(["so"]))
+check("v2.20: sempre claro (sem dark mode automatico)",
+      "prefers-color-scheme" not in _h20 and 'content="light only"' in _h20)
+_led_wrap = sender._meta_html({"source_name": "S", "source_url": "https://s.com", "hours_ago": 2, "byte_score": 7})
+check("v2.20: LED preso ao seu '·' num grupo nowrap", '<span style="white-space:nowrap;">&middot;&nbsp;<span' in _led_wrap)
+check("v2.20: sem hours_ago nao imprime 'há ?h'", "h&aacute;" not in sender._meta_html({"source_name": "S", "byte_score": 5}))
+
 print("\n--- v2.18: details nas historias principais ---")
 _ih = sender._render_item_html(_it("Com detalhes", 7, details=["Preco cai de US$15 para US$6", "<script>x</script>"]))
 check("details renderizados no item", "Preco cai de US$15 para US$6" in _ih)
 check("details escapados", "<script>" not in _ih and "&lt;script&gt;" in _ih)
 _ih4 = sender._render_item_html(_it("Muitos", 7, details=["a1", "a2", "a3", "a4"]))
 check("details cortados em 3", "a3" in _ih4 and "a4" not in _ih4)
-check("item sem details fica igual", "&bull;" not in sender._render_item_html(_it("Sem", 7)))
-check("details nao-lista ignorado", "&bull;" not in sender._render_item_html(_it("Str", 7, details="texto solto")))
+check("item sem details fica igual", "det\"" not in sender._render_item_html(_it("Sem", 7)))
+check("details nao-lista ignorado", "det\"" not in sender._render_item_html(_it("Str", 7, details="texto solto")))
 
 print("\n--- v2.18: ferramentas em alta ---")
 _tt = [
@@ -409,10 +446,10 @@ check("tools: descarta sem nome", all(t["name"] for t in _valid))
 check("tools: no maximo 3", len(_valid) == 3 and _valid[-1]["name"] == "Tres")
 check("tools: lixo -> lista vazia", sender._valid_trending_tools("x") == [] and sender._valid_trending_tools(None) == [])
 _h_tt = sender.generate_email_html({"items": [], "trending_tools": _tt})
-check("tools: secao renderizada", "FERRAMENTAS EM ALTA" in _h_tt and "https://granola.ai" in _h_tt)
+check("tools: secao renderizada", "Ferramentas em alta" in _h_tt and "https://granola.ai" in _h_tt)
 check("tools: javascript nao vaza", "javascript:" not in _h_tt)
 check("tools: secao some sem ferramenta valida",
-      "FERRAMENTAS EM ALTA" not in sender.generate_email_html({"items": [], "trending_tools": [_tt[1]]}))
+      "Ferramentas em alta" not in sender.generate_email_html({"items": [], "trending_tools": [_tt[1]]}))
 check("tools: markdown preview", "Granola" in sender.generate_email_content({"items": [], "trending_tools": _tt}))
 
 print("\n--- v2.18: dedup entre secoes com trending_tools ---")

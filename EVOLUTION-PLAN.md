@@ -4,6 +4,25 @@
 
 ## Changelog
 
+### v2.20 — 2026-11-21 (redesenho do layout)
+
+Pedido do Toto na mesma rodada: "use alguma skill ou agente para analisar o layout geral".
+Um agente de design (só leitura) gerou parecer com 6 DEVEMOS e 5 PODEMOS; o Toto aprovou
+os 4 pacotes (metadados + botão único, menos moldura, dark mode + fonte mínima, reordenar e
+fundir) e decidiu **manter o LED em todos os itens**. Detalhe na regra 91 do `CLAUDE.md`.
+
+| Mudança | Onde |
+|---|---|
+| Um card por seção, divisória só entre blocos | `_section`, `_stack` |
+| Metadados `Fonte ↗ · há Nh · LED`, manchete-link, sem ⏰/"N min"/"Ver original" | `_meta_html`, `_headline_html` |
+| Um botão bulletproof (Big Story e Tool) | `_button_html` |
+| **Sempre claro** (`color-scheme: light only`, sem bloco de tema escuro) — decisão do Toto | CSS do wrapper |
+| Fonte mínima 12px, rótulos em tom escuro | `_LABEL`, `_details_html` |
+| Nova ordem; Mundo+Radar num card; Número do Dia em faixa; Tool+Prompt+Ferramentas num card; Quick Links 1 coluna; rodapé único | `generate_email_html` |
+| 15 testes de regressão do layout | `test_byte_score.py` (203/203) |
+
+Edição de 21/11 re-renderizada: 4.704px → 3.859px no desktop (−18%).
+
 ### v2.19 — 2026-11-21 (sai o bloco de abertura)
 
 Rotina de evolução de sábado. O Toto vetou a abertura da v2.18 ("enche linguiça e o layout
